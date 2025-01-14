@@ -4,41 +4,41 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 
 const Header = () => {
-    const { data: session, status } = useSession();
+  const { data: session, status } = useSession();
+
   return (
     <header className="header_style">
-        {/* Logo */}
-        <div className="flex items-center">
-          <Link href={"/"}>
+      {/* Logo - ora sempre visibile */}
+      <div className="flex items-center">
+        <Link href={status === "authenticated" ? "/" : "/Login"}>
           <Image
             src="/hoon_logo.png"
             alt="Logo"
             width={150}
             height={100}
             className="object-contain"
+            priority // Aggiunto per caricare l'immagine con priorità
           />
-          </Link>
-        </div>
+        </Link>
+      </div>
 
-        {/* Navigation Buttons */}
-        <nav className="flex items-center space-x-4">
-          {status === "loading" ? (
-            <p>Caricamento...</p>
-          ) : session ? (
-            // Mostra il pulsante Logout se l'utente è loggato
-            <button
-              onClick={() => signOut()}
-              className="red_btn"
-            >
-              Logout
-            </button>
-          ) : (
-            // Mostra il pulsante Accedi se l'utente non è loggato
-            <Link href="/Login" passHref>
-              <button className="black_btn">Accedi</button>
-            </Link>
-          )}
-        </nav>
+      {/* Navigation Buttons */}
+      <nav className="flex items-center space-x-4">
+        {status === "loading" ? (
+          <p>Caricamento...</p>
+        ) : session ? (
+          <button
+            onClick={() => signOut({ callbackUrl: '/Login' })}
+            className="red_btn"
+          >
+            Logout
+          </button>
+        ) : (
+          <Link href="/Login" passHref>
+            <button className="black_btn">Accedi</button>
+          </Link>
+        )}
+      </nav>
     </header>
   );
 };

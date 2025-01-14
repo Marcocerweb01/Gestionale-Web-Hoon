@@ -42,15 +42,12 @@ const Login = () => {
         return;
       }
   
-      // Aggiungi un piccolo delay per assicurarti che la sessione sia completamente inizializzata
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Forza il refresh della sessione
+      await router.refresh();
       
-      // Usa replace invece di push per evitare problemi con il back button
-      router.replace("/");
-      
-      // Forza un refresh della pagina
-      router.refresh();
-
+      // Usa replace con URL completo
+      window.location.href = '/';
+  
     } catch (err) {
       console.error("Errore durante il login:", err);
       setError("Errore del server. Riprova più tardi.");
