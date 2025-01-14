@@ -77,7 +77,9 @@
 .red_btn {
   @apply text-white px-4 py-2 rounded bg-red-500 hover:bg-red-600;
 }
-
+.header_style{
+  @apply fixed top-0 left-0 w-full z-50 bg-white shadow-md flex items-center justify-between px-6 py-4 max-w-6xl mx-auto rounded-lg
+}
 .outline_btn {
   @apply rounded-full border border-black bg-transparent py-1.5 px-5 text-black transition-all hover:bg-black hover:text-white text-center text-lg font-inter flex items-center justify-center;
 }
