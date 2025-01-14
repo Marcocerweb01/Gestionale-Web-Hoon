@@ -53,7 +53,7 @@ const ListaClienti = ({ id, amministratore }) => {
       setError("ID utente non fornito.");
       setLoading(false);
     }
-  }, [id],[fetchCoollaborazioni]);
+  }, [id],[fetchCollaborazioni]);
 
 
   useEffect(() => {
