@@ -22,24 +22,32 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
+  
     if (!credentials.email || !credentials.password) {
       setError("Inserisci email e password.");
       return;
     }
-
+  
     try {
       setPending(true);
+      console.log("Inizio processo di login...");
+  
       const res = await signIn("credentials", {
         email: credentials.email,
         password: credentials.password,
         redirect: false,
       });
+  
+      console.log("Risultato del login:", res);
+  
       if (res.error) {
+        console.error("Errore:", res.error);
         setError("Credenziali errate");
         setPending(false);
         return;
       }
+  
+      console.log("Redirect alla homepage...");
       router.push("/");
     } catch (err) {
       console.error("Errore durante il login:", err);
@@ -47,7 +55,7 @@ const Login = () => {
       setPending(false);
     }
   };
-
+  
   return (
     <div className=" flex items-center justify-center">
       <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
