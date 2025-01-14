@@ -48,7 +48,7 @@ const Login = () => {
       }
   
       console.log("Redirect alla homepage...");
-      router.push("/");
+      router.push("/").catch((err) => console.error("Errore nel router.push:", err));
     } catch (err) {
       console.error("Errore durante il login:", err);
       setError("Errore del server. Riprova più tardi.");
