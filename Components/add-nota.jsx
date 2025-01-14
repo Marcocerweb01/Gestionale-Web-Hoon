@@ -51,15 +51,6 @@ const CreaNota = ({ collaborazioneId, autoreId, autorenome }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label>Nota:</label>
-        <textarea
-          className="w-full p-2 border"
-          value={nota}
-          onChange={(e) => setNota(e.target.value)}
-          required
-        />
-      </div>
-      <div>
         <label>Tipo:</label>
         <select
           className="w-full p-2 border"
@@ -81,6 +72,16 @@ const CreaNota = ({ collaborazioneId, autoreId, autorenome }) => {
           />
         </div>
       )}
+      <div>
+        <label>Nota:</label>
+        <textarea
+          className="w-full p-2 border"
+          value={nota}
+          onChange={(e) => setNota(e.target.value)}
+          required
+        />
+      </div>
+      
       <button type="submit" className="bg-blue-500 text-white p-2 rounded">
         Crea Nota
       </button>

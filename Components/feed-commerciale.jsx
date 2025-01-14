@@ -152,16 +152,7 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
         
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block font-medium">Nota:</label>
-            <textarea
-              className="w-full p-2 border rounded"
-              value={nota}
-              onChange={(e) => setNota(e.target.value)}
-              required
-            />
-          </div>
-          <div>
+        <div>
             <label className="block font-medium">Tipo:</label>
             <select
               className="w-full p-2 border rounded"
@@ -183,6 +174,16 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
               />
             </div>
           )}
+          <div>
+            <label className="block font-medium">Nota:</label>
+            <textarea
+              className="w-full p-2 border rounded"
+              value={nota}
+              onChange={(e) => setNota(e.target.value)}
+              required
+            />
+          </div>
+          
           <button
             type="submit"
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
