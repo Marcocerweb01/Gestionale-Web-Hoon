@@ -74,6 +74,9 @@
 .black_btn {
   @apply rounded-full py-1.5 px-5 bg-black text-white transition-all hover:bg-gray-50 hover:text-black text-center text-lg sm:text-sm font-inter flex items-center justify-center shadow-sm;
 }
+.red_btn {
+  @apply text-white px-4 py-2 rounded bg-red-500 hover:bg-red-600;
+}
 
 .outline_btn {
   @apply rounded-full border border-black bg-transparent py-1.5 px-5 text-black transition-all hover:bg-black hover:text-white text-center text-lg font-inter flex items-center justify-center;
