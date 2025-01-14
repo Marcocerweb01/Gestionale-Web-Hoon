@@ -2,7 +2,7 @@
 import React from 'react';
 import '@styles/global.css';
 import { SessionProvider } from "next-auth/react";
-import Header from '@Components/header';
+import Header from '@Components/Header';
 export const metadada = {
     title:"Wbarea",
     description:"La città del business"
