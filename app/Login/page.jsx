@@ -40,7 +40,7 @@ const Login = () => {
         setPending(false);
         return;
       }
-      router.replace("/");
+      router.push("/");
     } catch (err) {
       console.error("Errore durante il login:", err);
       setError("Errore del server. Riprova più tardi.");
