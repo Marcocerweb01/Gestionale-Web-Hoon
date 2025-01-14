@@ -5,7 +5,7 @@ const nextConfig = {
     serverComponentsExternalPackages: ["mongoose"],
   },
   images: {
-    domains: ['lh3.googleusercontent.com'],
+    unoptimized: process.env.NODE_ENV === 'development',
   },
   webpack(config) {
     config.experiments = {
