@@ -7,7 +7,6 @@ const Header = () => {
     const { data: session, status } = useSession();
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-white shadow-md flex items-center justify-between px-6 py-4 max-w-6xl mx-auto rounded-lg">
-      <div className="">
         {/* Logo */}
         <div className="flex items-center">
           <Link href={"/"}>
@@ -40,7 +39,6 @@ const Header = () => {
             </Link>
           )}
         </nav>
-      </div>
     </header>
   );
 };
