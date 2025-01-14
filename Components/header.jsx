@@ -6,7 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 const Header = () => {
     const { data: session, status } = useSession();
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-white shadow-md">
+    <header className=" w-full z-50 bg-white shadow-md">
       <div className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto rounded-lg">
         {/* Logo */}
         <div className="flex items-center">
