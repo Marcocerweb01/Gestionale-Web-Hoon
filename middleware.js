@@ -1,30 +1,31 @@
-// middleware.js
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
 export async function middleware(req) {
+  // Permetti sempre l'accesso alle risorse statiche e pubbliche
+  if (
+    req.nextUrl.pathname.startsWith('/_next') ||
+    req.nextUrl.pathname.startsWith('/public') ||
+    req.nextUrl.pathname.startsWith('/hoon_logo.png') ||  // Permetti esplicitamente l'accesso al logo
+    req.nextUrl.pathname.includes('.') // Permetti l'accesso a tutti i file con estensione
+  ) {
+    return NextResponse.next();
+  }
+
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   console.log("Token nel middleware:", token);
 
   const url = req.nextUrl.clone();
-  
-  // Permetti sempre l'accesso alle risorse statiche
-  if (req.nextUrl.pathname.startsWith('/_next') || 
-      req.nextUrl.pathname.startsWith('/images') ||
-      req.nextUrl.pathname.startsWith('/public')) {
-    return NextResponse.next();
-  }
 
   if (!token) {
-    if (req.nextUrl.pathname !== "/Login") {
-      return NextResponse.redirect(new URL("/Login", req.url));
+    if (url.pathname !== "/Login") {
+      url.pathname = "/Login";
+      return NextResponse.redirect(url);
     }
-  } else if (req.nextUrl.pathname === "/Login") {
-    // Se l'utente è già autenticato e prova ad accedere alla pagina di login
-    return NextResponse.redirect(new URL("/", req.url));
-  } else if (["/Register", "/AddCollab", "/Lista_clienti", "/Feed-comm"].includes(req.nextUrl.pathname)) {
+  } else if (["/Register", "/AddCollab", "/Lista_clienti", "/Feed-comm"].includes(url.pathname)) {
     if (token.role !== "amministratore") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
+      url.pathname = "/unauthorized";
+      return NextResponse.redirect(url);
     }
   }
 
@@ -32,5 +33,8 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    // Escludi i file statici e le API dalla verifica del middleware
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
 };
