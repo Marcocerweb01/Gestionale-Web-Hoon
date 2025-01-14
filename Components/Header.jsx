@@ -29,7 +29,7 @@ const Header = () => {
             // Mostra il pulsante Logout se l'utente è loggato
             <button
               onClick={() => signOut()}
-              className="text-white px-4 py-2 rounded bg-red-500 hover:bg-red-600"
+              className="text-white px-4 py-2 rounded bg-red-500 !important hover:bg-red-600"
             >
               Logout
             </button>
