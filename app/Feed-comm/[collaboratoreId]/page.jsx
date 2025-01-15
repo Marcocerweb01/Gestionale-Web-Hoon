@@ -15,7 +15,7 @@ const FeedCollaborazione = ({params}) => {
   }
 
   return (
-    <div className="w-full h-full bg-slate-50 shadow-md rounded-lg mt-10 p-14">
+    <div className="w-full h-4/5 bg-slate-50 shadow-md rounded-lg mt-10 p-14">
       <h1 className="text-2xl font-bold">{nome}</h1>
       <FeedCommerciale id={collaboratoreId} className="fixed"/>
     </div>
