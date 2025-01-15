@@ -62,7 +62,7 @@ const FeedCommerciale = ({ id }) => {
       <div
         className={` overflow-y-auto w-full lg:w-3/4 p-4 lg:p-6`}
         style={{
-        
+          width:'100%',
           height: '75vh', // Altezza dinamica in base alla pagina
           overflowY: 'auto',
           zIndex:'10'
