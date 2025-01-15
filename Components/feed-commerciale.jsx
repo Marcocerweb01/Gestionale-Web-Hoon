@@ -118,8 +118,8 @@ const FeedCommerciale = ({ id }) => {
                 <p>{note.nota}</p>
                 <p className="text-sm text-gray-500">Autore: {note.autore}</p>
                 <p className="text-sm text-gray-500">
-                  Data: {new Date(note.data).toLocaleString()}{console.log(note.data)}
-                  Data: {format(new Date(note.data), 'dd/MM/yyyy HH:mm:ss')}
+                  Data: {new Date(note.data).toISOString().split('T')[0]}{console.log(note.data)}
+        
                 </p>
               </li>
             ))}
