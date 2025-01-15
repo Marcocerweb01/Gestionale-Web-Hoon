@@ -253,7 +253,7 @@ const ListaClienti = ({ id, amministratore }) => {
             ) : (
               <button
                 onClick={() => handleEditClick(row.id)}
-                className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                className="bg-blue-500 text-white px-3 py-1 rounded text-sm ml-9"
               >
                 Modifica
               </button>
