@@ -149,7 +149,7 @@ const ListaClienti = ({ id, amministratore }) => {
 
   // Componente per la visualizzazione desktop
   const DesktopView = () => (
-    <div className="hidden sm:hidden overflow-x-auto">
+    <div className="hidden sm:hidden lg:hidden overflow-x-auto">
       <table className="w-full border border-black text-left">
         <thead className="rounded-lg">
           <tr className="bg-gray-100">
