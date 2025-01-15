@@ -91,7 +91,7 @@
 }
 
 .head_text {
-  @apply  mb-10 text-5xl font-extrabold leading-[1.15] text-black sm:text-6xl;
+  @apply  mb-10 text-5xl font-extrabold leading-[1.15] text-black sm:text-3xl;
 }
 .head_text1 {
   @apply  text-5xl font-extrabold leading-[1.15] text-black sm:text-6xl;
