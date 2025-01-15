@@ -137,11 +137,23 @@ const ListaClienti = ({ id, amministratore }) => {
 
   const CounterEditor = ({ value, onIncrement, onDecrement }) => (
     <div className="flex items-center space-x-2 w-full">
-      <button className="w-8 h-8 border border-black bg-slate-200 rounded-md" onClick={onDecrement}>
+      <button className="w-8 h-8 border border-black bg-slate-200 rounded-md" style={{
+          width: "2rem", // w-8
+          height: "2rem", // h-8
+          border: "1px solid black", // border border-black
+          backgroundColor: "rgb(226, 232, 240)", // bg-slate-200
+          borderRadius: "0.375rem", // rounded-md
+        }} onClick={onDecrement}>
         <b>-</b>
       </button>
       <span className="flex-1 text-center">{value || "Non disponibile"}</span>
-      <button className="w-8 h-8 border border-black bg-slate-200 rounded-md" onClick={onIncrement}>
+       <button className="w-8 h-8 border border-black bg-slate-200 rounded-md" style={{
+        width: "2rem", // w-8
+        height: "2rem", // h-8
+        border: "1px solid black", // border border-black
+        backgroundColor: "rgb(226, 232, 240)", // bg-slate-200
+        borderRadius: "0.375rem", // rounded-md
+      }}   onClick={onIncrement}>
         <b>+</b>
       </button>
     </div>
