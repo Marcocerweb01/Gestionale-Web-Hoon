@@ -149,7 +149,7 @@ const ListaClienti = ({ id, amministratore }) => {
 
   // Componente per la visualizzazione desktop
   const DesktopView = () => (
-    <div className="hidden lg:hidden overflow-x-auto">
+    <div className="hidden sm:hidden overflow-x-auto">
       <table className="w-full border border-black text-left">
         <thead className="rounded-lg">
           <tr className="bg-gray-100">
@@ -247,7 +247,7 @@ const ListaClienti = ({ id, amministratore }) => {
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg">{row.cliente}</h3>
             {editingRow === row.id ? (
-              <button onClick={handleSave} className="bg-green-500!important text-white px-3 py-1 rounded text-sm">
+              <button onClick={handleSave} className="bg-green-500 text-white px-3 py-1 rounded text-sm">
                 Salva
               </button>
             ) : (
