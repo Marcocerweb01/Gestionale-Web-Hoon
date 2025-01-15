@@ -39,7 +39,7 @@ const FeedCommerciale = ({ id }) => {
 
   return (
     <div className="relative w-full">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 className="text-xl font-bold">Feed delle Note</h2>
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
