@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { format } from 'date-fns';
 
 const FeedCommerciale = ({ id }) => {
   const [notes, setNotes] = useState([]);
@@ -118,6 +119,7 @@ const FeedCommerciale = ({ id }) => {
                 <p className="text-sm text-gray-500">Autore: {note.autore}</p>
                 <p className="text-sm text-gray-500">
                   Data: {new Date(note.data).toLocaleString()}{console.log(note.data)}
+                  Data: {format(new Date(note.data), 'dd/MM/yyyy HH:mm:ss')}
                 </p>
               </li>
             ))}
