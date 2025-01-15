@@ -244,7 +244,7 @@ const ListaClienti = ({ id, amministratore }) => {
     <div className="md:hidden space-y-4">
       {data.map((row) => (
         <div key={row.id} className="bg-white rounded-lg shadow-md p-4 space-y-3">
-          <div className="flex justify-between items-center" style="display:flex; justify-content:between; align-items:center;">
+          <div className="flex justify-between items-center"   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 className="font-semibold text-lg">{row.cliente}</h3>
             {editingRow === row.id ? (
               <button onClick={handleSave} className="green_btn">
