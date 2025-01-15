@@ -140,7 +140,7 @@ const selectCollaboratore = (collaboratore) => {
 };
 
   return (
-    <div className="w-2/3 mx-auto p-6 border rounded-lg shadow-md">
+    <div className="w-2/3 mx-auto p-6 border rounded-lg shadow-md" style={{ width: "66.6667%"}}>
       <h2 className="text-2xl font-bold mb-6">Nuova Collaborazione</h2>
       
       <form onSubmit={handleSubmit} className="space-y-4">
