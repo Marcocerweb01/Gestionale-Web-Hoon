@@ -34,7 +34,7 @@ dayjs.extend(timezone);
         }
         const result = await response.json();
         setNotes(result);
-        setCount(result.lenght);
+        setCount(result.length);
       } catch (err) {
         console.error("Errore:", err);
         setError("Non è stato possibile recuperare le note.");
