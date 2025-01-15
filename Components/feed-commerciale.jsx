@@ -61,7 +61,11 @@ const FeedCommerciale = ({ id }) => {
       {/* Feed Note */}
       <div
         className={` overflow-y-auto w-full lg:w-3/4 p-4 lg:p-6`}
-        style={{position:'fixed'}}
+        style={{
+          position: 'fixed',
+          height: 'calc(100vh - 100px)', // Altezza dinamica in base alla pagina
+          overflowY: 'auto',
+        }}
       >
         {loadingNotes ? (
           <div className="animate-pulse">
