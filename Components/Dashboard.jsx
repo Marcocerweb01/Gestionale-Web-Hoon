@@ -54,9 +54,9 @@ const Dashboard = () => {
       <h1 className='head_text'>Ciao {session?.user?.nome}</h1>
       
 
-      <div className="flex space-x-5">
+      <div className="flex space-x-5"> 
         {session?.user?.role === "amministratore" ? (
-          <div className='flex space-x-5 '>
+          <div className='flex space-x-5 ' style={{display:'flex', 	marginLeft: '1.25rem' }}>
           <Link href="/AddCollab"> <button className="black_btn">Crea Collaborazione</button></Link> 
           <Link href="/Register"> <button className="black_btn">Registra utente</button></Link>
           <Link href="/Lista_clienti"> <button className="black_btn">Lista Clienti</button></Link> </div> ):(<></>)}
