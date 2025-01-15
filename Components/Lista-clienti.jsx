@@ -247,7 +247,7 @@ const ListaClienti = ({ id, amministratore }) => {
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg">{row.cliente}</h3>
             {editingRow === row.id ? (
-              <button onClick={handleSave} className="bg-green-500 text-white px-3 py-1 rounded text-sm">
+              <button onClick={handleSave} className="bg-green-500!important text-white px-3 py-1 rounded text-sm">
                 Salva
               </button>
             ) : (
