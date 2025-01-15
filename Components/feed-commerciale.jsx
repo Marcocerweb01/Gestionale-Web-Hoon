@@ -34,7 +34,7 @@ dayjs.extend(timezone);
         }
         const result = await response.json();
         setNotes(result);
-        setCount(result.count);
+        setCount(result.lenght);
       } catch (err) {
         console.error("Errore:", err);
         setError("Non è stato possibile recuperare le note.");
@@ -53,7 +53,7 @@ dayjs.extend(timezone);
 
   return (
     <div className="relative w-full h-3/5" >
-      <h2 className="text-xl font-bold">Trovate {count} {console.log(count)}</h2>
+      <h2 className="text-xl font-bold">Trovate {count}</h2>
       <div className="flex justify-between items-center mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 className="text-xl font-bold">Feed delle Note</h2>
         <div className="flex space-x-4 mb-4">
