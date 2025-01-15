@@ -27,10 +27,10 @@ export async function GET(req, { params }) {
     if (startDate || endDate) {
       filter.data = {};
       if (startDate) {
-        filter.data.$gte = new Date(startDate);
+        filter.data.$gte = new Date(new Date(startDate).setHours(0, 0, 0, 0)); // Imposta a mezzanotte
       }
       if (endDate) {
-        filter.data.$lte = new Date(endDate);
+        filter.data.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999)); // Imposta alla fine del giorno
       }
     }
 
