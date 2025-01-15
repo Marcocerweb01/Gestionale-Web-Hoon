@@ -117,7 +117,7 @@ const FeedCommerciale = ({ id }) => {
                 <p>{note.nota}</p>
                 <p className="text-sm text-gray-500">Autore: {note.autore}</p>
                 <p className="text-sm text-gray-500">
-                  Data: {new Date(note.data).toLocaleDateString()}{console.log(note.data)}
+                  Data: {new Date(note.data).toLocaleString()}{console.log(note.data)}
                 </p>
               </li>
             ))}
