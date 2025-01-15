@@ -136,7 +136,12 @@ const ListaClienti = ({ id, amministratore }) => {
 
 
   const CounterEditor = ({ value, onIncrement, onDecrement }) => (
-    <div className="flex items-center space-x-2 w-full">
+    <div className="flex items-center space-x-2 w-full" style={{
+      display: "flex", // flex
+      alignItems: "center", // items-center
+      gap: "0.5rem", // space-x-2 (equivale a 2 * 0.25rem)
+      width: "100%", // w-full
+    }}>
       <button className="w-8 h-8 border border-black bg-slate-200 rounded-md" style={{
           width: "2rem", // w-8
           height: "2rem", // h-8
