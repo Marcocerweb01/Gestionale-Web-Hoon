@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { format } from 'date-fns';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
 const FeedCommerciale = ({ id }) => {
   const [notes, setNotes] = useState([]);
@@ -12,6 +15,8 @@ const FeedCommerciale = ({ id }) => {
   const { data: session } = useSession();
   const [startDate, setStartDate]= useState();
   const [endDate, setEndDate]= useState();
+  dayjs.extend(utc);
+dayjs.extend(timezone);
   // Fetch note del commerciale
   useEffect(() => {
     const fetchNotes = async () => {
@@ -118,7 +123,7 @@ const FeedCommerciale = ({ id }) => {
                 <p>{note.nota}</p>
                 <p className="text-sm text-gray-500">Autore: {note.autore}</p>
                 <p className="text-sm text-gray-500">
-                  Data: {new Date(note.data).toISOString().split('T')[0]}{console.log(note.data)}
+                  Data: {dayjs(note.data).utc().format('DD/MM/YYYY HH:mm')}{console.log(note.data)}
         
                 </p>
               </li>
