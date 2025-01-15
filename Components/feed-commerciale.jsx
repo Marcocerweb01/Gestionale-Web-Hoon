@@ -9,13 +9,19 @@ const FeedCommerciale = ({ id }) => {
   const [error, setError] = useState("");
   const [isPopupOpen, setIsPopupOpen] = useState(false); // Stato per gestire il popup
   const { data: session } = useSession();
-
+  const [startDate, setStartDate]= useState();
+  const [endDate, setEndDate]= useState();
   // Fetch note del commerciale
   useEffect(() => {
     const fetchNotes = async () => {
       setLoadingNotes(true);
       try {
-        const response = await fetch(`/api/feed_note_comm/${id}`);
+        // Costruisci i parametri di query
+        const query = new URLSearchParams();
+        if (startDate) query.append("startDate", startDate);
+        if (endDate) query.append("endDate", endDate);
+  
+        const response = await fetch(`/api/feed_note_comm/${id}?${query.toString()}`);
         if (!response.ok) {
           throw new Error("Errore nel recupero delle note");
         }
@@ -28,10 +34,10 @@ const FeedCommerciale = ({ id }) => {
         setLoadingNotes(false);
       }
     };
-
+  
     fetchNotes();
-  }, [id]);
-
+  }, [id, startDate, endDate]); // Aggiungi `startDate` e `endDate` come dipendenze
+  
   const handleAddNote = async (newNote) => {
     // Aggiungi la nuova nota al feed locale
     setNotes((prevNotes) => [newNote, ...prevNotes]);
@@ -41,6 +47,27 @@ const FeedCommerciale = ({ id }) => {
     <div className="relative w-full h-3/5" >
       <div className="flex justify-between items-center mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 className="text-xl font-bold">Feed delle Note</h2>
+        <div className="flex space-x-4 mb-4">
+            <div>
+              <label>Data Inizio</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border p-2 rounded"
+              />
+            </div>
+            <div>
+              <label>Data Fine</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="border p-2 rounded"
+              />
+            </div>
+          </div>
+
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           onClick={() => setIsPopupOpen(true)}

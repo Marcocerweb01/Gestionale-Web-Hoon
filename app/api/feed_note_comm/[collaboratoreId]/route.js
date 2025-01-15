@@ -5,11 +5,14 @@ export async function GET(req, { params }) {
   try {
     console.log("Parametri ricevuti:", params);
 
-    // Assicurati che collaboratoreId sia definito
     const { collaboratoreId } = params;
-    console.log(collaboratoreId)
+    const { searchParams } = new URL(req.url);
+
+    // Recupera i parametri di query (se presenti)
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+
     if (!collaboratoreId) {
-      console.error("ID collaborazione mancante");
       return new Response(
         JSON.stringify({ message: "ID collaborazione mancante" }),
         { status: 400 }
@@ -18,9 +21,21 @@ export async function GET(req, { params }) {
 
     await connectToDB();
 
-    // Recupera tutte le note relative a questa collaborazione
-    const notes = await NotaComm.find({ autoreId: collaboratoreId })
-    console.log(notes)
+    // Costruisci il filtro
+    const filter = { autoreId: collaboratoreId };
+
+    if (startDate || endDate) {
+      filter.data = {};
+      if (startDate) {
+        filter.data.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        filter.data.$lte = new Date(endDate);
+      }
+    }
+
+    // Recupera le note filtrate
+    const notes = await NotaComm.find(filter);
     return new Response(JSON.stringify(notes), { status: 200 });
   } catch (error) {
     console.error("Errore nel recupero delle note:", error);
