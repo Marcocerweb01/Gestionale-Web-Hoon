@@ -149,9 +149,13 @@ useEffect(() => {
               <li
                 key={note._id}
                 className={`p-4 rounded shadow w-full lg:w-2/4 ${
-                  note.autoreId === session?.user?.id
-                    ? "bg-blue-100 ml-auto text-right"
-                    : "bg-gray-100 mr-auto text-left"
+                  note.tipo === "problema"
+                    ? note.autoreId === session?.user?.id
+                      ? "bg-red-100 ml-auto text-right" // Sfondo rosso e posizione a destra
+                      : "bg-red-100 mr-auto text-left" // Sfondo rosso e posizione a sinistra
+                    : note.autoreId === session?.user?.id
+                    ? "bg-blue-100 ml-auto text-right" // Sfondo blu e posizione a destra
+                    : "bg-gray-100 mr-auto text-left" // Sfondo grigio e posizione a sinistra
                 }`}
               >
                 <h3 className="font-bold">{note.tipo || "Nota Generica"}</h3>
