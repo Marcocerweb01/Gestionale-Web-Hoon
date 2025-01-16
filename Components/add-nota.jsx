@@ -59,7 +59,7 @@ const CreaNota = ({ collaborazioneId, autoreId, autorenome }) => {
         >
           <option value="generico">Generico</option>
           <option value="appuntamento">Appuntamento</option>
-          <option value="probelma">Problema</option>
+          <option value="problema">Problema</option>
         </select>
       </div>
       {tipo === "appuntamento" && (
