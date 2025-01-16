@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Menu } from "lucide-react";
@@ -15,56 +13,60 @@ const FeedPage = ({ params }) => {
   const [error, setError] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { data: session } = useSession();
+  const feedContainerRef = useRef(null); // Riferimento per il contenitore del feed
 
- // Fetch collaborazioni del collaboratore
- useEffect(() => {
-  const fetchCollaborations = async () => {
-    try {
-      const response = await fetch(`/api/collaborazioni/${collaboratoreId}`);
-      if (!response.ok) {
-        throw new Error("Errore nel recupero delle collaborazioni");
+  // Fetch collaborazioni del collaboratore
+  useEffect(() => {
+    const fetchCollaborations = async () => {
+      try {
+        const response = await fetch(`/api/collaborazioni/${collaboratoreId}`);
+        if (!response.ok) {
+          throw new Error("Errore nel recupero delle collaborazioni");
+        }
+        const result = await response.json();
+        setCollaborazioni(result);
+        if (result.length > 0) {
+          setSelectedCollaborationId(result[0].id); // Seleziona la prima collaborazione di default
+        }
+      } catch (err) {
+        console.error("Errore:", err);
+        setError("Non è stato possibile recuperare le collaborazioni.");
+      } finally {
+        setLoadingCollaborations(false);
       }
-      const result = await response.json();
-      setCollaborazioni(result);
-      if (result.length > 0) {
-        setSelectedCollaborationId(result[0].id); // Seleziona la prima collaborazione di default
+    };
+
+    fetchCollaborations();
+  }, [collaboratoreId]);
+
+  // Fetch note della collaborazione selezionata
+  useEffect(() => {
+    const fetchNotes = async () => {
+      if (!selectedCollaborationId) return;
+
+      setLoadingNotes(true);
+      try {
+        const response = await fetch(`/api/feed_note/${selectedCollaborationId}`);
+        if (!response.ok) {
+          throw new Error("Errore nel recupero delle note");
+        }
+        const result = await response.json();
+        setNotes(result);
+
+        // Scroll automatico verso il basso
+        if (feedContainerRef.current) {
+          feedContainerRef.current.scrollTop = feedContainerRef.current.scrollHeight;
+        }
+      } catch (err) {
+        console.error("Errore:", err);
+        setError("Non è stato possibile recuperare le note.");
+      } finally {
+        setLoadingNotes(false);
       }
-    } catch (err) {
-      console.error("Errore:", err);
-      setError("Non è stato possibile recuperare le collaborazioni.");
-    } finally {
-      setLoadingCollaborations(false);
-    }
-  };
+    };
 
-  fetchCollaborations();
-}, [collaboratoreId]);
-
-// Fetch note della collaborazione selezionata
-useEffect(() => {
-  const fetchNotes = async () => {
-    if (!selectedCollaborationId) return;
-
-    setLoadingNotes(true);
-    try {
-      const response = await fetch(`/api/feed_note/${selectedCollaborationId}`);
-      if (!response.ok) {
-        throw new Error("Errore nel recupero delle note");
-      }
-      const result = await response.json();
-      setNotes(result);
-    } catch (err) {
-      console.error("Errore:", err);
-      setError("Non è stato possibile recuperare le note.");
-    } finally {
-      setLoadingNotes(false);
-    }
-  };
-
-  fetchNotes();
-}, [selectedCollaborationId]);
-
-
+    fetchNotes();
+  }, [selectedCollaborationId]);
 
   if (loadingCollaborations) return <div>Caricamento collaborazioni...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
@@ -73,7 +75,7 @@ useEffect(() => {
     <div className="relative w-full">
       {/* Header con hamburger menu */}
       <div className="fixed top-24 sm:top-16 md:top-16 left-0 lg:left-1/4 right-0 bg-gray-200 p-4 z-20 flex items-center gap-4">
-        <button 
+        <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="lg:hidden p-2 hover:bg-gray-300 rounded"
         >
@@ -89,6 +91,7 @@ useEffect(() => {
           Aggiungi Nota
         </Link>
       </div>
+
 
       {/* Sidebar responsive */}
       <div className={`
@@ -129,13 +132,16 @@ useEffect(() => {
       )}
 
       {/* Feed Note con padding dinamico */}
-      <div className={`
-        fixed right-0 top-40 bottom-0 overflow-y-auto
-        w-full lg:w-3/4 
-        transition-all duration-300
-        ${isSidebarOpen ? 'lg:ml-64' : 'ml-0'}
-        p-4 lg:p-6
-      `}>
+      <div
+        ref={feedContainerRef}
+        className={`
+          fixed right-0 top-40 bottom-0 overflow-y-auto
+          w-full lg:w-3/4 
+          transition-all duration-300
+          ${isSidebarOpen ? "lg:ml-64" : "ml-0"}
+          p-4 lg:p-6
+        `}
+      >
         {loadingNotes ? (
           <div className="animate-pulse">
             <div className="h-6 bg-gray-300 rounded mb-4 w-3/4"></div>
@@ -151,11 +157,11 @@ useEffect(() => {
                 className={`p-4 rounded shadow w-full lg:w-2/4 ${
                   note.tipo === "problema"
                     ? note.autoreId === session?.user?.id
-                      ? "bg-red-100 ml-auto text-right" // Sfondo rosso e posizione a destra
-                      : "bg-red-100 mr-auto text-left" // Sfondo rosso e posizione a sinistra
+                      ? "bg-red-100 ml-auto text-right"
+                      : "bg-red-100 mr-auto text-left"
                     : note.autoreId === session?.user?.id
-                    ? "bg-blue-100 ml-auto text-right" // Sfondo blu e posizione a destra
-                    : "bg-gray-100 mr-auto text-left" // Sfondo grigio e posizione a sinistra
+                    ? "bg-blue-100 ml-auto text-right"
+                    : "bg-gray-100 mr-auto text-left"
                 }`}
               >
                 <h3 className="font-bold">{note.tipo || "Nota Generica"}</h3>
