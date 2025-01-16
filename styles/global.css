@@ -70,7 +70,7 @@
 /* Tailwind Styles */
 
 .app {
-  @apply relative z-10 flex justify-center items-center flex-col max-w-7xl mx-auto sm:px-16 px-6 h-full sm:top-20 top-0;
+  @apply relative z-10 flex justify-center items-center flex-col max-w-7xl mx-auto sm:px-1 px-6 h-full sm:top-20 top-0;
 }
 
 .black_btn {
@@ -93,7 +93,7 @@
 }
 
 .head_text {
-  @apply  mb-10 text-5xl font-extrabold leading-[1.15] text-black sm:text-3xl;
+  @apply  mb-10 sm:mb-2 text-5xl font-extrabold leading-[1.15] text-black sm:text-3xl;
 }
 .head_text1 {
   @apply  text-5xl font-extrabold leading-[1.15] text-black sm:text-6xl;
