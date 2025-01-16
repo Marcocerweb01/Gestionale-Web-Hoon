@@ -42,8 +42,7 @@ const Login = () => {
         return;
       }
   
-      // Forza il refresh della sessione
-      await router.refresh();
+      // Forza il refresh della session
       
       // Usa replace con URL completo
       window.location.href = '/';
