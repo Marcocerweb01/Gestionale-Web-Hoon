@@ -38,8 +38,8 @@ const AmministratoreSchema = new Schema({
 }, { timestamps: true });
 
 const ContattoSchema = new Schema({
-  nome: { type: String, required: true },
-  cognome: { type: String, required: true },
+  referente: { type: String, required: true },
+  numero:{tyoe:String, required: true},
   email: { type: String, required: true, unique: true },
   ragioneSociale: { type: String },
   indirizzo: { type: String },
