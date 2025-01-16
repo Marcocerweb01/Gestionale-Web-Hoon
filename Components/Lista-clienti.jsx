@@ -10,7 +10,7 @@ const ListaClienti = ({ id, amministratore }) => {
   const [editingRow, setEditingRow] = useState(null);
   const [tempData, setTempData] = useState({});
   const [appuntamenti, setAppuntamenti] = useState({});
-
+  const [problemi, setProblemi]=useState({});
   const fetchCollaborazioni = async () => {
     try {
       const response = await fetch(`/api/collaborazioni/${id}`);
@@ -45,6 +45,23 @@ const ListaClienti = ({ id, amministratore }) => {
     }
   };
 
+  const fetchProblemi = async (collaborazioneId) => {
+    try {
+      if (!collaborazioneId) return;
+
+
+      const response = await fetch(`/api/problemi/${collaborazioneId}`);
+      if (!response.ok) {
+        throw new Error("Errore nel recupero dei problemi");
+      }
+      const result = await response.json();
+      return result;
+    } catch (err) {
+      console.error("Errore:", err);
+      setError("Non è stato possibile recuperare i problemi");
+    }
+  };
+
 
   useEffect(() => {
     if (id) {
@@ -69,9 +86,25 @@ const ListaClienti = ({ id, amministratore }) => {
 
     if (data.length > 0) {
       loadAppuntamenti();
+     
     }
   }, [data]);
 
+  useEffect(() => {
+    const loadProblemi = async () => {
+      const problemiData = {};
+      for (const row of data) {
+        const result = await fetchProblemi(row.feed);
+        problemiData[row.feed] = result || 0;
+      }
+      setProblemi(problemiData);
+    };
+
+
+    if (data.length > 0) {
+      loadProblemi();
+    }
+  }, [data]);
 
   const handleEditClick = (rowId) => {
     setEditingRow(rowId);
@@ -173,6 +206,7 @@ const ListaClienti = ({ id, amministratore }) => {
             <th className="border border-black px-4 py-2">Cliente</th>
             <th className="border border-black px-4 py-2">Feed</th>
             <th className="border border-black px-4 py-2">Appuntamenti mensili</th>
+            <th className="border border-black px-4 py-2">Problemi riscontrati</th>
             <th className="border border-black px-4 py-2">Post IG & FB</th>
             <th className="border border-black px-4 py-2">Post TikTok</th>
             <th className="border border-black px-4 py-2">Post LinkedIn</th>
@@ -191,6 +225,9 @@ const ListaClienti = ({ id, amministratore }) => {
                 </td>
                 <td className="border border-black px-4 py-2">
                   {appuntamenti[row.feed] || 0}/{row.appuntamenti}
+                </td>
+                <td className="border border-black px-4 py-2">
+                  {problemi[row.feed] || 0}
                 </td>
                 <td className="border border-black px-4 py-2">
                   {editingRow === row.id ? (
