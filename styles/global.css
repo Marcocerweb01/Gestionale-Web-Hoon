@@ -14,6 +14,7 @@
   position: fixed;
   display: flex;
   justify-content: center;
+  align-items: center;
   padding: 120px 0px 160px 0px;
   pointer-events: none;
 }
