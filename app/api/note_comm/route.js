@@ -23,11 +23,14 @@ export async function POST(req) {
 
     // Validazione dei dati principali
     if (!mainCategoria || !nota || !autoreId || !autore) {
-      return new Response(JSON.stringify({ message: "Dati mancanti o non validi" }), { status: 400 });
+      return new Response(
+        JSON.stringify({ message: "Dati mancanti o non validi" }),
+        { status: 400 }
+      );
     }
 
-    // Creazione della nuova nota
-    const newNote = new NotaComm({
+    // Creazione dei dati della nuova nota
+    const newNoteData = {
       mainCategoria,
       tipoContatto: mainCategoria === "contatto" ? tipoContatto : undefined,
       comeArrivato: mainCategoria === "contatto" ? comeArrivato : undefined,
@@ -39,15 +42,30 @@ export async function POST(req) {
       nota,
       autoreId,
       autore,
-      data_appuntamento: mainCategoria === "appuntamento" ? data_appuntamento : undefined,
+      data_appuntamento:
+        mainCategoria === "appuntamento" ? data_appuntamento : undefined,
+    };
+
+    // Rimuovi i campi undefined
+    Object.keys(newNoteData).forEach((key) => {
+      if (newNoteData[key] === undefined) {
+        delete newNoteData[key];
+      }
     });
 
-    // Salva la nota nel database
+    // Creazione della nuova nota
+    const newNote = new NotaComm(newNoteData);
     await newNote.save();
 
-    return new Response(JSON.stringify({ message: "Nota creata con successo", newNote }), { status: 201 });
+    return new Response(
+      JSON.stringify({ message: "Nota creata con successo", newNote }),
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Errore nella creazione della nota:", error);
-    return new Response(JSON.stringify({ message: "Errore interno al server" }), { status: 500 });
+    return new Response(
+      JSON.stringify({ message: "Errore interno al server" }),
+      { status: 500 }
+    );
   }
 }

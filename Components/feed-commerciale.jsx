@@ -194,7 +194,18 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
+  
+    // Verifica campi obbligatori
+    if (mainCategoria === "contatto" && (!tipoContatto || !comeArrivato || !nomeAzienda || !luogo || !indirizzo || !numeroTelefono || !referente)) {
+      setError("Tutti i campi per 'contatto' sono obbligatori.");
+      return;
+    }
+  
+    if (mainCategoria === "appuntamento" && !dataAppuntamento) {
+      setError("La data dell'appuntamento è obbligatoria.");
+      return;
+    }
+  
     try {
       const response = await fetch("/api/note_comm", {
         method: "POST",
@@ -214,12 +225,12 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
           data_appuntamento: mainCategoria === "appuntamento" ? dataAppuntamento : undefined,
         }),
       });
-
+  
       if (!response.ok) {
         const res = await response.json();
         throw new Error(res.message || "Errore durante la creazione della nota.");
       }
-
+  
       const result = await response.json();
       onAddNote(result.newNote);
       onClose();
@@ -228,6 +239,7 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
       setError("Errore durante la creazione della nota.");
     }
   };
+  
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-150">
