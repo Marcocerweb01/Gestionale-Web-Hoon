@@ -99,7 +99,7 @@ dayjs.extend(timezone);
 
       {/* Feed Note */}
 <div
-  className="overflow-y-auto w-full lg:w-3/4 p-4 lg:p-6"
+  className="overflow-y-auto w-full lg:w-3/4 p-2 lg:p-6"
   style={{
     width: "100%",
     height: "75vh", // Altezza dinamica in base alla pagina
@@ -242,7 +242,7 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
   
 
   return (
-    <div className="fixed top-40 inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div
     className="bg-white rounded-lg shadow-lg w-full max-w-md"
     style={{
