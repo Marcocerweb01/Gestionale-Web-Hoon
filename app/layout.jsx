@@ -19,7 +19,7 @@ const Rootlayout = ({children}) => {
           
               </div>
              <SessionProvider>
-              <main className="app w-full p-0 lg:p-5">
+              <main className="app w-full">
                   <Header></Header>
                   <div className='lg:h-40 sm:h-0'></div>
                   {children}
