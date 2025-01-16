@@ -14,7 +14,7 @@ const FeedPage = ({ params }) => {
   const [error, setError] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { data: session } = useSession();
-  const feedContainerRef = useRef(null); // Riferimento per il contenitore del feed
+  const feedContainerRef = useRef(null);
 
   // Fetch collaborazioni del collaboratore
   useEffect(() => {
@@ -27,7 +27,7 @@ const FeedPage = ({ params }) => {
         const result = await response.json();
         setCollaborazioni(result);
         if (result.length > 0) {
-          setSelectedCollaborationId(result[0].id); // Seleziona la prima collaborazione di default
+          setSelectedCollaborationId(result[0].id);
         }
       } catch (err) {
         console.error("Errore:", err);
@@ -53,11 +53,6 @@ const FeedPage = ({ params }) => {
         }
         const result = await response.json();
         setNotes(result);
-
-        // Scroll automatico verso il basso
-        if (feedContainerRef.current) {
-          feedContainerRef.current.scrollTop = feedContainerRef.current.scrollHeight;
-        }
       } catch (err) {
         console.error("Errore:", err);
         setError("Non è stato possibile recuperare le note.");
@@ -68,6 +63,21 @@ const FeedPage = ({ params }) => {
 
     fetchNotes();
   }, [selectedCollaborationId]);
+
+  // Effetto dedicato per lo scroll automatico
+  useEffect(() => {
+    const scrollToBottom = () => {
+      if (feedContainerRef.current && notes.length > 0) {
+        const container = feedContainerRef.current;
+        // Aggiungiamo un piccolo delay per assicurarci che il contenuto sia renderizzato
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight;
+        }, 100);
+      }
+    };
+
+    scrollToBottom();
+  }, [notes]); // Si attiva quando le note cambiano
 
   if (loadingCollaborations) return <div>Caricamento collaborazioni...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
@@ -93,7 +103,6 @@ const FeedPage = ({ params }) => {
         </Link>
       </div>
 
-
       {/* Sidebar responsive */}
       <div className={`
         fixed left-0 top-24 sm:top-40 md:top-32 bottom-0 z-10 w-64 bg-gray-200 p-4 transition-transform duration-300 ease-in-out
@@ -112,7 +121,6 @@ const FeedPage = ({ params }) => {
               }`}
               onClick={() => {
                 setSelectedCollaborationId(collaborazione.id);
-                // Chiudi sidebar su mobile dopo la selezione
                 if (window.innerWidth < 1024) {
                   setIsSidebarOpen(false);
                 }
@@ -141,6 +149,7 @@ const FeedPage = ({ params }) => {
           transition-all duration-300
           ${isSidebarOpen ? "lg:ml-64" : "ml-0"}
           p-4 lg:p-6
+          scroll-smooth
         `}
       >
         {loadingNotes ? (
