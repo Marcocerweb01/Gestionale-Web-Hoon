@@ -243,33 +243,38 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-150">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-        <div className="flex flex-row mb-5">
-          <h3 className="text-xl font-bold w-5/6">Crea Nota</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-800 w-1/6 text-4xl flex items-center align-middle justify-center"
-          >
-            &times;
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Main Categoria */}
-          <div>
-            <label className="block font-medium">Categoria Principale:</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={mainCategoria}
-              onChange={(e) => setMainCategoria(e.target.value)}
-            >
-              <option value="appuntamento">Appuntamento</option>
-              <option value="contatto">Contatto</option>
-            </select>
-          </div>
-
-          {/* Tipo di contatto */}
-          {mainCategoria === "contatto" && (
-            <>
+  <div
+    className="bg-white rounded-lg shadow-lg w-full max-w-md"
+    style={{
+      maxHeight: "90vh", // Limita l'altezza del popup
+      overflowY: "auto", // Abilita lo scroll verticale
+      padding: "1.5rem",
+    }}
+  >
+    <div className="flex flex-row mb-5">
+      <h3 className="text-xl font-bold w-5/6">Crea Nota</h3>
+      <button
+        onClick={onClose}
+        className="text-gray-500 hover:text-gray-800 w-1/6 text-4xl flex items-center align-middle justify-center"
+      >
+        &times;
+      </button>
+    </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Campi del form */}
+      <div>
+        <label className="block font-medium">Categoria Principale:</label>
+        <select
+          className="w-full p-2 border rounded sm:p-3"
+          value={mainCategoria}
+          onChange={(e) => setMainCategoria(e.target.value)}
+        >
+          <option value="appuntamento">Appuntamento</option>
+          <option value="contatto">Contatto</option>
+        </select>
+      </div>
+      {mainCategoria === "contatto" && (
+        <>
               <div>
                 <label className="block font-medium">Tipo di Contatto:</label>
                 <select
@@ -338,43 +343,47 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
                   onChange={(e) => setReferente(e.target.value)}
                 />
               </div>
-            </>
-          )}
+              </>
+      )}
+      {mainCategoria === "appuntamento" && (
+        <div>
+          <label className="block font-medium">Data Appuntamento:</label>
+          <input
+            type="date"
+            className="w-full p-2 border rounded sm:p-3"
+            value={dataAppuntamento}
+            onChange={(e) => setDataAppuntamento(e.target.value)}
+          />
+        </div>
+      )}
 
-          {/* Data Appuntamento */}
-          {mainCategoria === "appuntamento" && (
-            <div>
-              <label className="block font-medium">Data Appuntamento:</label>
-              <input
-                type="date"
-                className="w-full p-2 border rounded"
-                value={dataAppuntamento}
-                onChange={(e) => setDataAppuntamento(e.target.value)}
-              />
-            </div>
-          )}
-
-          {/* Nota */}
-          <div>
-            <label className="block font-medium">Nota:</label>
-            <textarea
-              className="w-full p-2 border rounded"
-              value={nota}
-              onChange={(e) => setNota(e.target.value)}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Salva
-          </button>
-        </form>
-        {error && <p className="text-red-500 mt-4">{error}</p>}
+      {/* Nota */}
+      <div>
+        <label className="block font-medium">Nota:</label>
+        <textarea
+          className="w-full p-2 border rounded sm:p-3"
+          value={nota}
+          onChange={(e) => setNota(e.target.value)}
+          required
+        />
       </div>
-    </div>
+
+      {/* Pulsante Salva */}
+      <div
+        className="fixed bottom-0 left-0 w-full bg-white p-4 border-t"
+        style={{ position: "sticky", bottom: 0, zIndex: 150 }}
+      >
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full"
+        >
+          Salva
+        </button>
+      </div>
+    </form>
+    {error && <p className="text-red-500 mt-4">{error}</p>}
+  </div>
+</div>
   );
 };
 
