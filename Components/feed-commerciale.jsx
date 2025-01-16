@@ -180,8 +180,8 @@ dayjs.extend(timezone);
 // PopupForm Component
 const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
   const [mainCategoria, setMainCategoria] = useState("appuntamento"); // Categoria principale
-  const [tipoContatto, setTipoContatto] = useState(""); // Tipo di contatto
-  const [comeArrivato, setComeArrivato] = useState(""); // Come è arrivato il contatto
+  const [tipoContatto, setTipoContatto] = useState("chiamata"); // Tipo di contatto
+  const [comeArrivato, setComeArrivato] = useState("chiamata"); // Come è arrivato il contatto
   const [nomeAzienda, setNomeAzienda] = useState(""); // Nome azienda
   const [luogo, setLuogo] = useState(""); // Luogo
   const [indirizzo, setIndirizzo] = useState(""); // Indirizzo
