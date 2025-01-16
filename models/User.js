@@ -39,7 +39,7 @@ const AmministratoreSchema = new Schema({
 
 const ContattoSchema = new Schema({
   referente: { type: String, required: true },
-  numero:{tyoe:String, required: true},
+  numero:{type:String, required: true},
   email: { type: String, required: true, unique: true },
   ragioneSociale: { type: String },
   indirizzo: { type: String },
