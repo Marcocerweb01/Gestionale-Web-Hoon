@@ -50,7 +50,7 @@ const Dashboard = () => {
   return (
             
     
-    <div className="w-full h-full bg-slate-50 shadow-md rounded-lg mt-10 ">
+    <div className="w-full h-full bg-slate-50 shadow-md rounded-lg mt-10 px-2">
       <h1 className='head_text p-5'>Ciao {session?.user?.nome}</h1>
       
 
