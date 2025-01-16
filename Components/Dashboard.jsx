@@ -62,7 +62,7 @@ const Dashboard = () => {
           <Link href="/Lista_clienti"> <button className="black_btn">Lista Clienti</button></Link> </div> ):(<></>)}
 
       </div>
-      <div className="border-2 mt-10">
+      <div className="border-2 mt-10 sm:mt-5">
         {/* Verifica del ruolo dell'utente */}
         {session?.user?.role === "amministratore" ? (
           // Mostra collaboratori se amministratore
