@@ -249,7 +249,7 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
       maxHeight: "90vh", // Limita l'altezza del popup
       overflowY: "auto", // Abilita lo scroll verticale
       padding: "1.5rem",
-      paddingTop: "4rem"
+      paddingTop: "6rem"
     }}
   >
     <div className="flex flex-row mb-5">
