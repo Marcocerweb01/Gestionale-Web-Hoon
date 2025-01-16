@@ -67,7 +67,7 @@ dayjs.extend(timezone);
                 className="border p-2 rounded"
               />
             </div>
-            <div>
+            <div className="ml-5">
               <label>Data Fine</label>
               <input
                 type="date"
