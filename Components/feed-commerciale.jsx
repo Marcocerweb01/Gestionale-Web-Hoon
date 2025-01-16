@@ -257,7 +257,18 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
       <button
         onClick={onClose}
         className="text-gray-500 hover:text-gray-800 w-1/6 text-4xl flex items-center align-middle justify-center"
-      >
+        style={{
+          color: 'rgb(107, 114, 128)', // text-gray-500
+          hover: {
+            color: 'rgb(31, 41, 55)', // hover:text-gray-800
+          },
+          width: '16.666667%', // w-1/6
+          fontSize: '2.25rem', // text-4xl
+          display: 'flex', // flex
+          alignItems: 'center', // items-center
+          justifyContent: 'center', // justify-center
+          verticalAlign: 'middle', // align-middle
+        }}>
         &times;
       </button>
     </div>
