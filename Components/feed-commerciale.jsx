@@ -56,8 +56,9 @@ dayjs.extend(timezone);
       <h2 className="text-xl font-bold">Trovate {count}</h2>
       <div className="flex justify-between items-center mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 className="text-xl font-bold">Feed delle Note</h2>
+        {session?.user?.role === "amministratore" ? (
         <div className="flex space-x-4 mb-4">
-            <div>
+          <div>
               <label>Data Inizio</label>
               <input
                 type="date"
@@ -74,8 +75,9 @@ dayjs.extend(timezone);
                 onChange={(e) => setEndDate(e.target.value)}
                 className="border p-2 rounded"
               />
-            </div>
-          </div>
+            </div> </div>):(<></>)}
+    
+         
 
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
