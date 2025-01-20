@@ -2,7 +2,8 @@
 import { connectToDB } from "@/utils/database"; // Importa la connessione al DB
 import { Azienda } from "@/models/User.js"; // Importa il modello di Azienda
 
-export default async function handler(req, res) {
+
+export async function POST(req) {
  
 
   try {
