@@ -3,9 +3,7 @@ import { connectToDB } from "@/utils/database"; // Importa la connessione al DB
 import { Azienda } from "@/models/User"; // Importa il modello di Azienda
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Metodo non consentito, usa POST" });
-  }
+ 
 
   try {
     // Connessione al database
