@@ -57,7 +57,7 @@ const Registrazione = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(info),
       });
-
+      console.log(res)
       if (res.ok) {
         router.push("/");
       } else {
@@ -66,6 +66,7 @@ const Registrazione = () => {
       }
     } catch (err) {
       console.error("Errore durante la registrazione:", err);
+      console.log(err)
       setError("Errore del server. Riprova più tardi.");
     } finally {
       setPending(false);
