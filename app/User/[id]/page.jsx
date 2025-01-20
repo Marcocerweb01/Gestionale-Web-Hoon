@@ -191,6 +191,9 @@ const UserDetails = ({ params }) => {
             </form>
           ) : (
             <div>
+               <p>
+                <strong>Etichetta:</strong> {user.etichetta}
+              </p>
               <p>
                 <strong>Nome:</strong> {user.nome}
               </p>
