@@ -1,13 +1,13 @@
 import { Schema, model, models } from "mongoose";
 
 const AziendaSchema = new Schema({
-  nome: { type: String, required: true },
-  cognome: { type: String, required: true },
+  nome: { type: String, required: false },
+  cognome: { type: String, required: false },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   partitaIva: { type: String, required: true },
   ragioneSociale: { type: String, required: true },
-  indirizzo: { type: String, required: true },
+  indirizzo: { type: String, required: false },
   pagamento: { type: Boolean, default: false },
   livelloAccesso: { type: Number, default: 3 },
 }, { timestamps: true });
