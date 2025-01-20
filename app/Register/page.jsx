@@ -111,7 +111,6 @@ const Registrazione = () => {
                 type="text"
                 name="indirizzo"
                 onChange={handleDettagliInput}
-                required
                 className="w-full border-gray-300 rounded-lg p-2 bg-slate-100"
               />
             </div>
@@ -161,7 +160,6 @@ const Registrazione = () => {
             type="text"
             name="nome"
             onChange={handleInput}
-            required
             className="w-full border-gray-300 rounded-lg p-2 bg-slate-100"
           />
         </div>
