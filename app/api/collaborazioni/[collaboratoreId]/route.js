@@ -20,7 +20,7 @@ export async function GET(req, { params }) {
     // Trasforma i dati per il frontend
     const result = collaborazioni.map((collaborazione) => ({
       id: collaborazione._id,
-      cliente: collaborazione.azienda.ragioneSociale,
+      cliente: collaborazione.azienda.etichetta,
       clienteId: collaborazione.azienda._id,
       appuntamenti: collaborazione.numero_appuntamenti, // Esempio statico
       postIg_fb: collaborazione.post_ig_fb,

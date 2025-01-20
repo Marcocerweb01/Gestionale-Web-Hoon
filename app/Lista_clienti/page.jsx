@@ -44,7 +44,7 @@ const ListaClienti = () => {
             className="cursor-pointer p-2 bg-gray-100 rounded shadow hover:bg-gray-200"
           >
             <Link href={`/User/${cliente.id}`}> 
-            {cliente.ragioneSociale}
+            {cliente.etichetta}
             </Link>
           </li>
          
