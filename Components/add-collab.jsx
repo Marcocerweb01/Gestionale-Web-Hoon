@@ -127,7 +127,7 @@ const AddCollabForm = () => {
 const selectAzienda = (azienda) => {
     setFormData(prev => ({ ...prev, aziendaId: azienda.id }));
     console.log(azienda.id)
-    setAziendaSearch(azienda.ragioneSociale);
+    setAziendaSearch(azienda.etichetta);
     setShowAziendeDropdown(false);
     console.log('Dopo select azienda:', formData); // Verifica i valori
 };
