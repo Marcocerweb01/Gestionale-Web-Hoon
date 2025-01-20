@@ -203,9 +203,11 @@ const UserDetails = ({ params }) => {
             </form>
           ) : (
             <div>
+              {typeof user.etichetta !== "undefined" && (
                <p>
                 <strong>Etichetta:</strong> {user.etichetta}
               </p>
+              )}
               <p>
                 <strong>Nome:</strong> {user.nome}
               </p>
