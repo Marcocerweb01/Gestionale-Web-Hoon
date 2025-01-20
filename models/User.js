@@ -29,7 +29,7 @@ const CollaboratoreSchema = new Schema({
 
 const AmministratoreSchema = new Schema({
   nome: { type: String, required: true },
-  cognome: { type: String, required: true },
+  cognome: { type: String, required: false },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 }, { timestamps: true });
