@@ -1,11 +1,7 @@
- 
-import { connectToDB } from "@/utils/database"; // Importa la connessione al DB
-import { Azienda } from "@/models/User.js"; // Importa il modello di Azienda
-
+import { connectToDB } from "@/utils/database"; // Connessione al database
+import { Azienda } from "@/models/User.js"; // Modello Azienda (assicurati che il percorso sia corretto)
 
 export async function POST(req) {
- 
-
   try {
     // Connessione al database
     await connectToDB();
@@ -14,14 +10,23 @@ export async function POST(req) {
     const result = await Azienda.updateMany(
       {}, // Nessun filtro, aggiorna tutti i documenti
       { $set: { etichetta: "Default" } }, // Imposta il valore predefinito
-      { upsert: false } // Non creare nuovi documenti, aggiorna solo quelli esistenti
+      { upsert: false } // Non creare nuovi documenti
     );
 
-    return res.status(200).json({
-      message: `Aggiornati ${result.modifiedCount} documenti.`,
-    });
+    // Risposta con il numero di documenti aggiornati
+    return new Response(
+      JSON.stringify({
+        message: `Aggiornati ${result.modifiedCount} documenti.`,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   } catch (error) {
     console.error("Errore durante l'aggiornamento:", error);
-    return res.status(500).json({ message: "Errore interno al server" });
+
+    // Risposta con errore
+    return new Response(
+      JSON.stringify({ message: "Errore interno al server" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }
