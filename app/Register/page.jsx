@@ -225,7 +225,6 @@ const Registrazione = () => {
         >
           {pending ? "Registrazione in corso..." : "Registra"}
         </button>
-
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </form>
     </div>

@@ -20,7 +20,7 @@ export async function POST(req) {
     } = await req.json();
 
     // Validazione dei dati comuni
-    if (!nome || !email || !password || !ruolo?.nome) {
+    if (!email || !password || !ruolo?.nome) {
       return NextResponse.json(
         { message: "Tutti i campi obbligatori" },
         { status: 400 }
@@ -52,7 +52,7 @@ export async function POST(req) {
     // Creazione dettagli specifici in base al ruolo
     let nuovoUtente;
     if (ruolo.nome === "azienda") {
-      if (!partitaIva || !ruolo.dettagli?.ragioneSociale || !ruolo.dettagli?.indirizzo) {
+      if (!partitaIva || !ruolo.dettagli?.ragioneSociale) {
         return NextResponse.json(
           { message: "Dati specifici dell'azienda mancanti" },
           { status: 400 }
