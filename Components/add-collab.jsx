@@ -168,7 +168,7 @@ const selectCollaboratore = (collaboratore) => {
                   className="p-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => selectAzienda(azienda)}
                 >
-                  {azienda.ragioneSociale}
+                  {azienda.etichetta}
                 </div>
               ))}
             </div>
