@@ -81,6 +81,18 @@ const UserDetails = ({ params }) => {
         <div>
           {editMode ? (
             <form className="space-y-4">
+                {typeof user.etichetta !== "undefined" && (
+               <div>
+                <label className="block font-medium">Eichetta:</label>
+                <input
+                  type="text"
+                  name="etichetta"
+                  value={formData.etichetta || ""}
+                  onChange={handleChange}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+                )}
               <div>
                 <label className="block font-medium">Nome:</label>
                 <input
