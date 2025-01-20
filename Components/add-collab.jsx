@@ -81,7 +81,7 @@ const AddCollabForm = () => {
   }, []);
 
   const filteredAziende = aziende.filter(azienda => 
-    azienda.ragioneSociale.toLowerCase().includes(aziendaSearch.toLowerCase())
+    azienda.etichetta.toLowerCase().includes(aziendaSearch.toLowerCase())
   );
 
   const filteredCollaboratori = collaboratori.filter(collab => 
