@@ -114,6 +114,7 @@ export async function POST(req) {
     );
   } catch (error) {
     console.error("Errore durante la registrazione:", error);
+    console.log(error)
     return NextResponse.json(
       { message: "Errore del server durante la registrazione" },
       { status: 500 }
