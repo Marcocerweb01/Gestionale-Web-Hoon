@@ -2,6 +2,8 @@ import { connectToDB } from "@/utils/database";
 import { Azienda, Collaboratore, Contatto, Amministratore } from "@/models/User";
 import bcrypt from "bcrypt";
  
+
+
 export async function GET(req, { params }) {
   try {
     await connectToDB();

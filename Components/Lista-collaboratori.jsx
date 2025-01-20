@@ -11,6 +11,8 @@ const Lista_collaboratori = ({nome, ruolo, id}) => {
   const toggleAccordion = () => {
     setIsOpen(!isOpen);
   };
+
+
  
   return (
     <div className="p-4 border-b-1">
