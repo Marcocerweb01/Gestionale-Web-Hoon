@@ -99,7 +99,6 @@ export async function POST(req) {
         nome,
         email,
         password: hashedPassword,
-
       });
     } else {
       return NextResponse.json(

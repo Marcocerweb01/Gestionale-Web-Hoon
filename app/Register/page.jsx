@@ -134,26 +134,6 @@ const Registrazione = () => {
           </div>
         )}
 
-        {info.ruolo.nome === "amministratore" && (
-          <div>
-            <label className="block text-sm font-medium mb-1">Privilegi</label>
-            <input
-              type="text"
-              name="privilegi"
-              placeholder="Inserisci privilegi separati da virgola"
-              onChange={(e) =>
-                handleDettagliInput({
-                  target: {
-                    name: "privilegi",
-                    value: e.target.value.split(",").map((p) => p.trim()),
-                  },
-                })
-              }
-              className="w-full border-gray-300 rounded-lg p-2 bg-slate-100"
-            />
-          </div>
-        )}
-
         <div>
           <label className="block text-sm font-medium mb-1">Nome</label>
           <input
