@@ -32,10 +32,6 @@ const AmministratoreSchema = new Schema({
   cognome: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  privilegi: {
-    type: [String],
-    default: ["gestione_utenti", "gestione_ruoli"],
-  },
 }, { timestamps: true });
 
 const ContattoSchema = new Schema({
