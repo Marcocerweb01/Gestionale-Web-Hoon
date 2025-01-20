@@ -20,7 +20,7 @@ export async function GET(req) {
 
     return new Response(JSON.stringify(result), { status: 200 });
   } catch (error) {
-    console.error("Errore durante il recupero dei collaboratori:", error);
+    console.error("Errore durante il recupero delle aziende:", error);
     return new Response(
       JSON.stringify({ message: "Errore interno al server" }),
       { status: 500 }
