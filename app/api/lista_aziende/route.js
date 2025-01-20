@@ -13,7 +13,7 @@ export async function GET(req) {
     const result = aziende.map((azienda) => ({
       id: azienda._id,
       nome: azienda.nome,
-      ragioneSociale: azienda.ragioneSociale,
+      etichetta: azienda.etichetta,
       email: azienda.email,
       partitaIva: azienda.partitaIva,
     }));
