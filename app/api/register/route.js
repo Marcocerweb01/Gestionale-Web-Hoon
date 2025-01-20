@@ -99,7 +99,7 @@ export async function POST(req) {
         nome,
         email,
         password: hashedPassword,
-        privilegi: ruolo.dettagli?.privilegi || ["gestione_utenti", "gestione_ruoli"],
+
       });
     } else {
       return NextResponse.json(

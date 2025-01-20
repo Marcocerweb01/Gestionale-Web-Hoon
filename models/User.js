@@ -7,6 +7,7 @@ const AziendaSchema = new Schema({
   password: { type: String, required: true },
   partitaIva: { type: String, required: true },
   ragioneSociale: { type: String, required: true },
+  etichetta: { type: String, required: false },
   indirizzo: { type: String, required: false },
   pagamento: { type: Boolean, default: false },
   livelloAccesso: { type: Number, default: 3 },
