@@ -44,7 +44,7 @@ const Registrazione = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!info.nome || !info.email || !info.password || !info.ruolo.nome) {
+    if ( !info.email || !info.password || !info.ruolo.nome) {
       setError("Compila tutti i campi obbligatori.");
       return;
     }
