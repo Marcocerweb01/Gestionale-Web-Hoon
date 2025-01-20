@@ -51,6 +51,7 @@ const Registrazione = () => {
 
     try {
       setPending(true);
+      console.log(info);
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
