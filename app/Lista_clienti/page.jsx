@@ -2,33 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "@node_modules/next/link";
-import { Azienda } from "@models/User";
 const ListaClienti = () => {
   const [clienti, setClienti] = useState([]);
   const [error, setError] = useState("");
   const [loadingClienti, setLoadingClienti] = useState(true);
 
-  async function addEtichettaToAziende() {
-    try {
-      await connectToDB();
-      console.log('Connesso al database');
+ 
   
-      // Aggiorna tutti i documenti aggiungendo un valore predefinito per "etichetta"
-      const result = await Azienda.updateMany(
-        {}, // Nessun filtro, aggiorna tutti i documenti
-        { $set: { etichetta: "Default" } } // Cambia "Default" con il valore che desideri
-      );
   
-      console.log(`Aggiornati ${result.modifiedCount} documenti.`);
-    } catch (error) {
-      console.error('Errore durante l\'aggiornamento:', error);
-    } finally {
-      mongoose.connection.close();
-      console.log('Connessione chiusa.');
-    }
-  }
-  
-  addEtichettaToAziende();
 
   useEffect(() => {
     const fetchClienti = async () => {
