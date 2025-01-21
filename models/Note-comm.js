@@ -13,47 +13,53 @@ const NoteCommSchema = new Schema({
   },
   tipoContatto: {
     type: String,
-    enum: ['chiamata', 'visita'], // Tipi di contatto disponibili
+    enum: ['visita', 'chiamata'], // Tipi di contatto disponibili
     required: function () {
       return this.mainCategoria === 'contatto'; // Obbligatorio solo per "contatto"
     },
   },
   comeArrivato: {
     type: String,
-    enum: ['chiamata', 'in azienda', 'referal'], // Come è arrivato il contatto
+    enum: ['in azienda', 'chiamata', 'referal', 'ricerca'], // Come è arrivato il contatto
     required: function () {
       return this.mainCategoria === 'contatto'; // Obbligatorio solo per "contatto"
-    } // Non obbligatorio, ma utile
+    },
+  },
+  referal: {
+    type: String,
+    required: function () {
+      return this.mainCategoria === 'contatto'; // Obbligatorio solo per "contatto"
+    },
   },
   nomeAzienda: {
     type: String,
     required: function () {
       return this.mainCategoria === 'contatto'; // Obbligatorio solo per "contatto"
-    } // Non obbligatorio, ma utile
+    },
   },
   luogo: {
     type: String,
     required: function () {
       return this.mainCategoria === 'contatto'; // Obbligatorio solo per "contatto"
-    }
+    },
   },
   indirizzo: {
     type: String,
     required: function () {
       return this.mainCategoria === 'contatto'; // Obbligatorio solo per "contatto"
-    }
+    },
   },
   numeroTelefono: {
     type: String,
     required: function () {
       return this.mainCategoria === 'contatto'; // Obbligatorio solo per "contatto"
-    }
+    },
   },
   referente: {
     type: String,
     required: function () {
       return this.mainCategoria === 'contatto'; // Obbligatorio solo per "contatto"
-    }
+    },
   },
   nota: {
     type: String,
