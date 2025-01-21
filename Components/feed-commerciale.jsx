@@ -52,7 +52,7 @@ const FeedCommerciale = ({ id }) => {
   return (
     <div className="relative w-full h-3/5">
       <h2 className="text-xl font-bold mb-4">Trovate {count} note</h2>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 className="text-xl font-bold">Feed delle Note</h2>
         {session?.user?.role === "amministratore" && (
           <div className="flex space-x-4">
