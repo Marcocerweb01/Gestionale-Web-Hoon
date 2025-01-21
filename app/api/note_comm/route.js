@@ -10,7 +10,7 @@ export async function POST(req) {
       mainCategoria,
       tipoContatto,
       comeArrivato,
-      referral,
+      referal,
       nomeAzienda,
       luogo,
       indirizzo,
@@ -30,7 +30,7 @@ export async function POST(req) {
       );
     }
 
-    if (comeArrivato === "referal" && !referral) {
+    if (comeArrivato === "referal" && !referal) {
       return new Response(
         JSON.stringify({ message: "Il nome del referral è obbligatorio." }),
         { status: 400 }
@@ -42,7 +42,7 @@ export async function POST(req) {
       mainCategoria,
       tipoContatto: mainCategoria === "contatto" ? tipoContatto : undefined,
       comeArrivato: mainCategoria === "contatto" ? comeArrivato : undefined,
-      referral: comeArrivato === "referal" ? referral : undefined,
+      referal: comeArrivato === "referal" ? referral : undefined,
       nomeAzienda: mainCategoria === "contatto" ? nomeAzienda : undefined,
       luogo: mainCategoria === "contatto" ? luogo : undefined,
       indirizzo: mainCategoria === "contatto" ? indirizzo : undefined,
