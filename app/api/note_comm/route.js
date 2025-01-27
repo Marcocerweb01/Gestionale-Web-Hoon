@@ -42,7 +42,7 @@ export async function POST(req) {
       mainCategoria,
       tipoContatto: mainCategoria === "contatto" ? tipoContatto : undefined,
       comeArrivato: mainCategoria === "contatto" ? comeArrivato : undefined,
-      referal: comeArrivato === "referal" ? referral : undefined,
+      referal: comeArrivato === "referal" ? referal : undefined,
       nomeAzienda: mainCategoria === "contatto" ? nomeAzienda : undefined,
       luogo: mainCategoria === "contatto" ? luogo : undefined,
       indirizzo: mainCategoria === "contatto" ? indirizzo : undefined,

@@ -62,18 +62,15 @@ const Dashboard = () => {
           <Link href="/Lista_clienti"> <button className="black_btn">Lista Clienti</button></Link> </div> ):(<></>)}
 
       </div>
-      <div className="border-2 mt-10 sm:mt-5">
+      <div className=" mt-10 sm:mt-5">
         {/* Verifica del ruolo dell'utente */}
         {session?.user?.role === "amministratore" ? (
           // Mostra collaboratori se amministratore
-          data.map((collaboratore) => (
+      
             <ListaCollaboratori
-              key={collaboratore.id}
-              id={collaboratore.id}
-              nome={collaboratore.nome}
-              ruolo={collaboratore.subRole}
+              collaboratori={data}
             />
-          ))
+        
         ) : session?.user?.subrole === "commerciale" ? (
           <FeedCommerciale id={session?.user.id} />
         
