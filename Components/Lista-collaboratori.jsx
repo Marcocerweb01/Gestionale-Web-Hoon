@@ -122,7 +122,10 @@ const CollaboratoreItem = ({ id, nome, ruolo }) => {
   return (
     <div className="p-4 rounded shadow flex bg-white">
       {/* Testo a sinistra */}
-      <div className="flex-1 pr-2">
+      <div className="flex-1 pr-2" style={{
+    flex: "1 1 0%",    // flex-1 in Tailwind corrisponde a flex-grow: 1, flex-shrink: 1, flex-basis: 0%
+    paddingRight: "0.5rem",  // pr-2 in Tailwind corrisponde a padding-right: 0.5rem
+  }}>
         <Link href={`/User/${id}`}>
           <h2 className="subhead_text">{nome}</h2>
         </Link>
