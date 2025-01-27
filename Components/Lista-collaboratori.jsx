@@ -132,7 +132,12 @@ const CollaboratoreItem = ({ id, nome, ruolo }) => {
       </div>
 
       {/* Pulsante e (eventuale) lista clienti in verticale */}
-      <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-col items-end gap-2"  style={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: "0.5rem", // gap-2 corrisponde tipicamente a 0.5rem in Tailwind
+  }}>
         {ruolo === "commerciale" ? (
           <Link href={`/Feed-comm/${id}?nome=${encodeURIComponent(nome)}`}>
             <button className="black_btn">Vai al Feed</button>
