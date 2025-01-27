@@ -444,21 +444,45 @@ const EditForm = ({ note, onClose, onUpdateNote }) => {
             />
           </div>
           {error && <p className="text-red-500">{error}</p>}
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-              onClick={onClose}
-            >
-              Annulla
-            </button>
-            <button
-              type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              Salva
-            </button>
-          </div>
+          <div
+  style={{
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "1rem", // space-x-4 => 1rem (16px)
+  }}
+>
+  <button
+    type="button"
+    style={{
+      backgroundColor: "#6b7280", // bg-gray-500 => #6b7280
+      color: "#fff",             // text-white
+      padding: "0.5rem 1rem",    // px-4 => 1rem, py-2 => 0.5rem
+      borderRadius: "0.25rem",   // rounded => 4px
+      transition: "background-color 0.2s ease",
+    }}
+    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4b5563")} // hover:bg-gray-600 => #4b5563
+    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#6b7280")}
+    onClick={onClose}
+  >
+    Annulla
+  </button>
+
+  <button
+    type="submit"
+    style={{
+      backgroundColor: "#3b82f6", // bg-blue-500 => #3b82f6
+      color: "#fff",
+      padding: "0.5rem 1rem",
+      borderRadius: "0.25rem",
+      transition: "background-color 0.2s ease",
+    }}
+    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")} // hover:bg-blue-600 => #2563eb
+    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#3b82f6")}
+  >
+    Salva
+  </button>
+</div>
+
         </form>
       </div>
     </div>
