@@ -203,11 +203,22 @@ const FeedCommerciale = ({ id }) => {
                 <p className="text-sm text-gray-500">
                   Data Creazione: {dayjs(note.data).utc().format("DD/MM/YYYY HH:mm")}
                 </p>
-                <div className="mt-4 flex justify-end space-x-2">
+                <div className="mt-4 flex justify-end space-x-2"style={{
+    marginTop: "1rem",        // mt-4 -> 1rem
+    display: "flex",          // flex
+    justifyContent: "flex-end", // justify-end
+    gap: "0.5rem",            // space-x-2 -> gap di 0.5rem (8px)
+  }}>
             {session?.user?.role === "amministratore" && (
               <button
                 className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                 onClick={() => handleDelete(note._id)}
+                style={{
+                  backgroundColor: "#ef4444", // bg-red-500 corrisponde circa a #ef4444
+                  color: "#fff",              // text-white
+                  padding: "0.25rem 0.75rem", // px-3 => 0.75rem (12px), py-1 => 0.25rem (4px)
+                  borderRadius: "0.25rem",    // rounded => 4px
+                }}
               >
                 Elimina
               </button>
@@ -215,6 +226,13 @@ const FeedCommerciale = ({ id }) => {
             <button
               className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
               onClick={() => handleEdit(note)}
+              style={{
+                backgroundColor: "#f59e0b", // bg-yellow-500 corrisponde circa a #f59e0b
+                color: "#fff",              // text-white
+                padding: "0.25rem 0.75rem", // px-3 => 0.75rem (12px), py-1 => 0.25rem (4px)
+                borderRadius: "0.25rem",    // rounded => 4px
+                transition: "background-color 0.2s ease",
+              }}
             >
               Modifica
             </button>
