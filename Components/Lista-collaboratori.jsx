@@ -31,7 +31,14 @@ const Lista_collaboratori = ({ collaboratori }) => {
     <div className="space-y-4">
       {/* Area Web Designers */}
       <div className="rounded p-3">
-        <div className="flex justify-between items-center bg-gray-100 p-2 rounded">
+        <div className="flex justify-between items-center bg-gray-100 p-2 rounded" style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#f3f4f6", // bg-gray-100 tipicamente corrisponde a #f3f4f6
+    padding: "0.5rem",         // p-2 corrisponde a 0.5rem (8px)
+    borderRadius: "0.25rem",   // rounded corrisponde a 4px
+  }}>
           <h2 className="font-bold text-lg">
             Web Designer ({webDesigners.length})
           </h2>
@@ -57,7 +64,14 @@ const Lista_collaboratori = ({ collaboratori }) => {
 
       {/* Area Social Media Manager */}
       <div className=" rounded p-3">
-        <div className="flex justify-between items-center bg-gray-100 p-2 rounded">
+        <div className="flex justify-between items-center bg-gray-100 p-2 rounded" style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#f3f4f6", // bg-gray-100 tipicamente corrisponde a #f3f4f6
+    padding: "0.5rem",         // p-2 corrisponde a 0.5rem (8px)
+    borderRadius: "0.25rem",   // rounded corrisponde a 4px
+  }}>
           <h2 className="font-bold text-lg">
             Social Media Manager ({smms.length})
           </h2>
