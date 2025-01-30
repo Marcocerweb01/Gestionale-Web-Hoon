@@ -78,7 +78,7 @@ const NoteCommSchema = new Schema({
     },
   },
   luogo_appuntamento: {
-    type: Date,
+    type: String,
     required: function () {
       return this.mainCategoria === 'appuntamento'; // Solo obbligatorio per "appuntamento"
     },
