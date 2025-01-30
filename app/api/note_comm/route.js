@@ -20,6 +20,7 @@ export async function POST(req) {
       autoreId,
       autore,
       data_appuntamento,
+      luogo_appuntamento
     } = await req.json();
 
     // Validazione dei dati principali
@@ -53,6 +54,8 @@ export async function POST(req) {
       autore,
       data_appuntamento:
         mainCategoria === "appuntamento" ? data_appuntamento : undefined,
+      luogo_appuntamento:
+        mainCategoria === "appuntamento" ? luogo_appuntamento : undefined,
     };
 
     // Rimuovi i campi undefined

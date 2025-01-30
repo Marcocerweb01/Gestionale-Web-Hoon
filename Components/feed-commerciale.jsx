@@ -194,9 +194,14 @@ const FeedCommerciale = ({ id }) => {
                   </>
                 )}
                 {note.mainCategoria === "appuntamento" && (
+                  <>
                   <p className="text-sm text-gray-700">
                     <b>Data Appuntamento:</b> {dayjs(note.data_appuntamento).utc().format("DD/MM/YYYY HH:mm")}
                   </p>
+                  <p className="text-sm text-gray-700">
+                  <b>Luogo Appuntamento:</b> {note.luogo_appuntamento?note.luogo_appuntamento:"Non impostato"}
+                </p>
+                </>
                 )}
                 <p className="text-sm text-gray-700"><b>Nota:</b> {note.nota}</p>
                 <p className="text-sm text-gray-500">Autore: {note.autore}</p>
@@ -264,6 +269,7 @@ const EditForm = ({ note, onClose, onUpdateNote }) => {
   const [nota, setNota] = useState(note.nota || "");
   const [dataAppuntamento, setDataAppuntamento] = useState(note.data_appuntamento?.split("T")[0] || "");
   const [oraAppuntamento, setOraAppuntamento] = useState(note.data_appuntamento?.split("T")[1]?.substring(0, 5) || "");
+  const [luogo_appuntamento, setLuogoAppuntamento] = useState(notEqual.luogo_appuntamento||"");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
@@ -291,6 +297,8 @@ const EditForm = ({ note, onClose, onUpdateNote }) => {
               mainCategoria === "appuntamento" && dataAppuntamento && oraAppuntamento
                 ? `${dataAppuntamento}T${oraAppuntamento}`
                 : undefined,
+            luogo_appuntamento:
+              mainCategoria === "appuntamento" ? luogo_appuntamento : undefined,
           },
         }),
       });
@@ -431,6 +439,16 @@ const EditForm = ({ note, onClose, onUpdateNote }) => {
                   onChange={(e) => setOraAppuntamento(e.target.value)}
                 />
               </div>
+              <div>
+                <label className="block font-medium">Luogo Appuntamento:</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded"
+                  value={luogo_appuntamento}
+                  onChange={(e) => setLuogoAppuntamento(e.target.value)}
+                />
+              </div>
+             
             </>
           )}
 
@@ -504,6 +522,7 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
   const [nota, setNota] = useState("");
   const [dataAppuntamento, setDataAppuntamento] = useState("");
   const [oraAppuntamento, setOraAppuntamento] = useState("");
+  const [luogo_appuntamento, setLuogoAppuntamento] = useState("");
   const [error, setError] = useState("");
 
   const handleTipoContattoChange = (newTipo) => {
@@ -557,6 +576,7 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
           autoreId,
           autore: autoreNome,
           data_appuntamento: mainCategoria === "appuntamento" ? `${dataAppuntamento}T${oraAppuntamento}` : undefined,
+          luogo_appuntamento: mainCategoria === "appuntamento" ? luogo_appuntamento : undefined,
         }),
       });
 
@@ -739,6 +759,15 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
                   className="w-full p-2 border rounded sm:p-3"
                   value={oraAppuntamento}
                   onChange={(e) => setOraAppuntamento(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block font-medium">Luogo Appuntamento:</label>
+                <input
+                  type="time"
+                  className="w-full p-2 border rounded sm:p-3"
+                  value={luogo_appuntamento}
+                  onChange={(e) => setLuogoAppuntamento(e.target.value)}
                 />
               </div>
             </>

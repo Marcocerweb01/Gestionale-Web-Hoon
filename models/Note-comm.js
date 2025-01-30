@@ -77,6 +77,12 @@ const NoteCommSchema = new Schema({
       return this.mainCategoria === 'appuntamento'; // Solo obbligatorio per "appuntamento"
     },
   },
+  luogo_appuntamento: {
+    type: Date,
+    required: function () {
+      return this.mainCategoria === 'appuntamento'; // Solo obbligatorio per "appuntamento"
+    },
+  },
 });
 
 const NotaComm = models.NotaComm || model('NotaComm', NoteCommSchema);
