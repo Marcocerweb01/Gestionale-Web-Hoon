@@ -764,7 +764,7 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
               <div>
                 <label className="block font-medium">Luogo Appuntamento:</label>
                 <input
-                  type="time"
+                  type="text"
                   className="w-full p-2 border rounded sm:p-3"
                   value={luogo_appuntamento}
                   onChange={(e) => setLuogoAppuntamento(e.target.value)}
