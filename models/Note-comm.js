@@ -27,9 +27,6 @@ const NoteCommSchema = new Schema({
   },
   referal: {
     type: String,
-    required: function () {
-      return this.mainCategoria === 'contatto'; // Obbligatorio solo per "contatto"
-    },
   },
   nomeAzienda: {
     type: String,
