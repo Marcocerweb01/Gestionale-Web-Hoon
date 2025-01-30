@@ -576,7 +576,17 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 pt-32">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-y-auto max-h-[90vh] p-6 pt-24">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-y-auto max-h-[90vh] p-6 pt-24" style={{
+    backgroundColor: "white", // bg-white
+    borderRadius: "0.5rem", // rounded-lg (equivale a 8px)
+    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", // shadow-lg
+    width: "100%", // w-full
+    maxWidth: "28rem", // max-w-md (equivale a 448px)
+    overflowY: "auto", // overflow-y-auto
+    maxHeight: "90vh", // max-h-[90vh]
+    padding: "1.5rem", // p-6 (24px)
+    paddingTop: "6rem", // pt-24 (96px)
+  }}>
         <div className="flex flex-row mb-5">
           <h3 className="text-xl font-bold w-5/6">Crea Nota</h3>
           <button
