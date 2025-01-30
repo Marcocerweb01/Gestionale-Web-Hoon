@@ -591,7 +591,17 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
           <h3 className="text-xl font-bold w-5/6">Crea Nota</h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-800 w-1/6 text-4xl flex items-center justify-center"
+            className="text-gray-500 hover:text-gray-800 w-1/6 text-4xl flex items-center justify-center" style={{
+
+              color: "rgb(107, 114, 128)", // text-gray-500
+              width: "16.666667%", // w-1/6
+              fontSize: "2.25rem", // text-4xl
+              display: "flex", // flex
+              alignItems: "center", // items-center
+              justifyContent: "center", // justify-center
+            }}
+            onMouseEnter={(e) => (e.target.style.color = "rgb(31, 41, 55)")} // hover:text-gray-800
+            onMouseLeave={(e) => (e.target.style.color = "rgb(107, 114, 128)")}
           >
             &times;
           </button>
