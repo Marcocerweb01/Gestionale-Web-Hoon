@@ -269,7 +269,7 @@ const EditForm = ({ note, onClose, onUpdateNote }) => {
   const [nota, setNota] = useState(note.nota || "");
   const [dataAppuntamento, setDataAppuntamento] = useState(note.data_appuntamento?.split("T")[0] || "");
   const [oraAppuntamento, setOraAppuntamento] = useState(note.data_appuntamento?.split("T")[1]?.substring(0, 5) || "");
-  const [luogo_appuntamento, setLuogoAppuntamento] = useState("");
+  const [luogo_appuntamento, setLuogoAppuntamento] = useState(note.luogo_appuntamento||"");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
