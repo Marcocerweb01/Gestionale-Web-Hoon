@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Azienda } from "@/models/User";
 import { connectToDB } from "@/utils/database";
 
