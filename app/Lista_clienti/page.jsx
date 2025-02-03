@@ -7,16 +7,13 @@ const ListaClienti = () => {
   const [error, setError] = useState("");
   const [loadingClienti, setLoadingClienti] = useState(true);
 
- 
-  
-  
 
   useEffect(() => {
     const fetchClienti = async () => {
       try {
         const response = await fetch(`/api/lista_aziende`);
         if (!response.ok) {
-          throw new Error("Errore nel recupero delle collaborazioni");
+          throw new Error("Errore nel recupero delle aziende");
         }
         const result = await response.json();
         setClienti(result);
@@ -33,12 +30,15 @@ const ListaClienti = () => {
 
   if (loadingClienti) return <div>Caricamento in corso...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
+  const sortedClienti = [...clienti].sort((a, b) =>
+    a.etichetta.localeCompare(b.etichetta)
+  ); 
 
   return (
     <div className="w-full h-full bg-slate-50 shadow-md rounded-lg mt-10 p-14">
       <h2 className="text-lg font-bold mb-4">Clienti</h2>
       <ul className="space-y-2">
-        {clienti.map((cliente) => (
+        {sortedClienti.map((cliente) => (
           <li
             key={cliente.id}
             className="cursor-pointer p-2 bg-gray-100 rounded shadow hover:bg-gray-200"
