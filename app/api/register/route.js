@@ -66,6 +66,7 @@ export async function POST(req) {
         password: hashedPassword,
         numerotelefonico,
         partitaIva,
+        etichetta: ruolo.dettagli.etichetta,
         ragioneSociale: ruolo.dettagli.ragioneSociale,
         indirizzo: ruolo.dettagli.indirizzo,
       });

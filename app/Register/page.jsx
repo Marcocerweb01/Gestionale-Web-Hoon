@@ -108,6 +108,18 @@ const Registrazione = () => {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium mb-1">
+                Etichetta
+              </label>
+              <input
+                type="text"
+                name="etichetta"
+                onChange={handleDettagliInput}
+                required
+                className="w-full border-gray-300 rounded-lg p-2 bg-slate-100"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium mb-1">Indirizzo</label>
               <input
                 type="text"
