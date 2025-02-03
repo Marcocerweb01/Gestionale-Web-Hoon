@@ -14,7 +14,14 @@ const ListaClienti = () => {
     setError("");
 
     try {
-      const response = await fetch("/api/lista_aziende");
+      const response = await fetch("/api/lista_aziende",{
+        method: "GET",
+      cache: "no-store", 
+      headers: {
+        "Cache-Control": "no-cache",
+      }
+
+      });
       if (!response.ok) {
         throw new Error("Errore nel recupero delle aziende");
       }
