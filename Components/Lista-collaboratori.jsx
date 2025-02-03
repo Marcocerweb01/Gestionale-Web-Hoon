@@ -39,7 +39,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
     padding: "0.5rem",         // p-2 corrisponde a 0.5rem (8px)
     borderRadius: "0.25rem",   // rounded corrisponde a 4px
   }}>
-          <h2 className="font-bold text-lg">
+          <h2 className="font-bold text-lg" onClick={toggleWeb}>
             Web Designer ({webDesigners.length})
           </h2>
           <button className="black_btn" onClick={toggleWeb}>
@@ -72,7 +72,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
     padding: "0.5rem",         // p-2 corrisponde a 0.5rem (8px)
     borderRadius: "0.25rem",   // rounded corrisponde a 4px
   }}>
-          <h2 className="font-bold text-lg">
+          <h2 className="font-bold text-lg" onClick={toggleSmm}>
             Social Media Manager ({smms.length})
           </h2>
           <button className="black_btn" onClick={toggleSmm}>
@@ -103,7 +103,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
     padding: "0.5rem",         // p-2 corrisponde a 0.5rem (8px)
     borderRadius: "0.25rem",   // rounded corrisponde a 4px
   }}>
-          <h2 className="font-bold text-lg">
+          <h2 className="font-bold text-lg" onClick={toggleComm}>
             Commerciale ({commercials.length})
           </h2>
           <button className="black_btn" onClick={toggleComm}>
