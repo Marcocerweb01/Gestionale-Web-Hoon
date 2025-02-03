@@ -237,7 +237,7 @@ const ListaClienti = ({ id, amministratore }) => {
                       <button className="w-1/5 border border-black bg-slate-200 rounded-md py-0" onClick={() => handleDecrement("post_ig_fb_fatti")}><b>-</b></button>
                     </div>
                   ) : row.postIg_fb === 0 ? (
-                    "Non disponibile
+                    "Non disponibile"
                   ) : (
                     row.post_ig_fb_fatti + " / " + row.postIg_fb
                   )}
