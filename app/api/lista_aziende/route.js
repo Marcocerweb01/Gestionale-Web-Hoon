@@ -1,15 +1,12 @@
-import { Azienda } from "@/models/User"; // Assicurati che Collaboratore sia importato correttamente
+import { Azienda } from "@/models/User";
 import { connectToDB } from "@/utils/database";
 
 export async function GET(req) {
   try {
-    // Connessione al database
     await connectToDB();
 
-    // Recupera tutti i collaboratori dal database
     const aziende = await Azienda.find();
 
-    // Formatta i dati per il frontend
     const result = aziende.map((azienda) => ({
       id: azienda._id,
       nome: azienda.nome,
@@ -18,7 +15,15 @@ export async function GET(req) {
       partitaIva: azienda.partitaIva,
     }));
 
-    return new Response(JSON.stringify(result), { status: 200 });
+    // Imposta intestazioni no-cache
+    const headers = new Headers({
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    });
+
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers,
+    });
   } catch (error) {
     console.error("Errore durante il recupero delle aziende:", error);
     return new Response(
