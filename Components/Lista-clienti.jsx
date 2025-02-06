@@ -221,7 +221,8 @@ const ListaClienti = ({ id, amministratore }) => {
                   <Link href={`User/${row.clienteId}`}> {row.cliente} </Link>
                 </td>
                 <td className="border border-black px-4 py-2 text-blue-600 cursor-pointer hover:underline">
-                  <Link href={`/Feed-2/${id}`}>Visualizza Feed</Link>
+                <Link href={`/Feed-2/${id}?collaborazioneId=${row.id}`}>Visualizza Feed</Link>
+
                 </td>
                 <td className="border border-black px-4 py-2">
                   {appuntamenti[row.feed] || 0}/{row.appuntamenti}
