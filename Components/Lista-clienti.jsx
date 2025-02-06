@@ -231,43 +231,94 @@ const ListaClienti = ({ id, amministratore }) => {
                   {problemi[row.feed] || 0}
                 </td>
                 <td className="border border-black px-4 py-2">
-                  {editingRow === row.id ? (
-                    <div className=" flex content-center items-center self-stretch ">
-                      <button className="w-1/5 border border-black bg-slate-200 rounded-md py-0" onClick={() => handleIncrement("post_ig_fb_fatti")}><b>+</b></button>
-                      <span className="w-3/5 text-center">{tempData.postIg_fb = 0 ? tempData.post_ig_fb_fatti || "Non disponibile" : tempData.post_ig_fb_fatti || 0}</span>
-                      <button className="w-1/5 border border-black bg-slate-200 rounded-md py-0" onClick={() => handleDecrement("post_ig_fb_fatti")}><b>-</b></button>
-                    </div>
-                  ) : row.postIg_fb === 0 ? (
+                {editingRow === row.id ? (
+                  row.postIg_fb === 0 ? (
                     "Non disponibile"
                   ) : (
-                    row.post_ig_fb_fatti + " / " + row.postIg_fb
-                  )}
+                    <div className="flex content-center items-center self-stretch">
+                      <button
+                        className="w-1/5 border border-black bg-slate-200 rounded-md py-0"
+                        onClick={() => handleIncrement("post_ig_fb_fatti")}
+                      >
+                        <b>+</b>
+                      </button>
+                      <span className="w-3/5 text-center">
+                        {tempData.post_ig_fb_fatti || 0}
+                      </span>
+                      <button
+                        className="w-1/5 border border-black bg-slate-200 rounded-md py-0"
+                        onClick={() => handleDecrement("post_ig_fb_fatti")}
+                      >
+                        <b>-</b>
+                      </button>
+                    </div>
+                  )
+                ) : row.postIg_fb === 0 ? (
+                  "Non disponibile"
+                ) : (
+                  row.post_ig_fb_fatti + " / " + row.postIg_fb
+                )}
+
                 </td>
                 <td className="border border-black px-4 py-2">
-                  {editingRow === row.id ? (
-                    <div className=" flex content-center items-center self-stretch ">
-                      <button className="w-1/5 border border-black bg-slate-200 rounded-md py-0" onClick={() => handleIncrement("post_tiktok_fatti")}><b>+</b></button>
-                      <span className="w-3/5 text-center">{tempData.post_tiktok_fatti || "Non disponibile"}</span>
-                      <button className="w-1/5 border border-black bg-slate-200 rounded-md py-0" onClick={() => handleDecrement("post_tiktok_fatti")}><b>-</b></button>
-                    </div>
+                {editingRow === row.id ? (
+                    row.postTiktok === 0 ? (
+                      "Non disponibile"
+                    ) : (
+                      <div className="flex content-center items-center self-stretch">
+                        <button
+                          className="w-1/5 border border-black bg-slate-200 rounded-md py-0"
+                          onClick={() => handleIncrement("post_tiktok_fatti")}
+                        >
+                          <b>+</b>
+                        </button>
+                        <span className="w-3/5 text-center">
+                          {tempData.post_tiktok_fatti || 0}
+                        </span>
+                        <button
+                          className="w-1/5 border border-black bg-slate-200 rounded-md py-0"
+                          onClick={() => handleDecrement("post_tiktok_fatti")}
+                        >
+                          <b>-</b>
+                        </button>
+                      </div>
+                    )
                   ) : row.postTiktok === 0 ? (
                     "Non disponibile"
                   ) : (
                     row.post_tiktok_fatti + " / " + row.postTiktok
                   )}
+
                 </td>
                 <td className="border border-black px-4 py-2">
-                  {editingRow === row.id ? (
-                    <div className=" flex content-center items-center self-stretch ">
-                      <button className="w-1/5 border border-black bg-slate-200 rounded-md py-0" onClick={() => handleIncrement("post_linkedin_fatti")}><b>+</b></button>
-                      <span className="w-3/5 text-center">{tempData.post_linkedin_fatti || "Non disponibile"}</span>
-                      <button className="w-1/5 border border-black bg-slate-200 rounded-md py-0" onClick={() => handleDecrement("post_linkedin_fatti")}><b>-</b></button>
-                    </div>
-                  ) : row.postLinkedin === 0 ? (
+                {editingRow === row.id ? (
+                  row.postLinkedin === 0 ? (
                     "Non disponibile"
                   ) : (
-                    row.post_linkedin_fatti + " / " + row.postLinkedin
-                  )}
+                    <div className="flex content-center items-center self-stretch">
+                      <button
+                        className="w-1/5 border border-black bg-slate-200 rounded-md py-0"
+                        onClick={() => handleIncrement("post_linkedin_fatti")}
+                      >
+                        <b>+</b>
+                      </button>
+                      <span className="w-3/5 text-center">
+                        {tempData.post_linkedin_fatti || 0}
+                      </span>
+                      <button
+                        className="w-1/5 border border-black bg-slate-200 rounded-md py-0"
+                        onClick={() => handleDecrement("post_linkedin_fatti")}
+                      >
+                        <b>-</b>
+                      </button>
+                    </div>
+                  )
+                ) : row.postLinkedin === 0 ? (
+                  "Non disponibile"
+                ) : (
+                  row.post_linkedin_fatti + " / " + row.postLinkedin
+                )}
+
                 </td>
                 {amministratore ? (
                   <td className="border border-black px-4 py-2">{row.pagato}</td>
