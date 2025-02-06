@@ -380,12 +380,15 @@ const ListaClienti = ({ id, amministratore }) => {
             <div className="space-y-1 col-span-2">
               <p className="font-medium text-gray-600">Post IG & FB:</p>
               {editingRow === row.id ? (
+                row.postIg_fb === 0 ? (
+                  "Non disponibile"
+                ) : (
                 <CounterEditor
                   value={tempData.post_ig_fb_fatti}
                   onIncrement={() => handleIncrement("post_ig_fb_fatti")}
                   onDecrement={() => handleDecrement("post_ig_fb_fatti")}
                 />
-              ) : (
+              )) : (
                 <p>{row.postIg_fb === 0 ? "Non disponibile" : `${row.post_ig_fb_fatti} / ${row.postIg_fb}`}</p>
               )}
             </div>
@@ -393,12 +396,15 @@ const ListaClienti = ({ id, amministratore }) => {
             <div className="space-y-1 col-span-2">
               <p className="font-medium text-gray-600">Post TikTok:</p>
               {editingRow === row.id ? (
+                row.postTiktok === 0 ? (
+                  "Non disponibile"
+                ) : (
                 <CounterEditor
                   value={tempData.post_tiktok_fatti}
                   onIncrement={() => handleIncrement("post_tiktok_fatti")}
                   onDecrement={() => handleDecrement("post_tiktok_fatti")}
                 />
-              ) : (
+              )) : (
                 <p>{row.postTiktok === 0 ? "Non disponibile" : `${row.post_tiktok_fatti} / ${row.postTiktok}`}</p>
               )}
             </div>
@@ -406,12 +412,15 @@ const ListaClienti = ({ id, amministratore }) => {
             <div className="space-y-1 col-span-2">
               <p className="font-medium text-gray-600">Post LinkedIn:</p>
               {editingRow === row.id ? (
+                row.postLinkedin === 0 ? (
+                  "Non disponibile"
+                ) : (
                 <CounterEditor
                   value={tempData.post_linkedin_fatti}
                   onIncrement={() => handleIncrement("post_linkedin_fatti")}
                   onDecrement={() => handleDecrement("post_linkedin_fatti")}
                 />
-              ) : (
+              )) : (
                 <p>{row.postLinkedin === 0 ? "Non disponibile" : `${row.post_linkedin_fatti} / ${row.postLinkedin}`}</p>
               )}
             </div>
