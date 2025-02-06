@@ -318,9 +318,7 @@ const ListaClienti = ({ id, amministratore }) => {
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="space-y-1">
               <p className="font-medium text-gray-600">Feed:</p>
-              <Link href={`/Feed-2/${id}`} className="text-blue-600 hover:underline">
-                Visualizza Feed
-              </Link>
+              <Link href={`/Feed-2/${id}?collaborazioneId=${row.id}`}>Visualizza Feed</Link>
             </div>
             
             <div className="space-y-1">
