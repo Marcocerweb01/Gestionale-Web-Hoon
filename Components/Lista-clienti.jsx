@@ -168,7 +168,7 @@ const ListaClienti = ({ id, amministratore }) => {
   };
 
 
-  const CounterEditor = ({ value, onIncrement, onDecrement }) => (
+  const CounterEditor = ({ value, valuetot, onIncrement, onDecrement }) => (
     <div className="flex items-center space-x-2 w-full" style={{
       display: "flex", // flex
       alignItems: "center", // items-center
@@ -184,7 +184,7 @@ const ListaClienti = ({ id, amministratore }) => {
         }} onClick={onDecrement}>
         <b>-</b>
       </button>
-      <span className="flex-1 text-center">{value || "Non disponibile"}</span>
+      <span className="flex-1 text-center">{valuetot === 0 ? "Non disponibile" : value }</span>
        <button className="w-8 h-8 border border-black bg-slate-200 rounded-md" style={{
         width: "2rem", // w-8
         height: "2rem", // h-8
@@ -385,6 +385,7 @@ const ListaClienti = ({ id, amministratore }) => {
                 ) : (
                 <CounterEditor
                   value={tempData.post_ig_fb_fatti}
+                  valuetot={tempData.postIg_fb}
                   onIncrement={() => handleIncrement("post_ig_fb_fatti")}
                   onDecrement={() => handleDecrement("post_ig_fb_fatti")}
                 />
@@ -401,6 +402,7 @@ const ListaClienti = ({ id, amministratore }) => {
                 ) : (
                 <CounterEditor
                   value={tempData.post_tiktok_fatti}
+                  valuetot={tempData.postTiktok}
                   onIncrement={() => handleIncrement("post_tiktok_fatti")}
                   onDecrement={() => handleDecrement("post_tiktok_fatti")}
                 />
@@ -417,6 +419,7 @@ const ListaClienti = ({ id, amministratore }) => {
                 ) : (
                 <CounterEditor
                   value={tempData.post_linkedin_fatti}
+                  valuetot={tempData.postLinkedin}
                   onIncrement={() => handleIncrement("post_linkedin_fatti")}
                   onDecrement={() => handleDecrement("post_linkedin_fatti")}
                 />
