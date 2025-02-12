@@ -12,7 +12,7 @@ const UserDetails = ({ params }) => {
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({}); // Stato del form per modifica
   const { data: session, status } = useSession();
-  
+  const [collaborazioni, setCollab]=useState([]);
   const router = useRouter();
 
   // Fetch dettagli utente
@@ -38,7 +38,32 @@ const UserDetails = ({ params }) => {
       fetchUser();
     }
   }, [id]);
+    // Fetch delle collaborazioni
+  
+    useEffect(() => {
+      const fetchCollab = async () => {
+        try {
+          const response = await fetch(`/api/collaborazioni/clienti/${id}`);
+          if (!response.ok) {
+            throw new Error("Errore nel recupero dei dettagli utente");
+          }
+          const data = await response.json();
+          setCollab(data);
+         // Imposta i dati iniziali del form
+        } catch (err) {
+          console.error(err);
+          setError("Non è stato possibile recuperare i dettagli utente.");
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      if (id) {
+        fetchCollab();
+      }
+    }, [id]);
 
+   
   // Gestione input del form
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -73,6 +98,7 @@ const UserDetails = ({ params }) => {
   if (error) return <div className="text-red-500">{error}</div>;
 
   return (
+    <div className="w-full flex flex-col justify-center items-center">
     <div className="p-6 bg-white shadow rounded w-5/6">
       <h1 className="text-2xl font-bold mb-4">
         {editMode ? "Modifica Utente" : "Dettagli Utente"}
@@ -254,6 +280,28 @@ const UserDetails = ({ params }) => {
           )}
         </div>
       )}
+    </div>
+    <div className="w-5/6 mt-10 bg-white shadow-md rounded-md  p-6">
+    <h2 className="text-2xl font-bold mb-4"> Collaborazioni</h2>
+    <ul>
+    {collaborazioni.map((collaborazione)=>(
+
+
+        <li className="p-2 bg-slate-100 rounded-md shadow-md">
+          <div className="flex flex-row gap-4"> 
+              <p>{collaborazione.collaboratorenome}</p>
+              <p>{collaborazione.collaboratorecognome}</p>
+              <p>{collaborazione.postIg_fb ? collaborazione.postIg_fb : "Non Diponibili"}</p>
+              <p>{collaborazione.postTikTok ? collaborazione.postTikTok:"Non Diponibili" }</p>     
+              <p>{collaborazione.POstLinkedin? collaborazione.postTikTok: "Non Diponibili"}</p>          
+
+          </div>      
+        </li>
+     
+
+    ))}
+     </ul>
+     </div>
     </div>
   );
 };

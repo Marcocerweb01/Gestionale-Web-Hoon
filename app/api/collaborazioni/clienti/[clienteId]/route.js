@@ -7,20 +7,22 @@ export async function GET(req, { params }) {
     await connectToDB();
 
     // Ottieni il collaboratoreId dai parametri dell'URL
-    const { collaboratoreId } = params;
+    const { clienteId } = params;
 
-    if (!collaboratoreId) {
+    if (!clienteId) {
       return new Response(JSON.stringify({ message: "ID collaboratore mancante" }), { status: 400 });
     }
 
     // Recupera le collaborazioni del collaboratore specifico
-    const collaborazioni = await Collaborazione.find({ collaboratore: collaboratoreId })
-      .populate("azienda");
+    const collaborazioni = await Collaborazione.find({ azienda: clienteId })
+      .populate("collaboratore").populate("azienda");
 
     // Trasforma i dati per il frontend
     const result = collaborazioni.map((collaborazione) => ({
       id: collaborazione._id,
       cliente: collaborazione.azienda.etichetta,
+      collaboratorenome: collaborazione.collaboratore.nome,
+      collaboratorecognome: collaborazione.collaboratore.cognome,
       clienteId: collaborazione.azienda._id,
       appuntamenti: collaborazione.numero_appuntamenti, // Esempio statico
       postIg_fb: collaborazione.post_ig_fb,
