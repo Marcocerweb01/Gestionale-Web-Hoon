@@ -224,7 +224,9 @@ const selectCollaboratore = (collaboratore) => {
            Numero post Instagram & Facebook:
           </label>
           <input
+          
           type='number'
+           min="0"
             name="post_if&fb"
             value={formData.post_ig_fb}
             onChange={(e) => setFormData(prev => ({ ...prev, post_ig_fb: e.target.value }))}
@@ -239,7 +241,9 @@ const selectCollaboratore = (collaboratore) => {
            Numero post Tik Tok:
           </label>
           <input
+          
           type='number'
+           min="0"
             name="post_tiktok"
             value={formData.post_tiktok}
             onChange={(e) => setFormData(prev => ({ ...prev, post_tiktok: e.target.value }))}
@@ -254,6 +258,7 @@ const selectCollaboratore = (collaboratore) => {
           </label>
           <input
           type='number'
+           min="0"
             name="post_linkedin"
             value={formData.post_linkedin}
             onChange={(e) => setFormData(prev => ({ ...prev, post_linkedin: e.target.value }))}
