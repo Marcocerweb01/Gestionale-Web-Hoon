@@ -211,9 +211,10 @@ const selectCollaboratore = (collaboratore) => {
           </label>
           <input
           type='number'
+           min="0"
             name="appuntamenti"
             value={formData.numero_appuntamenti}
-            onChange={(e) => setFormData(prev => ({ ...prev, numero_appuntamenti: e.target.value }))}
+            onChange={(e) => setFormData(prev => ({ ...prev, numero_appuntamenti:  Math.max(0, Number(e.target.value)) }))}
             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={4}
             placeholder="Inserisci numero appuntamenti"
@@ -229,7 +230,7 @@ const selectCollaboratore = (collaboratore) => {
            min="0"
             name="post_if&fb"
             value={formData.post_ig_fb}
-            onChange={(e) => setFormData(prev => ({ ...prev, post_ig_fb: e.target.value }))}
+            onChange={(e) => setFormData(prev => ({ ...prev, post_ig_fb: Math.max(0, Number(e.target.value)) }))}
             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={4}
             placeholder="Inserisci numero post"
@@ -246,7 +247,7 @@ const selectCollaboratore = (collaboratore) => {
            min="0"
             name="post_tiktok"
             value={formData.post_tiktok}
-            onChange={(e) => setFormData(prev => ({ ...prev, post_tiktok: e.target.value }))}
+            onChange={(e) => setFormData(prev => ({ ...prev, post_tiktok: Math.max(0, Number(e.target.value)) }))}
             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={4}
             placeholder="Inserisci numero post"
@@ -261,7 +262,7 @@ const selectCollaboratore = (collaboratore) => {
            min="0"
             name="post_linkedin"
             value={formData.post_linkedin}
-            onChange={(e) => setFormData(prev => ({ ...prev, post_linkedin: e.target.value }))}
+            onChange={(e) => setFormData(prev => ({ ...prev, post_linkedin: Math.max(0, Number(e.target.value))}))}
             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={4}
             placeholder="Inserisci numero post"
