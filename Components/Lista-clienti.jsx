@@ -206,10 +206,10 @@ const ListaClienti = ({ id, amministratore }) => {
             <th className="border border-black px-4 py-2">Cliente</th>
             <th className="border border-black px-4 py-2">Feed</th>
             <th className="border border-black px-4 py-2">Appuntamenti mensili</th>
-            <th className="border border-black px-4 py-2">Problemi riscontrati</th>
             <th className="border border-black px-4 py-2">Post IG & FB</th>
             <th className="border border-black px-4 py-2">Post TikTok</th>
             <th className="border border-black px-4 py-2">Post LinkedIn</th>
+            <th className="border border-black px-4 py-2">Problemi riscontrati</th>
             {amministratore && <th className="border border-black px-4 py-2">Pagato</th>}
             <th className="border border-black px-4 py-2">Azione</th>
           </tr>
@@ -227,9 +227,7 @@ const ListaClienti = ({ id, amministratore }) => {
                 <td className="border border-black px-4 py-2">
                   {appuntamenti[row.feed] || 0}/{row.appuntamenti}
                 </td>
-                <td className="border border-black px-4 py-2">
-                  {problemi[row.feed] || 0}
-                </td>
+              
                 <td className="border border-black px-4 py-2">
                   {editingRow === row.id ? (
                     <div className=" flex content-center items-center self-stretch ">
@@ -269,7 +267,11 @@ const ListaClienti = ({ id, amministratore }) => {
                     row.post_linkedin_fatti + " / " + row.postLinkedin
                   )}
                 </td>
+                <td className="border border-black px-4 py-2">
+                    {problemi[row.feed] || 0}
+                  </td>
                 {amministratore ? (
+                   
                   <td className="border border-black px-4 py-2">{row.pagato}</td>
                 ) : null}
                 <td className="border border-black px-4 py-2">
