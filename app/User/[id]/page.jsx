@@ -287,7 +287,7 @@ const UserDetails = ({ params }) => {
     {collaborazioni.map((collaborazione)=>(
 
 
-        <li className="p-2 bg-slate-100 rounded-md shadow-md">
+        <li  key={collaborazione.id} className="p-2 bg-slate-100 rounded-md shadow-md">
           <div className="flex flex-row gap-4"> 
               <p>{collaborazione.collaboratorenome}</p>
               <p>{collaborazione.collaboratorecognome}</p>
