@@ -41,7 +41,7 @@ const CreaNota = ({ collaborazioneId, autoreId, autorenome }) => {
       setSuccess(true);
 
       // Reindirizza al link precedente dopo il successo
-      router.back();
+    router.push(`/Feed-2/${autoreId}?collaborazioneId=${collaborazioneId}`);
     } catch (err) {
       console.error(err);
       setError(err.message);

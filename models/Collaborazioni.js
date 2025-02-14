@@ -1,5 +1,4 @@
-import { Schema, model, models } from "mongoose";
-
+import { Schema, model, models } from 'mongoose';
 const CollaborazioneSchema = new Schema(
   {
     azienda: {
@@ -13,15 +12,15 @@ const CollaborazioneSchema = new Schema(
       required: true,
     },
     aziendaRagioneSociale: {
-      type: String, // Campo duplicato per snapshot
+      type: String,
       required: true,
     },
     collaboratoreNome: {
-      type: String, // Campo duplicato per snapshot
+      type: String,
       required: true,
     },
     collaboratoreCognome: {
-      type: String, // Campo duplicato per snapshot
+      type: String,
       required: true,
     },
     dataInizio: {
@@ -41,17 +40,17 @@ const CollaborazioneSchema = new Schema(
       type: String,
       default: "",
     },
-    numero_appuntamenti:{
-      type:Number,
+    numero_appuntamenti: {
+      type: Number,
     },
-    post_ig_fb:{
-      type:Number,
+    post_ig_fb: {
+      type: Number,
     },
-    post_tiktok:{
-      type:Number,
+    post_tiktok: {
+      type: Number,
     },
-    post_linkedin:{
-      type:Number,
+    post_linkedin: {
+      type: Number,
     },
     post_ig_fb_fatti: {
       type: Number,
@@ -65,8 +64,11 @@ const CollaborazioneSchema = new Schema(
       type: Number,
       default: 0,
     },
-  
-
+    pagato: {
+      type: String,
+      enum: ["si", "no"],
+      default: "no", // 👈 Nuovo campo aggiunto con valore di default "no"
+    },
   },
   { timestamps: true }
 );

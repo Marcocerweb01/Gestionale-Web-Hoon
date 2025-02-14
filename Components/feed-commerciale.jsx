@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
 
 const FeedCommerciale = ({ id }) => {
   const [notes, setNotes] = useState([]);
@@ -14,10 +16,12 @@ const FeedCommerciale = ({ id }) => {
   const [endDate, setEndDate] = useState("");
   const [count, setCount] = useState(0);
   const [editingNote, setEditingNote] = useState(null);
-
   const { data: session } = useSession();
+  const [showFilters, setShowFilters] = useState(false);
 
-  dayjs.extend(utc);
+  // Stati per ricerca e filtro per tipo
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState(""); // vuoto = tutti i tipi
 
   // Fetch note del commerciale
   useEffect(() => {
@@ -45,30 +49,37 @@ const FeedCommerciale = ({ id }) => {
 
     fetchNotes();
   }, [id, startDate, endDate]);
-    //scroll
-    useEffect(() => {
-      const feedContainer = document.getElementById("feed-container");
-      if (feedContainer) {
-        feedContainer.scrollTop = feedContainer.scrollHeight;
-      }
-    }, [notes]);
-    
+
+  // Filtro: creiamo un array filtrato in base alla search query e al filtro per tipo
+  const filteredNotes = notes.filter((note) => {
+    const matchesSearch =
+      searchQuery === "" ||
+      note.nota.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === "" || note.mainCategoria === typeFilter;
+    return matchesSearch && matchesType;
+  });
+
+  // Scroll (opzionale)
+  useEffect(() => {
+    const feedContainer = document.getElementById("feed-container");
+    if (feedContainer) {
+      feedContainer.scrollTop = feedContainer.scrollHeight;
+    }
+  }, [notes]);
+
   const handleAddNote = async (newNote) => {
     setNotes((prevNotes) => [...prevNotes, newNote]);
   };
-  
+
   const handleEdit = (note) => {
     setEditingNote(note);
   };
+
   const handleDelete = async (noteId) => {
-    console.log(noteId)
     try {
-      // Chiamata all'API DELETE
       const response = await fetch(`/api/delete_note_comm`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: noteId,
           userRole: session?.user?.role,
@@ -78,28 +89,43 @@ const FeedCommerciale = ({ id }) => {
         const res = await response.json();
         throw new Error(res.message || "Errore durante l'eliminazione della nota.");
       }
-  
-      // Aggiorna il feed delle note rimuovendo la nota eliminata
-      setNotes((prevNotes) => prevNotes.filter((note) => note._id !== noteId));
+      setNotes((prevNotes) =>
+        prevNotes.filter((note) => note._id !== noteId)
+      );
     } catch (err) {
       console.error("Errore eliminazione nota:", err);
       setError("Non è stato possibile eliminare la nota.");
     }
   };
-  
+
   const handleUpdateNote = (updatedNote) => {
     setNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note._id === updatedNote._id ? updatedNote : note
-      )
+      prevNotes.map((note) => (note._id === updatedNote._id ? updatedNote : note))
     );
   };
-  
+
   return (
     <div className="relative w-full h-3/5">
       <h2 className="text-xl font-bold mb-4">Trovate {count} note</h2>
-      <div className="flex justify-between items-center mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 className="text-xl font-bold">Feed delle Note</h2>
+      <div className="flex justify-between items-center mb-4">
+      <h2 className="text-xl font-bold">Feed delle Note</h2>
+      <button
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          onClick={() => setIsPopupOpen(true)}
+        >
+          Aggiungi Nota
+        </button>
+        <button
+          onClick={() => setShowFilters((prev) => !prev)}
+          className="bg-gray-300 text-black px-3 py-1 rounded  text-sm lg:hidden"
+        >
+          {showFilters ? "Nascondi filtri" : "Mostra filtri"}
+        </button>
+        </div>
+      <div className={`${ showFilters ? "sm:visible" : "sm:hidden"
+        }`}>
+      <div className={`flex justify-between items-center mb-4`}>
+        
         {session?.user?.role === "amministratore" && (
           <div className="flex space-x-4">
             <div>
@@ -123,14 +149,29 @@ const FeedCommerciale = ({ id }) => {
           </div>
         )}
 
-        <button
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          onClick={() => setIsPopupOpen(true)}
-        >
-          Aggiungi Nota
-        </button>
+        
       </div>
 
+      {/* Campi per ricerca e filtro */}
+      <div className="flex gap-4 mb-4">
+        <input
+          type="text"
+          placeholder="Cerca note..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="border p-2 rounded flex-1"
+        />
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="border p-2 rounded"
+        >
+          <option value="">Tutti i tipi</option>
+          <option value="appuntamento">Appuntamento</option>
+          <option value="contatto">Contatto</option>
+        </select>
+      </div>
+      </div>    
       {isPopupOpen && (
         <PopupForm
           onClose={() => setIsPopupOpen(false)}
@@ -139,13 +180,13 @@ const FeedCommerciale = ({ id }) => {
           autoreNome={session?.user?.nome}
         />
       )}
-        {editingNote && (
-      <EditForm
-        note={editingNote}
-        onClose={() => setEditingNote(null)}
-        onUpdateNote={handleUpdateNote}
-      />
-    )}
+      {editingNote && (
+        <EditForm
+          note={editingNote}
+          onClose={() => setEditingNote(null)}
+          onUpdateNote={handleUpdateNote}
+        />
+      )}
 
       <div
         id="feed-container"
@@ -153,7 +194,7 @@ const FeedCommerciale = ({ id }) => {
         style={{
           height: "75vh",
           overflowY: "auto",
-          width:"100%",
+          width: "100%",
         }}
       >
         {loadingNotes ? (
@@ -161,11 +202,11 @@ const FeedCommerciale = ({ id }) => {
             <div className="h-6 bg-gray-300 rounded mb-4 w-3/4"></div>
             <div className="h-6 bg-gray-300 rounded mb-4 w-1/2"></div>
           </div>
-        ) : notes.length === 0 ? (
+        ) : filteredNotes.length === 0 ? (
           <p className="text-gray-500">Nessuna nota trovata per questo Utente.</p>
         ) : (
           <ul className="space-y-4">
-            {notes.map((note) => (
+            {filteredNotes.map((note) => (
               <li
                 key={note._id}
                 className={`p-4 rounded shadow w-full lg:w-2/4 ${
@@ -177,83 +218,63 @@ const FeedCommerciale = ({ id }) => {
                 <h3 className="font-bold">
                   {note.mainCategoria === "appuntamento" ? "Appuntamento" : "Contatto"}
                 </h3>
-                {note.mainCategoria === "contatto" && (
-                  <>
-                    <p className="text-sm text-gray-700"><b>Tipo di Contatto:</b> {note.tipoContatto}</p>
-                    <p className="text-sm text-gray-700"><b>Come Arrivato:</b> {note.comeArrivato}</p>
-                     {note.comeArrivato === "referal" && note.referal && (
-                      <p className="text-sm text-gray-700">
-                        <b>Referal:</b> {note.referal}
-                      </p>
-                    )}
-                    <p className="text-sm text-gray-700"><b>Nome Azienda:</b> {note.nomeAzienda}</p>
-                    <p className="text-sm text-gray-700"><b>Luogo:</b> {note.luogo}</p>
-                    <p className="text-sm text-gray-700"><b>Indirizzo:</b> {note.indirizzo}</p>
-                    <p className="text-sm text-gray-700"><b>Numero di Telefono:</b> {note.numeroTelefono}</p>
-                    <p className="text-sm text-gray-700"><b>Referente:</b> {note.referente}</p>
-                  </>
-                )}
                 {note.mainCategoria === "appuntamento" && (
-                  <>
-                  <p className="text-sm text-gray-700">
-                    <b>Data Appuntamento:</b> {dayjs(note.data_appuntamento).utc().format("DD/MM/YYYY HH:mm")}
+                  <p className="text-sm text-gray-500">
+                    Data Appuntamento:{" "}
+                    {dayjs(note.data_appuntamento).utc().format("DD/MM/YYYY HH:mm")}
                   </p>
-                  <p className="text-sm text-gray-700">
-                  <b>Luogo Appuntamento:</b> {note.luogo_appuntamento?note.luogo_appuntamento:"Non impostato"}
-                </p>
-                </>
                 )}
-                <p className="text-sm text-gray-700"><b>Nota:</b> {note.nota}</p>
+                <p>{note.nota}</p>
                 <p className="text-sm text-gray-500">Autore: {note.autore}</p>
                 <p className="text-sm text-gray-500">
-                  Data Creazione: {dayjs(note.data).utc().format("DD/MM/YYYY HH:mm")}
+                  Data: {dayjs(note.data).utc().format("DD/MM/YYYY HH:mm")}
                 </p>
-                <div className="mt-4 flex justify-end space-x-2"style={{
-    marginTop: "1rem",        // mt-4 -> 1rem
-    display: "flex",          // flex
-    justifyContent: "flex-end", // justify-end
-    gap: "0.5rem",            // space-x-2 -> gap di 0.5rem (8px)
-  }}>
-            {session?.user?.role === "amministratore" && (
-              <button
-                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                onClick={() => handleDelete(note._id)}
-                style={{
-                  backgroundColor: "#ef4444", // bg-red-500 corrisponde circa a #ef4444
-                  color: "#fff",              // text-white
-                  padding: "0.25rem 0.75rem", // px-3 => 0.75rem (12px), py-1 => 0.25rem (4px)
-                  borderRadius: "0.25rem",    // rounded => 4px
-                }}
-              >
-                Elimina
-              </button>
-            )}
-            <button
-              className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-              onClick={() => handleEdit(note)}
-              style={{
-                backgroundColor: "#f59e0b", // bg-yellow-500 corrisponde circa a #f59e0b
-                color: "#fff",              // text-white
-                padding: "0.25rem 0.75rem", // px-3 => 0.75rem (12px), py-1 => 0.25rem (4px)
-                borderRadius: "0.25rem",    // rounded => 4px
-                transition: "background-color 0.2s ease",
-              }}
-            >
-              Modifica
-            </button>
-          </div>
+                <div
+                  className="mt-2 flex justify-end space-x-2"
+                  style={{
+                    marginTop: "1rem",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "0.5rem",
+                  }}
+                >
+                  {session?.user?.role === "amministratore" && (
+                    <button
+                      onClick={() => handleDelete(note._id)}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                      style={{
+                        backgroundColor: "#ef4444",
+                        color: "#fff",
+                        padding: "0.25rem 0.75rem",
+                        borderRadius: "0.25rem",
+                      }}
+                    >
+                      Elimina
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleEdit(note)}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                    style={{
+                      backgroundColor: "#f59e0b",
+                      color: "#fff",
+                      padding: "0.25rem 0.75rem",
+                      borderRadius: "0.25rem",
+                      transition: "background-color 0.2s ease",
+                    }}
+                  >
+                    Modifica
+                  </button>
+                </div>
               </li>
             ))}
-            
           </ul>
         )}
-          
-
-
       </div>
     </div>
   );
 };
+
 
 
 const EditForm = ({ note, onClose, onUpdateNote }) => {

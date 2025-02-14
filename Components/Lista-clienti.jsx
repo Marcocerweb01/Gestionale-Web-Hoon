@@ -11,7 +11,9 @@ const ListaClienti = ({ id, amministratore }) => {
   const [tempData, setTempData] = useState({});
   const [appuntamenti, setAppuntamenti] = useState({});
   const [problemi, setProblemi]=useState({});
+
   const fetchCollaborazioni = async () => {
+    console.log("PARTITO")
     try {
       const response = await fetch(`/api/collaborazioni/${id}`);
       if (!response.ok) {
@@ -221,7 +223,7 @@ const ListaClienti = ({ id, amministratore }) => {
                   <Link href={`User/${row.clienteId}`}> {row.cliente} </Link>
                 </td>
                 <td className="border border-black px-4 py-2 text-blue-600 cursor-pointer hover:underline">
-                <Link href={`/Feed-2/${id}?collaborazioneId=${row.id}`}>Visualizza Feed</Link>
+                <Link href={`/Feed-2/${id}?collaborazioneId=${row.id}` }>Visualizza Feed</Link>
 
                 </td>
                 <td className="border border-black px-4 py-2">
@@ -321,8 +323,7 @@ const ListaClienti = ({ id, amministratore }) => {
                 <td className="border border-black px-4 py-2">
                     {problemi[row.feed] || 0}
                   </td>
-                {amministratore ? (
-                   
+                {amministratore ? (                   
                   <td className="border border-black px-4 py-2">{row.pagato}</td>
                 ) : null}
                 <td className="border border-black px-4 py-2">
@@ -371,7 +372,9 @@ const ListaClienti = ({ id, amministratore }) => {
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="space-y-1">
               <p className="font-medium text-gray-600">Feed:</p>
-              <Link href={`/Feed-2/${id}?collaborazioneId=${row.id}`} className="text-blue-600 cursor-pointer hover:underline">Visualizza Feed</Link>
+              <button className="bg-blue-500 text-white px-4 py-2 rounded">
+                <Link href={`/Feed-2/${id}?collaborazioneId=${row.id}` }>Visualizza Feed</Link>
+                </button>
             </div>
             
             <div className="space-y-1">
