@@ -1,5 +1,6 @@
 'use client'
 import React from 'react';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import '@styles/global.css';
 import { SessionProvider } from "next-auth/react";
 import Header from '@Components/Header';
