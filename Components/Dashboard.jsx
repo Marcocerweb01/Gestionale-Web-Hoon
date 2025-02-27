@@ -35,9 +35,7 @@ const Dashboard = () => {
         const response = await fetch(`/api/export_data`);
         if (!response.ok) {
           throw new Error("download avviato");
-        }
-        const result = await response.json();
-        setData(result);
+        } 
       } catch (err) {
         console.error("Errore:", err);
         setError("Non è stato possibile effettuare il download.");
