@@ -7,8 +7,15 @@ export async function GET() {
   try {
     await connectToDB();
 
-    // Recupera tutte le collaborazioni (puoi aggiungere filtri se necessario)
+    // Recupera tutte le collaborazioni (puoi applicare eventuali filtri)
     const collaborazioni = await Collaborazione.find({});
+
+    // Ordina le collaborazioni in ordine alfabetico per nome del collaboratore
+    collaborazioni.sort((a, b) => {
+      const nameA = `${a.collaboratoreNome} ${a.collaboratoreCognome}`.toLowerCase();
+      const nameB = `${b.collaboratoreNome} ${b.collaboratoreCognome}`.toLowerCase();
+      return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
+    });
 
     // Crea un nuovo workbook e worksheet
     const workbook = new ExcelJS.Workbook();
@@ -22,7 +29,7 @@ export async function GET() {
     ];
     const monthYearTitle = `${italianMonths[now.getMonth()]} ${now.getFullYear()}`;
 
-    // Aggiungi una riga per il titolo e unisci le celle (supponiamo 7 colonne)
+    // Aggiungi la riga del titolo e unisci le celle (supponiamo 7 colonne)
     const titleRow = worksheet.addRow([monthYearTitle]);
     worksheet.mergeCells(`A${titleRow.number}:G${titleRow.number}`);
     titleRow.font = { size: 16, bold: true };
@@ -31,18 +38,29 @@ export async function GET() {
     // Riga vuota per separare il titolo dalla tabella
     worksheet.addRow([]);
 
-    // Definisci le colonne della tabella
-    worksheet.columns = [
-      { header: "Collaboratore", key: "collaboratore", width: 30 },
-      { header: "Cliente", key: "cliente", width: 30 },
-      { header: "Appuntamenti Totali", key: "appuntamentiTotali", width: 20 },
-      { header: "Appuntamenti Fatti", key: "appuntamentiFatti", width: 20 },
-      { header: "Post IG", key: "postIG", width: 15 },
-      { header: "Post TikTok", key: "postTikTok", width: 15 },
-      { header: "Post LinkedIn", key: "postLinkedIn", width: 15 },
-    ];
+    // Aggiungi la riga di intestazione
+    const headerRow = worksheet.addRow([
+      "Collaboratore",
+      "Cliente",
+      "Appuntamenti Totali",
+      "Appuntamenti Fatti",
+      "Post IG",
+      "Post TikTok",
+      "Post LinkedIn",
+    ]);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { horizontal: "center" };
 
-    // Per ogni collaborazione, aggiungi una riga
+    // Imposta la larghezza delle colonne
+    worksheet.getColumn(1).width = 30;
+    worksheet.getColumn(2).width = 30;
+    worksheet.getColumn(3).width = 20;
+    worksheet.getColumn(4).width = 20;
+    worksheet.getColumn(5).width = 15;
+    worksheet.getColumn(6).width = 15;
+    worksheet.getColumn(7).width = 15;
+
+    // Aggiungi una riga per ogni collaborazione ordinata
     collaborazioni.forEach((collab) => {
       // Usa i campi snapshot per il collaboratore
       const collaboratore = `${collab.collaboratoreNome} ${collab.collaboratoreCognome}`.trim();
@@ -56,7 +74,7 @@ export async function GET() {
       const postTikTok = `${collab.post_tiktok_fatti || 0} / ${collab.post_tiktok || 0}`;
       const postLinkedIn = `${collab.post_linkedin_fatti || 0} / ${collab.post_linkedin || 0}`;
 
-      worksheet.addRow({
+      worksheet.addRow([
         collaboratore,
         cliente,
         appuntamentiTotali,
@@ -64,7 +82,7 @@ export async function GET() {
         postIG,
         postTikTok,
         postLinkedIn,
-      });
+      ]);
     });
 
     // Genera il file Excel in un buffer
@@ -79,6 +97,9 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Errore durante la generazione del file Excel:", error);
-    return new NextResponse(JSON.stringify({ message: "Errore interno al server" }), { status: 500 });
+    return new NextResponse(
+      JSON.stringify({ message: "Errore interno al server" }),
+      { status: 500 }
+    );
   }
 }
