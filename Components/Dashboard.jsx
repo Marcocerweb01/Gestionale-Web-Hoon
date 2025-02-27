@@ -34,13 +34,23 @@ const Dashboard = () => {
       try {
         const response = await fetch(`/api/export_data`);
         if (!response.ok) {
-          throw new Error("download avviato");
-        } 
+          throw new Error("Download non riuscito");
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "collaborazioni.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
       } catch (err) {
         console.error("Errore:", err);
         setError("Non è stato possibile effettuare il download.");
       }
     };
+    
   // Effetto per chiamare l'API al caricamento se amministratore
   useEffect(() => {
     if (status === "authenticated" && session?.user?.role === "amministratore") {
