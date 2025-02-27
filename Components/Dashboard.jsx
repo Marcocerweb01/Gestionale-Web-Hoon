@@ -29,7 +29,20 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
-
+    // Funzione per avviare il download
+    const downloadxlsx = async () => {
+      try {
+        const response = await fetch(`/api/export_data`);
+        if (!response.ok) {
+          throw new Error("download avviato");
+        }
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        console.error("Errore:", err);
+        setError("Non è stato possibile effettuare il download.");
+      }
+    };
   // Effetto per chiamare l'API al caricamento se amministratore
   useEffect(() => {
     if (status === "authenticated" && session?.user?.role === "amministratore") {
@@ -59,7 +72,8 @@ const Dashboard = () => {
           <div className='flex space-x-5 ' style={{display:'flex', 	marginLeft: '1.25rem' }}>
           <Link href="/AddCollab"> <button className="black_btn">Crea Collaborazione</button></Link> 
           <Link href="/Register"> <button className="black_btn" style={{marginLeft:'1.25rem',marginRight:'1.25rem'}}>Registra utente</button></Link>
-          <Link href="/Lista_clienti"> <button className="black_btn">Lista Clienti</button></Link> </div> ):(<></>)}
+          <Link href="/Lista_clienti"> <button className="black_btn">Lista Clienti</button></Link> 
+          <button className="black_btn" onClick={downloadxlsx}>Download Dati</button> </div> ):(<></>)}
 
       </div>
       <div className=" mt-10 sm:mt-5">
