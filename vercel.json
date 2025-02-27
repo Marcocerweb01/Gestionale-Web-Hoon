@@ -1,8 +1,9 @@
 {
-    "functions": {
-      "api/reset_posts/route.js": {
+    "crons": [
+      {
+        "path": "/api/reset_posts",
         "schedule": "0 0 1 * *"
       }
-    }
+    ]
   }
   
