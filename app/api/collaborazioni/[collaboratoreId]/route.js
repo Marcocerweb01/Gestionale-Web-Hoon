@@ -1,38 +1,37 @@
 import Collaborazione from "@/models/Collaborazioni";
 import { connectToDB } from "@/utils/database";
 
-
 export async function GET(req, { params }) {
   try {
     await connectToDB();
+    console.log("Connessione al database stabilita");
 
-    // Ottieni il collaboratoreId dai parametri dell'URL
     const { collaboratoreId } = params;
 
     if (!collaboratoreId) {
       return new Response(JSON.stringify({ message: "ID collaboratore mancante" }), { status: 400 });
     }
 
-    // Recupera le collaborazioni del collaboratore specifico
+    console.log(`Recupero collaborazioni per collaboratoreId: ${collaboratoreId}`);
     const collaborazioni = await Collaborazione.find({ collaboratore: collaboratoreId })
       .populate("azienda");
 
-    // Trasforma i dati per il frontend
     const result = collaborazioni.map((collaborazione) => ({
       id: collaborazione._id,
       cliente: collaborazione.azienda.etichetta,
       clienteId: collaborazione.azienda._id,
-      appuntamenti: collaborazione.numero_appuntamenti, // Esempio statico
+      appuntamenti: collaborazione.numero_appuntamenti,
       postIg_fb: collaborazione.post_ig_fb,
       postTiktok: collaborazione.post_tiktok,
-      postLinkedin: collaborazione.post_linkedin, // Esempio statico
-      feed: collaborazione._id, // Esempio statico
-      pagato: collaborazione.pagato, // Esempio statico
-      post_ig_fb_fatti:collaborazione.post_ig_fb_fatti,
-      post_tiktok_fatti:collaborazione.post_tiktok_fatti,
-      post_linkedin_fatti:collaborazione.post_linkedin_fatti,
+      postLinkedin: collaborazione.post_linkedin,
+      feed: collaborazione._id,
+      pagato: collaborazione.pagato,
+      post_ig_fb_fatti: collaborazione.post_ig_fb_fatti,
+      post_tiktok_fatti: collaborazione.post_tiktok_fatti,
+      post_linkedin_fatti: collaborazione.post_linkedin_fatti,
     }));
 
+    console.log("Collaborazioni recuperate con successo");
     return new Response(JSON.stringify(result), { status: 200 });
   } catch (error) {
     console.error("Errore durante il recupero delle collaborazioni:", error);
