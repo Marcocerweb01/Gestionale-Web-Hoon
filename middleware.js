@@ -12,24 +12,31 @@ export async function middleware(req) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  console.log("Token nel middleware:", token);
+  try {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const url = req.nextUrl.clone();
 
-  const url = req.nextUrl.clone();
+    if (!token) {
+      if (url.pathname !== "/Login") {
+        url.pathname = "/Login";
+        return NextResponse.redirect(url);
+      }
+    } else {
+      const adminPaths = ["/Register", "/AddCollab", "/Lista_clienti", "/Feed-comm"];
+      if (adminPaths.includes(url.pathname) && token.role !== "amministratore") {
+        url.pathname = "/unauthorized";
+        return NextResponse.redirect(url);
+      }
+    }
 
-  if (!token) {
-    if (url.pathname !== "/Login") {
-      url.pathname = "/Login";
-      return NextResponse.redirect(url);
-    }
-  } else if (["/Register", "/AddCollab", "/Lista_clienti", "/Feed-comm"].includes(url.pathname)) {
-    if (token.role !== "amministratore") {
-      url.pathname = "/unauthorized";
-      return NextResponse.redirect(url);
-    }
+    return NextResponse.next();
+  } catch (error) {
+    console.error("Errore nel middleware:", error);
+    return new Response(
+      JSON.stringify({ message: "Errore interno al server" }),
+      { status: 500 }
+    );
   }
-
-  return NextResponse.next();
 }
 
 export const config = {
