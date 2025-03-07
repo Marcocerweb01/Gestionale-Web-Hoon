@@ -1,27 +1,25 @@
 import mongoose from 'mongoose';
 
-let isConnected = false;
-
 export const connectToDB = async () => {
-
     mongoose.set('strictQuery', true);
 
-    if (isConnected) {
-        console.log("mongodb connesso")
-        return;       
+    if (mongoose.connections[0].readyState) {
+        console.log("Riuso connessione MongoDB esistente");
+        return;
     }
 
     try {
-        await mongoose.connect(process.env.MONGODB_URI, {
+        const conn = await mongoose.connect(process.env.MONGODB_URI, {
             dbName: "Webarea",
             useNewUrlParser: true,
             useUnifiedTopology: true,
-        })
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
+        });
 
-        isConnected=true;
-        console.log("mongodb connesso")
+        console.log(`MongoDB connesso: ${conn.connection.host}`);
     } catch (error) {
-        console.log(error)
+        console.error("Errore di connessione MongoDB:", error);
+        throw error; // Rilancia l'errore per gestirlo adeguatamente
     }
-
-}
+};
