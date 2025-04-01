@@ -1,3 +1,4 @@
+// utils/database.js
 import mongoose from 'mongoose';
 
 let cached = global.mongoose || { conn: null, promise: null };
@@ -6,7 +7,6 @@ export const connectToDB = async () => {
   mongoose.set('strictQuery', true);
 
   if (cached.conn) {
-    console.log("✅ Mongo già connesso");
     return cached.conn;
   }
 
