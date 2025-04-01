@@ -20,14 +20,15 @@ export async function GET() {
     const monthYearTitle = `${italianMonths[now.getMonth()]} ${now.getFullYear()}`;
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() , 0);
-    console.log("Filtro date:", {
-      firstDayOfMonth,
-      lastDayOfMonth,
-    });
+  
 
     // Prepara i dati da inserire: per ogni collaborazione, contiamo le note di tipo "appuntamento"
     const rowsData = await Promise.all(
       collaborazioni.map(async (collab) => {
+        console.log("Filtro date:", {
+          firstDayOfMonth,
+          lastDayOfMonth,
+        });
         // Conta le note di tipo "appuntamento" per la collaborazione nel mese corrente
         const appuntamentiFatti = await Nota.countDocuments({
           collaborazione: collab._id,
