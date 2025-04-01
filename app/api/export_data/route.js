@@ -18,8 +18,8 @@ export async function GET() {
       "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
     ];
     const monthYearTitle = `${italianMonths[now.getMonth()]} ${now.getFullYear()}`;
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() , 0);
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   
 
     // Prepara i dati da inserire: per ogni collaborazione, contiamo le note di tipo "appuntamento"
