@@ -25,16 +25,14 @@ export async function GET() {
     // Prepara i dati da inserire: per ogni collaborazione, contiamo le note di tipo "appuntamento"
     const rowsData = await Promise.all(
       collaborazioni.map(async (collab) => {
-        console.log("Filtro date:", {
-          firstDayOfMonth,
-          lastDayOfMonth,
-        });
+       
         // Conta le note di tipo "appuntamento" per la collaborazione nel mese corrente
         const appuntamentiFatti = await Nota.countDocuments({
           collaborazione: collab._id,
           tipo: "appuntamento",
           data_appuntamento: { $gte: firstDayOfMonth, $lte: lastDayOfMonth }
         });
+        console.log(appuntamentiFatti);
 
         // Per i post formattiamo come "fatti / totali"
         const postIG = `${collab.post_ig_fb_fatti || 0} / ${collab.post_ig_fb || 0}`;
