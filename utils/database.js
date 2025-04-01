@@ -1,27 +1,30 @@
 import mongoose from 'mongoose';
 
-let isConnected = false;
+let cached = global.mongoose || { conn: null, promise: null };
 
 export const connectToDB = async () => {
+  mongoose.set('strictQuery', true);
 
-    mongoose.set('strictQuery', true);
+  if (cached.conn) {
+    console.log("✅ Mongo già connesso");
+    return cached.conn;
+  }
 
-    if (isConnected) {
-        console.log("mongodb connesso")
-        return;       
-    }
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(process.env.MONGODB_URI, {
+      dbName: "Webarea",
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }).then((mongoose) => {
+      console.log("✅ Connessione Mongo avvenuta");
+      return mongoose;
+    }).catch((err) => {
+      console.error("❌ Errore Mongo:", err);
+      throw err;
+    });
+  }
 
-    try {
-        await mongoose.connect(process.env.MONGODB_URI, {
-            dbName: "Webarea",
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        })
-
-        isConnected=true;
-        console.log("mongodb connesso")
-    } catch (error) {
-        console.log(error)
-    }
-
-}
+  cached.conn = await cached.promise;
+  global.mongoose = cached;
+  return cached.conn;
+};
