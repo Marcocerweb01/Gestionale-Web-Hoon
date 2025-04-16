@@ -41,7 +41,7 @@ export async function POST(req) {
     if (!tipoProgetto || !clienteId || !webDesignerId) {
       console.log("Corpo della richiesta:", { clienteId, webDesignerId, note, tipoProgetto });
 
-      return new Response(JSON.stringify({ message: "Dati mancanti"+ { clienteId, webDesignerId, note, tipoProgetto } }), { status: 400 });
+      return new Response(JSON.stringify({ message: "Dati mancanti"+ clienteId + webDesignerId + note + tipoProgetto } ), { status: 400 });
     }
 
     // Seleziona la timeline in base al tipo di progetto
