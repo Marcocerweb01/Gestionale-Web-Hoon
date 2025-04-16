@@ -8,7 +8,7 @@ const TimelineWebDesigner = ({ userId }) => {
   useEffect(() => {
     const fetchCollaborazioni = async () => {
       try {
-        const response = await fetch(`/api/collaborazioni-webdesign?userId=${userId}`);
+        const response = await fetch(`/api/collaborazioni-webdesign/${userId}`);
         if (!response.ok) {
           throw new Error('Errore nel recupero delle collaborazioni');
         }

@@ -28,3 +28,31 @@ export async function GET(req, { params }) {
     return new Response(JSON.stringify({ message: "Errore interno al server" }), { status: 500 });
   }
 }
+
+export async function PATCH(req, { params }) {
+  try {
+    await connectToDB();
+
+    const { collaborazioneId } = params;
+    const { faseIndex, completata } = await req.json();
+
+    if (!collaborazioneId || faseIndex === undefined || completata === undefined) {
+      return new Response(JSON.stringify({ message: "Dati mancanti" }), { status: 400 });
+    }
+
+    const collaborazione = await CollaborazioneWebDesign.findById(collaborazioneId);
+
+    if (!collaborazione) {
+      return new Response(JSON.stringify({ message: "Collaborazione non trovata" }), { status: 404 });
+    }
+
+    // Aggiorna la fase specifica
+    collaborazione.fasiProgetto[faseIndex].completata = completata;
+    await collaborazione.save();
+
+    return new Response(JSON.stringify({ message: "Fase aggiornata con successo" }), { status: 200 });
+  } catch (error) {
+    console.error("Errore durante l'aggiornamento della fase:", error);
+    return new Response(JSON.stringify({ message: "Errore interno al server" }), { status: 500 });
+  }
+}
