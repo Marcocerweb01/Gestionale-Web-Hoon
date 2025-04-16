@@ -35,7 +35,7 @@ export async function POST(req) {
     await connectToDB();
     console.log("Connessione al database riuscita");
 
-    const { clienteId, webDesignerId, tipoProgetto, note } = await req.json();
+    const { clienteId, webDesignerId, note, tipoProgetto,  } = await req.json();
     console.log("Corpo della richiesta:", { clienteId, webDesignerId, tipoProgetto, note });
 
     if (!tipoProgetto || !clienteId || !webDesignerId) {
