@@ -97,7 +97,7 @@ const Dashboard = () => {
         ) : session?.user?.subrole === "commerciale" ? (
           <FeedCommerciale id={session?.user.id} />
         
-        ): ession?.user?.subrole === "smm" ?(
+        ): session?.user?.subrole === "smm" ?(
           <ListaClienti id={session?.user.id} amministratore={false} />
         ):(
           <timelineWebDesigner userId={session?.user.id}/>
