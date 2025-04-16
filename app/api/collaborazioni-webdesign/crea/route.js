@@ -36,9 +36,11 @@ export async function POST(req) {
     console.log("Connessione al database riuscita");
 
     const { clienteId, webDesignerId, note, tipoProgetto,  } = await req.json();
-    console.log("Corpo della richiesta:", { clienteId, webDesignerId, tipoProgetto, note });
+    console.log("Corpo della richiesta:", { clienteId, webDesignerId, note, tipoProgetto });
 
     if (!tipoProgetto || !clienteId || !webDesignerId) {
+      console.log("Corpo della richiesta:", { clienteId, webDesignerId, note, tipoProgetto });
+
       return new Response(JSON.stringify({ message: "Dati mancanti" }), { status: 400 });
     }
 
