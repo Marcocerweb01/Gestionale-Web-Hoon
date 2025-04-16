@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ListaCollaboratori from './Lista-collaboratori';
 import ListaClienti from './Lista-clienti';
+import TimelineWebDesigner from './timeline-web-designer';
 import { useSession } from "next-auth/react";
 import Link from '@node_modules/next/link';
 import FeedCommerciale from './feed-commerciale';
@@ -96,8 +97,10 @@ const Dashboard = () => {
         ) : session?.user?.subrole === "commerciale" ? (
           <FeedCommerciale id={session?.user.id} />
         
-        ):(
+        ): ession?.user?.subrole === "smm" ?(
           <ListaClienti id={session?.user.id} amministratore={false} />
+        ):(
+          <timelineWebDesigner id={session?.user.id}/>
         )}
          
       </div>
