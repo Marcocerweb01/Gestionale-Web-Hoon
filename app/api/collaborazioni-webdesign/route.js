@@ -29,6 +29,7 @@ const timelineWebApp = [
 ];
 
 export async function POST(req) {
+    console.log("api chiamata")
   try {
     await connectToDB();
 
