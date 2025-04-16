@@ -33,7 +33,7 @@ export async function POST(req) {
     await connectToDB();
 
     const { tipoProgetto, clienteId, webDesignerId } = await req.json();
-
+    console.log("Da api", tipoProgetto, clienteId, webDesignerId )
     if (!tipoProgetto || !clienteId || !webDesignerId) {
       return new Response(JSON.stringify({ message: "Dati mancanti" }), { status: 400 });
     }

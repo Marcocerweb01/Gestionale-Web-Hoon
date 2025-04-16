@@ -79,7 +79,7 @@ const AddWebDesignCollabForm = () => {
     setLoading(true);
     setError('');
     setSuccess('');
-
+    console-log("da form", e.target.value, formData.aziendaId, formData.collaboratoreId, formData.tipoProgetto)
     try {
       const response = await fetch('/api/collaborazioni-webdesign', {
         method: 'POST',
