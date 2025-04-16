@@ -100,7 +100,7 @@ const Dashboard = () => {
         ): ession?.user?.subrole === "smm" ?(
           <ListaClienti id={session?.user.id} amministratore={false} />
         ):(
-          <timelineWebDesigner id={session?.user.id}/>
+          <timelineWebDesigner userId={session?.user.id}/>
         )}
          
       </div>

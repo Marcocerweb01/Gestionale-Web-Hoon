@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const TimelineWebDesigner = ({ id }) => {
+const TimelineWebDesigner = ({ userId }) => {
   const [collaborazioni, setCollaborazioni] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
