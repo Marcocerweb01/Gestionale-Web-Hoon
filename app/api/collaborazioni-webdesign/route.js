@@ -1,5 +1,6 @@
 import CollaborazioneWebDesign from "@/models/Collaborazioniwebdesign.js";
 import { connectToDB } from "@/utils/database";
+import mongoose from "mongoose";
 
 const timelineECommerce = [
   { nome: "Analisi dei requisiti", completata: false },
