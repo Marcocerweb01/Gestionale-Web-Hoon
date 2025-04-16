@@ -33,7 +33,7 @@ export async function POST(req) {
   try {
     await connectToDB();
 
-    const { tipoProgetto, clienteId, webDesignerId } = await req.json();
+    const { clienteId, webDesignerId, tipoProgetto, note } = await req.json();
     console.log("Da api", tipoProgetto, clienteId, webDesignerId )
     if (!tipoProgetto || !clienteId || !webDesignerId) {
       return new Response(JSON.stringify({ message: "Dati mancanti" }), { status: 400 });
@@ -59,7 +59,13 @@ export async function POST(req) {
       tipoProgetto,
       cliente: clienteId,
       webDesigner: webDesignerId,
+      aziendaRagioneSociale: clienteId,
+      collaboratoreNome: webDesignerId,
+      collaboratoreCognome: webDesignerId,
+      faseAttuale: 0,
       fasiProgetto,
+      note,
+      fasiProgettoCompletate: 0,
     });
 
     return new Response(JSON.stringify(nuovaCollaborazione), { status: 201 });
