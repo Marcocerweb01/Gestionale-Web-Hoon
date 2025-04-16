@@ -35,13 +35,12 @@ export async function POST(req) {
     await connectToDB();
     console.log("Connessione al database riuscita");
 
-    const { clienteId, webDesignerId, note, tipoProgetto,  } = await req.json();
-    console.log("Corpo della richiesta:", { clienteId, webDesignerId, note, tipoProgetto });
+    const { aziendaId, collaboratoreId, note, tipoProgetto,  } = await req.json();
 
-    if (!tipoProgetto || !clienteId || !webDesignerId) {
-      console.log("Corpo della richiesta:", { clienteId, webDesignerId, note, tipoProgetto });
+    if (!tipoProgetto || !aziendaId || !collaboratoreId) {
+      console.log("Corpo della richiesta:", { aziendad, collaboratoreIdId, note, tipoProgetto });
 
-      return new Response(JSON.stringify({ message: "Dati mancanti"+ clienteId + webDesignerId + note + tipoProgetto } ), { status: 400 });
+      return new Response(JSON.stringify({ message: "Dati mancanti"+ aziendaId + collaboratoreId + note + tipoProgetto } ), { status: 400 });
     }
 
     // Seleziona la timeline in base al tipo di progetto
@@ -61,8 +60,8 @@ export async function POST(req) {
     }
 
     // Recupera i dati di azienda e collaboratore
-    const azienda = await Azienda.findById(clienteId);
-    const collaboratore = await Collaboratore.findById(webDesignerId);
+    const azienda = await Azienda.findById(aziendaId);
+    const collaboratore = await Collaboratore.findById(collaboratoreId);
 
     if (!azienda || !collaboratore) {
       return new Response(JSON.stringify({ message: "Azienda o collaboratore non trovati" }), { status: 404 });
@@ -71,8 +70,8 @@ export async function POST(req) {
     // Crea la nuova collaborazione
     const nuovaCollaborazione = await CollaborazioneWebDesign.create({
       tipoProgetto,
-      cliente: clienteId,
-      webDesigner: webDesignerId,
+      cliente: aziendaId,
+      webDesigner: collaboratoreId,
       aziendaRagioneSociale: azienda.ragioneSociale,
       collaboratoreNome: collaboratore.nome,
       collaboratoreCognome: collaboratore.cognome,
