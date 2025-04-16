@@ -29,7 +29,8 @@ const CollaborazioneWebDesignSchema = new Schema(
       },
     ],
     faseAttuale: { type: Number, default: 0 }, // Indice della fase attuale
-    note: [{ type: Schema.Types.ObjectId, ref: "Nota" }], // Collegamento al feed delle note
+    note: {type: String,
+    default: ""}, // Collegamento al feed delle note
   },
   { timestamps: true }
 );
