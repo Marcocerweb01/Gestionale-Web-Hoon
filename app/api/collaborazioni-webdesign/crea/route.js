@@ -1,5 +1,6 @@
 import CollaborazioneWebDesign from "@/models/Collaborazioniwebdesign.js";
 import { connectToDB } from "@/utils/database";
+import { Azienda, Collaboratore } from "@/models/User";
 import mongoose from "mongoose";
 
 const timelineECommerce = [
@@ -29,12 +30,14 @@ const timelineWebApp = [
 ];
 
 export async function POST(req) {
-    console.log("api chiamata")
+    console.log("api chiamata");
+    const azienda = await Azienda.findById(clienteId);
+    const collaboratore = await Collaboratore.findById(webDesignerId);
   try {
     await connectToDB();
 
     const { clienteId, webDesignerId, tipoProgetto, note } = await req.json();
-    console.log("Da api", tipoProgetto, clienteId, webDesignerId )
+    console.log("Da api", tipoProgetto, clienteId, webDesignerId );
     if (!tipoProgetto || !clienteId || !webDesignerId) {
       return new Response(JSON.stringify({ message: "Dati mancanti" }), { status: 400 });
     }
@@ -59,9 +62,9 @@ export async function POST(req) {
       tipoProgetto,
       cliente: clienteId,
       webDesigner: webDesignerId,
-      aziendaRagioneSociale: clienteId,
-      collaboratoreNome: webDesignerId,
-      collaboratoreCognome: webDesignerId,
+      aziendaRagioneSociale: azienda.ragioneSociale,
+      collaboratoreNome: collaboratore.nome,
+      collaboratoreCognome: collaboratore.cognome,
       faseAttuale: 0,
       fasiProgetto,
       note,
