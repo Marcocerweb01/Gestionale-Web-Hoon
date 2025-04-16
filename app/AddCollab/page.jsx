@@ -4,10 +4,10 @@ import AddWebDesignCollabForm from '@Components/add-webdesign-collab'
 
 export const AddCollab = () => {
   return (
-    <div>
+    <section>
     <AddCollabForm />
     <AddWebDesignCollabForm />
-    </div>
+    </section>
   )
 }
 
