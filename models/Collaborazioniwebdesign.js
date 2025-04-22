@@ -21,16 +21,19 @@ const CollaborazioneWebDesignSchema = new Schema(
       type: String,
       required: true,
     },
-    fasiProgetto: [
+    tasks: [
       {
         nome: { type: String, required: true },
+        dataInizio: { type: Date, required: true },
+        dataFine: { type: Date, required: true },
+        tempistica: { type: String, required: true }, // Es. "3 giorni", "5 ore"
         completata: { type: Boolean, default: false },
-        dataCompletamento: { type: Date, default: null },
       },
     ],
-    faseAttuale: { type: Number, default: 0 }, // Indice della fase attuale
-    note: {type: String,
-    default: ""}, // Collegamento al feed delle note
+    note: { type: String, default: "" }, // Annotazioni generali
+    problemi: { type: String, default: "" }, // Problemi riscontrati
+    dataInizioContratto: { type: Date, required: true }, // Data di inizio contratto
+    dataFineContratto: { type: Date, required: true }, // Data di fine contratto
   },
   { timestamps: true }
 );
