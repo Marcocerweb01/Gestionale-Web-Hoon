@@ -4,10 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 
 const AddWebDesignCollabForm = () => {
   const [formData, setFormData] = useState({
-    aziendaId: '',
-    collaboratoreId: '',
+    clienteId: '', // Cambiato da aziendaId a clienteId
+    webDesignerId: '', // Cambiato da collaboratoreId a webDesignerId
     tipoProgetto: '',
     note: '',
+    dataInizioContratto: '',
+    dataFineContratto: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -79,7 +81,8 @@ const AddWebDesignCollabForm = () => {
     setLoading(true);
     setError('');
     setSuccess('');
-    console.log("da form", formData)
+    console.log("Dati inviati al backend:", formData); // Verifica i dati inviati
+
     try {
       const response = await fetch('/api/collaborazioni-webdesign/crea', {
         method: 'POST',
@@ -96,7 +99,14 @@ const AddWebDesignCollabForm = () => {
       }
 
       setSuccess('Collaborazione creata con successo!');
-      setFormData({ aziendaId: '', collaboratoreId: '', tipoProgetto: '', note: '' });
+      setFormData({
+        clienteId: '', // Cambiato da aziendaId a clienteId
+        webDesignerId: '', // Cambiato da collaboratoreId a webDesignerId
+        tipoProgetto: '',
+        note: '',
+        dataInizioContratto: '',
+        dataFineContratto: '',
+      });
       setAziendaSearch('');
       setCollaboratoreSearch('');
     } catch (err) {
@@ -107,13 +117,13 @@ const AddWebDesignCollabForm = () => {
   };
 
   const selectAzienda = (azienda) => {
-    setFormData((prev) => ({ ...prev, aziendaId: azienda.id }));
+    setFormData((prev) => ({ ...prev, clienteId: azienda.id })); // Cambiato da aziendaId a clienteId
     setAziendaSearch(azienda.etichetta);
     setShowAziendeDropdown(false);
   };
 
   const selectCollaboratore = (collaboratore) => {
-    setFormData((prev) => ({ ...prev, collaboratoreId: collaboratore.id }));
+    setFormData((prev) => ({ ...prev, webDesignerId: collaboratore.id })); // Cambiato da collaboratoreId a webDesignerId
     setCollaboratoreSearch(`${collaboratore.nome} ${collaboratore.cognome}`);
     setShowCollaboratoriDropdown(false);
   };
@@ -141,7 +151,7 @@ const AddWebDesignCollabForm = () => {
             <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
               {filteredAziende.map((azienda) => (
                 <div
-                  key={azienda._id}
+                  key={azienda.id}
                   className="p-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => selectAzienda(azienda)}
                 >
@@ -170,7 +180,7 @@ const AddWebDesignCollabForm = () => {
             <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
               {filteredCollaboratori.map((collaboratore) => (
                 <div
-                  key={collaboratore._id}
+                  key={collaboratore.id}
                   className="p-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => selectCollaboratore(collaboratore)}
                 >
@@ -192,8 +202,30 @@ const AddWebDesignCollabForm = () => {
             <option value="">Seleziona il tipo di progetto</option>
             <option value="e-commerce">E-commerce</option>
             <option value="sito vetrina">Sito Vetrina</option>
-            <option value="web app">Web App</option>
+            <option value="sito starter">Sito Starter</option>
           </select>
+        </div>
+
+        {/* Data Inizio Contratto */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Data Inizio Contratto:</label>
+          <input
+            type="date"
+            value={formData.dataInizioContratto}
+            onChange={(e) => setFormData((prev) => ({ ...prev, dataInizioContratto: e.target.value }))}
+            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Data Fine Contratto */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Data Fine Contratto:</label>
+          <input
+            type="date"
+            value={formData.dataFineContratto}
+            onChange={(e) => setFormData((prev) => ({ ...prev, dataFineContratto: e.target.value }))}
+            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
 
         {/* Note */}
@@ -213,7 +245,7 @@ const AddWebDesignCollabForm = () => {
 
         <button
           type="submit"
-          disabled={loading || !formData.aziendaId || !formData.collaboratoreId || !formData.tipoProgetto}
+          disabled={loading || !formData.clienteId || !formData.webDesignerId || !formData.tipoProgetto || !formData.dataInizioContratto || !formData.dataFineContratto}
           className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Creazione in corso...' : 'Crea Collaborazione'}

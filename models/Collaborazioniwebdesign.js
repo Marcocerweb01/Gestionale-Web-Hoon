@@ -4,7 +4,7 @@ const CollaborazioneWebDesignSchema = new Schema(
   {
     tipoProgetto: {
       type: String,
-      enum: ["e-commerce", "sito vetrina", "web app"],
+      enum: ["e-commerce", "sito vetrina", "sito starter"],
       required: true,
     },
     cliente: { type: Schema.Types.ObjectId, ref: "Azienda", required: true },
@@ -24,8 +24,8 @@ const CollaborazioneWebDesignSchema = new Schema(
     tasks: [
       {
         nome: { type: String, required: true },
-        dataInizio: { type: Date, required: true },
-        dataFine: { type: Date, required: true },
+        dataInizio: { type: Date, default: null },
+        dataFine: { type: Date, default: null },
         tempistica: { type: String, required: true }, // Es. "3 giorni", "5 ore"
         completata: { type: Boolean, default: false },
       },

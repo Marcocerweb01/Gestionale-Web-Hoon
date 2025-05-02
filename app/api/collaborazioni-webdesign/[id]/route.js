@@ -48,11 +48,11 @@ export async function PATCH(req, { params }) {
   try {
     await connectToDB();
 
-    const { id } = params;
-    const { faseIndex, completata } = await req.json();
+    const { id } = params; // ID della collaborazione
+    const body = await req.json();
 
-    if (!id || faseIndex === undefined || completata === undefined) {
-      return new Response(JSON.stringify({ message: "Dati mancanti" }), { status: 400 });
+    if (!id) {
+      return new Response(JSON.stringify({ message: "ID collaborazione mancante" }), { status: 400 });
     }
 
     const collaborazione = await CollaborazioneWebDesign.findById(id);
@@ -61,13 +61,26 @@ export async function PATCH(req, { params }) {
       return new Response(JSON.stringify({ message: "Collaborazione non trovata" }), { status: 404 });
     }
 
-    // Aggiorna la fase specifica
-    collaborazione.fasiProgetto[faseIndex].completata = completata;
+    // Aggiorna i campi generici (note, problemi, ecc.)
+    if (body.note !== undefined) {
+      collaborazione.note = body.note;
+    }
+
+    if (body.problemi !== undefined) {
+      collaborazione.problemi = body.problemi;
+    }
+
+    // Aggiorna i task
+    if (body.tasks) {
+      collaborazione.tasks = body.tasks;
+    }
+
+    // Salva le modifiche
     await collaborazione.save();
 
-    return new Response(JSON.stringify({ message: "Fase aggiornata con successo" }), { status: 200 });
+    return new Response(JSON.stringify({ message: "Collaborazione aggiornata con successo" }), { status: 200 });
   } catch (error) {
-    console.error("Errore durante l'aggiornamento della fase:", error);
+    console.error("Errore durante l'aggiornamento della collaborazione:", error);
     return new Response(JSON.stringify({ message: "Errore interno al server" }), { status: 500 });
   }
 }
