@@ -13,13 +13,15 @@ export async function GET() {
 
     // Calcola il periodo del mese corrente
     const now = new Date();
+    // Mese scorso
+    const previousMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const italianMonths = [
       "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
       "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
     ];
-    const monthYearTitle = `${italianMonths[now.getMonth()]} ${now.getFullYear()}`;
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const monthYearTitle = `${italianMonths[previousMonthDate.getMonth()]} ${previousMonthDate.getFullYear()}`;
+    const firstDayOfMonth = new Date(previousMonthDate.getFullYear(), previousMonthDate.getMonth(), 1);
+    const lastDayOfMonth = new Date(previousMonthDate.getFullYear(), previousMonthDate.getMonth() + 1, 0);
   
 
     // Prepara i dati da inserire: per ogni collaborazione, contiamo le note di tipo "appuntamento"
