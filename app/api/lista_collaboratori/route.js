@@ -18,8 +18,9 @@ export async function GET(req) {
       subRole: collaboratore.subRole,
       partitaIva: collaboratore.partitaIva,
     }));
-
-    return new Response(JSON.stringify(result), { status: 200 });
+    console.log("Dati formattati per il frontend:", result);
+    return new Response(JSON.stringify(result), { status: 200, headers: {
+      "Cache-Control": "no-store",}});
   } catch (error) {
     console.error("Errore durante il recupero dei collaboratori:", error);
     return new Response(
