@@ -1,26 +1,28 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "@node_modules/next/link";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation"; // Importa useRouter
 
 const ListaClienti = () => {
   const [clienti, setClienti] = useState([]);
   const [error, setError] = useState("");
   const [loadingClienti, setLoadingClienti] = useState(true);
+  const router = useRouter(); // Inizializza il router
 
-  // 1. Definisco la funzione di fetch
+  // Funzione di fetch
   const fetchClienti = async () => {
-    setLoadingClienti(true);   // (ri)mostra lo stato di caricamento
+    setLoadingClienti(true);
     setError("");
 
     try {
-      const response = await fetch("/api/lista_aziende",{
+      const response = await fetch("/api/lista_aziende", {
         method: "GET",
-      cache: "no-store", 
-      headers: {
-        "Cache-Control": "no-cache",
-      }
-
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+        },
       });
       if (!response.ok) {
         throw new Error("Errore nel recupero delle aziende");
@@ -35,22 +37,18 @@ const ListaClienti = () => {
     }
   };
 
-  // 2. useEffect che chiama fetchClienti al montaggio del componente
   useEffect(() => {
     fetchClienti();
   }, []);
 
-  // 3. Se stiamo ancora caricando, mostriamo il messaggio
   if (loadingClienti) {
     return <div>Caricamento in corso...</div>;
   }
 
-  // Se c’è un errore, lo mostriamo
   if (error) {
     return <div className="text-red-500">{error}</div>;
   }
 
-  // 4. Ordiniamo (assicurandoci che "etichetta" esista su tutti gli oggetti)
   const sortedClienti = [...clienti].sort((a, b) =>
     (a.etichetta ?? "").localeCompare(b.etichetta ?? "")
   );
@@ -60,7 +58,6 @@ const ListaClienti = () => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold">Clienti</h2>
 
-        {/* 5. Pulsante di refresh */}
         <button
           className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
           onClick={fetchClienti}
@@ -71,12 +68,13 @@ const ListaClienti = () => {
 
       <ul className="space-y-2">
         {sortedClienti.map((cliente) => (
-      
-            <Link href={`/User/${cliente.id}`}>    <li
+          <li
             key={cliente.id}
             className="cursor-pointer p-2 bg-gray-100 rounded shadow hover:bg-gray-200"
-          >{cliente.etichetta}</li></Link>
-          
+            onClick={() => router.push(`/User/${cliente.id}`)} // Naviga al link
+          >
+            <Link href={`/User/${cliente.id}`}>{cliente.etichetta}</Link>
+          </li>
         ))}
       </ul>
     </div>
