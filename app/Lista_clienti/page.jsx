@@ -71,12 +71,12 @@ const ListaClienti = () => {
 
       <ul className="space-y-2">
         {sortedClienti.map((cliente) => (
-          <li
+      
+            <Link href={`/User/${cliente.id}`}>    <li
             key={cliente.id}
             className="cursor-pointer p-2 bg-gray-100 rounded shadow hover:bg-gray-200"
-          >
-            <Link href={`/User/${cliente.id}`}>{cliente.etichetta}</Link>
-          </li>
+          >{cliente.etichetta}</li></Link>
+          
         ))}
       </ul>
     </div>
