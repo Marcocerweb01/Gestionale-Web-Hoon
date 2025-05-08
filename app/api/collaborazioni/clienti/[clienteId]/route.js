@@ -10,7 +10,7 @@ export async function GET(req, { params }) {
     const { clienteId } = params;
 
     if (!clienteId) {
-      return new Response(JSON.stringify({ message: "ID collaboratore mancante" }), { status: 400 });
+      return new Response(JSON.stringify({ message: "ID azienda mancante" }), { status: 400 });
     }
 
     // Recupera le collaborazioni del collaboratore specifico

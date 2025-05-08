@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import TimelineWebDesigner from "@/Components/timeline-web-designer"; // Dashboard per Web Designer
 import FeedCommerciale from "@/Components/feed-commerciale"; // Dashboard per Commerciali
-import AdminCollaborationsList from "@/Components/edit-collab";// Dashboard per Social Media Manager
+import AdminCollaborationsList from "@/Components/edit-collab"; // Dashboard per Social Media Manager
+import AziendaCollab from "@/Components/azienda-collab"; // Dashboard per Cliente
 
 const UserDetails = ({ params }) => {
   const { id } = params; // ID utente dalla route
@@ -279,7 +280,7 @@ const UserDetails = ({ params }) => {
 
       <div className="w-5/6 mt-10 bg-white shadow-md rounded-md p-6">
         <h2 className="text-2xl font-bold mb-4">Collaborazioni</h2>
-
+        
         {/* Render condizionale in base al ruolo */}
         {user?.subRole === "web designer" && (
           <TimelineWebDesigner userId={user._id} />
@@ -293,8 +294,12 @@ const UserDetails = ({ params }) => {
           <AdminCollaborationsList id={user._id} amministratore={false} />
         )}
 
+        {user.ragioneSociale && (
+          <AziendaCollab aziendaId={user._id} />
+        )}
+
         {/* Messaggio di fallback */}
-        {!["web designer", "commerciale", "smm"].includes(user?.subRole) && (
+        {!["web designer", "commerciale", "smm"].includes(user?.subRole) || !user.ragioneSociale && (
           <p className="text-gray-500">Nessuna dashboard disponibile per questo ruolo.</p>
         )}
       </div>
