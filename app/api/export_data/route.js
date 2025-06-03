@@ -21,7 +21,7 @@ export async function GET() {
     ];
     const monthYearTitle = `${italianMonths[previousMonthDate.getMonth()]} ${previousMonthDate.getFullYear()}`;
     const firstDayOfMonth = new Date(previousMonthDate.getFullYear(), previousMonthDate.getMonth(), 1);
-    const lastDayOfMonth = new Date(previousMonthDate.getFullYear(), previousMonthDate.getMonth() + 1, 0);
+    const lastDayOfMonth = new Date(previousMonthDate.getFullYear(), previousMonthDate.getMonth() + 1, 0, 23, 59, 59, 999);
   
 
     // Prepara i dati da inserire: per ogni collaborazione, contiamo le note di tipo "appuntamento"

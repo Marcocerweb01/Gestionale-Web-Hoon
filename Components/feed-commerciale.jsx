@@ -219,10 +219,13 @@ const FeedCommerciale = ({ id }) => {
                   {note.mainCategoria === "appuntamento" ? "Appuntamento" : "Contatto"}
                 </h3>
                 {note.mainCategoria === "appuntamento" && (
+                  <>
                   <p className="text-sm text-gray-500">
                     Data Appuntamento:{" "}
                     {dayjs(note.data_appuntamento).utc().format("DD/MM/YYYY HH:mm")}
                   </p>
+                  <p className="text-sm text-gray-500">Luogo: {note.luogo_appuntamento}</p>
+                  </>
                 )}
                 <p>{note.nota}</p>
                 <p className="text-sm text-gray-500">Autore: {note.autore}</p>
