@@ -82,7 +82,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
         {openSmm && smms.length > 0 && (
           <div className="mt-3 space-y-3 w-full">
             {smms.map((collab) => (
-              <CollaboratoreItem id={collab.id} nome={collab.nome} ruolo={collab.subRole} />
+              <CollaboratoreItem id={collab.id} nome={collab.nome + "" + collab.cognome}  ruolo={collab.subRole} />
             ))}
           </div>
         )}
