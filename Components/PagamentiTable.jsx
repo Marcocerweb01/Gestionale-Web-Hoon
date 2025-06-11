@@ -61,6 +61,13 @@ const PagamentiTable = () => {
       });
   };
 
+  // Ordina alfabeticamente per cliente
+  const pagamentiOrdinati = [...pagamenti].sort((a, b) => {
+    if ((a.cliente || "") < (b.cliente || "")) return -1;
+    if ((a.cliente || "") > (b.cliente || "")) return 1;
+    return 0;
+  });
+
   if (loading) return <div>Caricamento...</div>;
 
   return (
@@ -76,7 +83,7 @@ const PagamentiTable = () => {
           </tr>
         </thead>
         <tbody>
-          {pagamenti.map((p) => (
+          {pagamentiOrdinati.map((p) => (
             <tr key={p.id || p._id}>
               <td>{p.cliente || "N/A"}</td>
               <td>
