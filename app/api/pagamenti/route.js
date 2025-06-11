@@ -6,7 +6,24 @@ import { connectToDB } from "@/utils/database";
 export async function GET() {
   try {
     await connectToDB();
-    const pagamenti = await Pagamenti.find({}).populate("cliente");
+
+    // Calcola inizio e fine del mese corrente
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    );
+
+    // Filtra i pagamenti per data_fattura nel mese corrente
+    const pagamenti = await Pagamenti.find({
+      data_fattura: { $gte: startOfMonth, $lte: endOfMonth },
+    }).populate("cliente");
 
     const result = pagamenti.map((p) => ({
       id: p._id,
