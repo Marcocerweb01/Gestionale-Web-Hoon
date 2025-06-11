@@ -3,10 +3,10 @@ import { Schema, model, models } from "mongoose";
 const AziendaSchema = new Schema({
   nome: { type: String, required: false },
   cognome: { type: String, required: false },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  partitaIva: { type: String, required: true },
-  ragioneSociale: { type: String, required: true },
+  email: { type: String, required: false, unique: true }, // era true
+  password: { type: String, required: false },             // era true
+  partitaIva: { type: String, required: false },           // era true
+  ragioneSociale: { type: String, required: false },       // era true
   etichetta: { type: String, required: false },
   indirizzo: { type: String, required: false },
   pagamento: { type: Boolean, default: false },
