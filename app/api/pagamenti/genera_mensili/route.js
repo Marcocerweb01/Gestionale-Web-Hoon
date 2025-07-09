@@ -6,8 +6,11 @@ export async function POST() {
   try {
     await connectToDB();
 
-    // Recupera tutte le collaborazioni con stato "attiva"
-    const collaborazioni = await Collaborazione.find({ stato: "attiva" }).populate("azienda");
+    // Recupera tutte le collaborazioni attive ESCLUDENDO il collaboratore specificato
+    const collaborazioni = await Collaborazione.find({
+      stato: "attiva",
+      collaboratore: { $ne: "686be44dc04a68e29f1770f3" },
+    }).populate("azienda");
 
     // Primo giorno del mese corrente
     const dataFattura = new Date();
