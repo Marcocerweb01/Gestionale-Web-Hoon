@@ -83,6 +83,7 @@ const Dashboard = () => {
           <Link href="/Register"> <button className="black_btn" style={{marginLeft:'1.25rem',marginRight:'1.25rem'}}>Registra utente</button></Link>
           <Link href="/Lista_clienti"> <button className="black_btn">Lista Clienti</button></Link> 
           <Link href="/Pagamenti"> <button className="black_btn">Pagamenti</button></Link> 
+          <Link href="/Lista_collaboratori"> <button className="black_btn">Lista Collaboratori</button></Link> 
           <button className="black_btn" onClick={downloadxlsx}>Download Dati</button> </div> ):(<></>)}
 
       </div>
