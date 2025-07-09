@@ -212,7 +212,6 @@ const ListaClienti = ({ id, amministratore }) => {
             <th className="border border-black px-4 py-2">Post TikTok</th>
             <th className="border border-black px-4 py-2">Post LinkedIn</th>
             <th className="border border-black px-4 py-2">Problemi riscontrati</th>
-            {amministratore && <th className="border border-black px-4 py-2">Pagato</th>}
             <th className="border border-black px-4 py-2">Azione</th>
           </tr>
         </thead>
@@ -323,9 +322,7 @@ const ListaClienti = ({ id, amministratore }) => {
                 <td className="border border-black px-4 py-2">
                     {problemi[row.feed] || 0}
                   </td>
-                {amministratore ? (                   
-                  <td className="border border-black px-4 py-2">{row.pagato}</td>
-                ) : null}
+               
                 <td className="border border-black px-4 py-2">
                   {editingRow === row.id ? (
                     <button onClick={handleSave} className="bg-green-500 text-white px-4 py-2 rounded">

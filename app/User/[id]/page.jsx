@@ -256,11 +256,7 @@ const UserDetails = ({ params }) => {
                     <strong>Indirizzo:</strong> {user.indirizzo}
                   </p>
                 )}
-                {typeof user.pagamento !== "undefined" && (
-                  <p>
-                    <strong>Pagamento:</strong> {user.pagamento ? "Pagato" : "Non Pagato"}
-                  </p>
-                )}
+               
                 {session?.user?.role === "amministratore" ? (
                   <button
                     type="button"
