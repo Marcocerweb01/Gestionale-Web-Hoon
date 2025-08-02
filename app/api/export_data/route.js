@@ -18,13 +18,15 @@ export async function GET() {
       "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
     ];
 
-    // Calcola mese e anno del mese scorso
-    const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-    const month = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+    // Calcola mese e anno del mese scorso (forzando UTC)
+    const utcNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+
+    const year = utcNow.getMonth() === 0 ? utcNow.getFullYear() - 1 : utcNow.getFullYear();
+    const month = utcNow.getMonth() === 0 ? 11 : utcNow.getMonth() - 1;
 
     const monthYearTitle = `${italianMonths[month]} ${year}`;
-    const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+    const firstDayOfMonth = new Date(Date.UTC(year, month, 1));
+    const lastDayOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
   
 
     // Prepara i dati da inserire: per ogni collaborazione, contiamo le note di tipo "appuntamento"
@@ -108,6 +110,11 @@ export async function GET() {
         row.postLinkedIn,
       ]);
     });
+
+    console.log("Periodo calcolato:");
+    console.log("firstDayOfMonth:", firstDayOfMonth);
+    console.log("lastDayOfMonth:", lastDayOfMonth);
+    console.log("Month title:", monthYearTitle);
 
     // Genera il file Excel in un buffer
     const buffer = await workbook.xlsx.writeBuffer();
