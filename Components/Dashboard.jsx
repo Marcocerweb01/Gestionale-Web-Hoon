@@ -14,6 +14,7 @@ const Dashboard = () => {
   const [error, setError] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const { data: session, status } = useSession();
+  const [isVisible, setIsVisible] = useState(false);
 
   // Funzione per recuperare la lista dei collaboratori
   const fetchCollaboratori = async () => {
@@ -157,7 +158,7 @@ const Dashboard = () => {
       {session?.user?.role === "amministratore" && (
         <div className="p-5 border-b border-gray-200">
           <h2 className="text-lg font-semibold mb-4">Pannello Amministratore</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <Link href="/AddCollab">
               <button className="black_btn w-full">Crea Collaborazione</button>
             </Link>
@@ -173,6 +174,15 @@ const Dashboard = () => {
             <Link href="/Lista_collaboratori">
               <button className="black_btn w-full">Lista Collaboratori</button>
             </Link>
+            <button
+              onClick={() => setIsVisible(!isVisible)}
+              className="black_btn w-full"
+            >
+              {isVisible ? "Nascondi Opzioni avanzate" : "Mostra Opzioni avanazate"}
+            </button>
+            </div>
+             {isVisible && ( 
+              <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <button 
               className="black_btn w-full bg-blue-600 hover:bg-blue-700" 
               onClick={downloadxlsx}
@@ -194,6 +204,7 @@ const Dashboard = () => {
               {resetLoading ? "Generando..." : "💰 Genera Pagamenti"}
             </button>
           </div>
+             )}
         </div>
       )}
 
