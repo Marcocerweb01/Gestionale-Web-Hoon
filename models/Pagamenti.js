@@ -12,7 +12,7 @@ const PagamentiSchema = new Schema(
     },
     stato: {
       type: String,
-      enum: ["si", "no"],
+      enum: ["si", "no", "ragazzi"],
       required: true,
     },
     cliente: {

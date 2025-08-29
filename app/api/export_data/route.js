@@ -8,38 +8,49 @@ export async function GET() {
   try {
     await connectToDB();
 
-    // Recupera tutte le collaborazioni (puoi aggiungere filtri se necessario)
+    // Recupera tutte le collaborazioni
     const collaborazioni = await Collaborazione.find({});
 
-    // Calcola il periodo del mese corrente
+    // *** NUOVA LOGICA PER IL CALCOLO DEL MESE PRECEDENTE ***
     const now = new Date();
+    
+    // Calcola il mese precedente in modo semplice e affidabile
+    let targetYear = now.getFullYear();
+    let targetMonth = now.getMonth() - 1; // getMonth() restituisce 0-11
+    
+    // Se siamo a gennaio, dobbiamo andare a dicembre dell'anno precedente
+    if (targetMonth < 0) {
+      targetMonth = 11; // Dicembre
+      targetYear = targetYear - 1;
+    }
+    
+    // Crea le date di inizio e fine mese usando il fuso orario locale
+    const firstDayOfMonth = new Date(targetYear, targetMonth, 1, 0, 0, 0, 0);
+    const lastDayOfMonth = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
+    
+    // Nome del mese in italiano
     const italianMonths = [
       "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
       "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
     ];
-
-    // Calcola mese e anno del mese scorso (forzando UTC)
-    const utcNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
-
-    const year = utcNow.getMonth() === 0 ? utcNow.getFullYear() - 1 : utcNow.getFullYear();
-    const month = utcNow.getMonth() === 0 ? 11 : utcNow.getMonth() - 1;
-
-    const monthYearTitle = `${italianMonths[month]} ${year}`;
-    const firstDayOfMonth = new Date(Date.UTC(year, month, 1));
-    const lastDayOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+    
+    const monthYearTitle = `${italianMonths[targetMonth]} ${targetYear}`;
   
 
     // Prepara i dati da inserire: per ogni collaborazione, contiamo le note di tipo "appuntamento"
     const rowsData = await Promise.all(
       collaborazioni.map(async (collab) => {
        
-        // Conta le note di tipo "appuntamento" per la collaborazione nel mese corrente
+        // *** QUERY MIGLIORATA PER GLI APPUNTAMENTI ***
+        // Conta le note di tipo "appuntamento" per la collaborazione nel mese target
         const appuntamentiFatti = await Nota.countDocuments({
           collaborazione: collab._id,
           tipo: "appuntamento",
-          data_appuntamento: { $gte: firstDayOfMonth, $lte: lastDayOfMonth }
+          data_appuntamento: { 
+            $gte: firstDayOfMonth, 
+            $lte: lastDayOfMonth 
+          }
         });
-        console.log(appuntamentiFatti);
 
         // Per i post formattiamo come "fatti / totali"
         const postIG = `${collab.post_ig_fb_fatti || 0} / ${collab.post_ig_fb || 0}`;
@@ -111,10 +122,19 @@ export async function GET() {
       ]);
     });
 
-    console.log("Periodo calcolato:");
-    console.log("firstDayOfMonth:", firstDayOfMonth);
-    console.log("lastDayOfMonth:", lastDayOfMonth);
-    console.log("Month title:", monthYearTitle);
+    // *** LOGGING MIGLIORATO PER DEBUG ***
+    console.log("=== EXPORT DATA DEBUG ===");
+    console.log("Data corrente:", now.toISOString());
+    console.log("Data corrente (locale):", now.toLocaleDateString('it-IT'), now.toLocaleTimeString('it-IT'));
+    console.log("Target Year:", targetYear);
+    console.log("Target Month (0-11):", targetMonth);
+    console.log("Mese target:", monthYearTitle);
+    console.log("Primo giorno del mese:", firstDayOfMonth.toISOString());
+    console.log("Primo giorno (locale):", firstDayOfMonth.toLocaleDateString('it-IT'), firstDayOfMonth.toLocaleTimeString('it-IT'));
+    console.log("Ultimo giorno del mese:", lastDayOfMonth.toISOString());
+    console.log("Ultimo giorno (locale):", lastDayOfMonth.toLocaleDateString('it-IT'), lastDayOfMonth.toLocaleTimeString('it-IT'));
+    console.log("Numero collaborazioni trovate:", collaborazioni.length);
+    console.log("========================");
 
     // Genera il file Excel in un buffer
     const buffer = await workbook.xlsx.writeBuffer();

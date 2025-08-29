@@ -32,6 +32,11 @@ const CollaborazioneWebDesignSchema = new Schema(
     ],
     note: { type: String, default: "" }, // Annotazioni generali
     problemi: { type: String, default: "" }, // Problemi riscontrati
+    stato: {
+      type: String,
+      enum: ["in corso", "in pausa", "terminata"],
+      default: "in corso", // Default per nuovi progetti
+    },
     dataInizioContratto: { type: Date, required: true }, // Data di inizio contratto
     dataFineContratto: { type: Date, required: true }, // Data di fine contratto
   },
