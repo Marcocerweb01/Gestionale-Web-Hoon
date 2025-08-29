@@ -1,74 +1,83 @@
 import ExcelJS from "exceljs";
 import { connectToDB } from "@/utils/database";
-import Collaborazione from "@/models/Collaborazioni";
-import Nota from "@/models/Note";
+import SnapshotCollaborazioni from "@/models/SnapshotCollaborazioni";
+import { getCurrentMonth, getPreviousMonth, getSnapshot, markSnapshotAsExported, updateSnapshot, createSnapshotForMonth, getMonthName } from "@/utils/snapshotManager";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req) {
   try {
     await connectToDB();
 
-    // Recupera tutte le collaborazioni
-    const collaborazioni = await Collaborazione.find({});
-
-    // *** NUOVA LOGICA PER IL CALCOLO DEL MESE PRECEDENTE ***
-    const now = new Date();
+    // Ottieni parametri dalla query string
+    const { searchParams } = new URL(req.url);
+    const manualMonth = searchParams.get('month'); // 0-11
+    const manualYear = searchParams.get('year');
     
-    // Calcola il mese precedente in modo semplice e affidabile
-    let targetYear = now.getFullYear();
-    let targetMonth = now.getMonth() - 1; // getMonth() restituisce 0-11
+    let targetMonth;
     
-    // Se siamo a gennaio, dobbiamo andare a dicembre dell'anno precedente
-    if (targetMonth < 0) {
-      targetMonth = 11; // Dicembre
-      targetYear = targetYear - 1;
+    if (manualMonth !== null && manualYear !== null) {
+      // *** MODALITÀ MANUALE: usa mese e anno specificati ***
+      const monthNum = parseInt(manualMonth);
+      const yearNum = parseInt(manualYear);
+      
+      targetMonth = {
+        mese: monthNum,
+        anno: yearNum,
+        meseNome: getMonthName(monthNum, yearNum)
+      };
+      
+      console.log(`Export MANUALE per: ${targetMonth.meseNome}`);
+    } else {
+      // *** MODALITÀ AUTOMATICA: sempre mese corrente se non specificato ***
+      const currentMonth = getCurrentMonth();
+      targetMonth = currentMonth;
+      
+      console.log(`Export AUTOMATICO - Mese corrente: ${targetMonth.meseNome}`);
     }
     
-    // Crea le date di inizio e fine mese usando il fuso orario locale
-    const firstDayOfMonth = new Date(targetYear, targetMonth, 1, 0, 0, 0, 0);
-    const lastDayOfMonth = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
+    // Prova a recuperare lo snapshot del mese target
+    let snapshot = await getSnapshot(targetMonth.mese, targetMonth.anno);
     
-    // Nome del mese in italiano
-    const italianMonths = [
-      "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-      "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
-    ];
-    
-    const monthYearTitle = `${italianMonths[targetMonth]} ${targetYear}`;
-  
+    // Se non esiste lo snapshot, crealo
+    if (!snapshot) {
+      console.log(`Snapshot per ${targetMonth.meseNome} non trovato, creazione in corso...`);
+      
+      // Per qualsiasi mese, prova a creare lo snapshot
+      try {
+        snapshot = await createSnapshotForMonth(targetMonth.mese, targetMonth.anno);
+      } catch (createError) {
+        console.error(`Errore nella creazione dello snapshot: ${createError.message}`);
+        // Se fallisce la creazione specifica, prova con updateSnapshot normale se è il mese corrente
+        const currentMonth = getCurrentMonth();
+        if (targetMonth.mese === currentMonth.mese && targetMonth.anno === currentMonth.anno) {
+          console.log("Tentativo con updateSnapshot per il mese corrente...");
+          snapshot = await updateSnapshot();
+        }
+      }
+      
+      if (!snapshot) {
+        console.log(`Impossibile creare snapshot per ${targetMonth.meseNome}`);
+        return new NextResponse(`Nessun dato disponibile per ${targetMonth.meseNome}`, { status: 404 });
+      }
+    }
 
-    // Prepara i dati da inserire: per ogni collaborazione, contiamo le note di tipo "appuntamento"
-    const rowsData = await Promise.all(
-      collaborazioni.map(async (collab) => {
-       
-        // *** QUERY MIGLIORATA PER GLI APPUNTAMENTI ***
-        // Conta le note di tipo "appuntamento" per la collaborazione nel mese target
-        const appuntamentiFatti = await Nota.countDocuments({
-          collaborazione: collab._id,
-          tipo: "appuntamento",
-          data_appuntamento: { 
-            $gte: firstDayOfMonth, 
-            $lte: lastDayOfMonth 
-          }
-        });
+    console.log(`Snapshot trovato: ${snapshot.collaborazioni_snapshot.length} collaborazioni per ${targetMonth.meseNome}`);
 
-        // Per i post formattiamo come "fatti / totali"
-        const postIG = `${collab.post_ig_fb_fatti || 0} / ${collab.post_ig_fb || 0}`;
-        const postTikTok = `${collab.post_tiktok_fatti || 0} / ${collab.post_tiktok || 0}`;
-        const postLinkedIn = `${collab.post_linkedin_fatti || 0} / ${collab.post_linkedin || 0}`;
+    if (!snapshot.collaborazioni_snapshot || snapshot.collaborazioni_snapshot.length === 0) {
+      console.log("Nessuna collaborazione trovata nello snapshot");
+      return new NextResponse(`Nessun dato disponibile per ${targetMonth.meseNome}`, { status: 404 });
+    }
 
-        // Costruisci l'oggetto da inserire come riga
-        return {
-          collaboratore: `${collab.collaboratoreNome} ${collab.collaboratoreCognome}`.trim(),
-          cliente: collab.aziendaRagioneSociale || "",
-          appuntamentiTotali: collab.numero_appuntamenti || 0,
-          appuntamentiFatti,
-          postIG,
-          postTikTok,
-          postLinkedIn,
-        };
-      })
-    );
+    // Prepara i dati per Excel dallo snapshot
+    const rowsData = snapshot.collaborazioni_snapshot.map(collab => ({
+      collaboratore: collab.collaboratore,
+      cliente: collab.cliente,
+      appuntamentiTotali: collab.appuntamenti_totali,
+      appuntamentiFatti: collab.appuntamenti_fatti,
+      postIG: collab.post_ig_fb,
+      postTikTok: collab.post_tiktok,
+      postLinkedIn: collab.post_linkedin,
+    }));
 
     // Ordina i dati in ordine alfabetico per collaboratore
     rowsData.sort((a, b) => a.collaboratore.localeCompare(b.collaboratore));
@@ -78,7 +87,7 @@ export async function GET() {
     const worksheet = workbook.addWorksheet("Collaborazioni");
 
     // Aggiungi il titolo con il mese e l'anno in alto
-    const titleRow = worksheet.addRow([monthYearTitle]);
+    const titleRow = worksheet.addRow([snapshot.meseNome]);
     // Supponiamo di avere 7 colonne: unisci celle da A a G
     worksheet.mergeCells(`A${titleRow.number}:G${titleRow.number}`);
     titleRow.font = { size: 16, bold: true };
@@ -123,27 +132,34 @@ export async function GET() {
     });
 
     // *** LOGGING MIGLIORATO PER DEBUG ***
-    console.log("=== EXPORT DATA DEBUG ===");
-    console.log("Data corrente:", now.toISOString());
-    console.log("Data corrente (locale):", now.toLocaleDateString('it-IT'), now.toLocaleTimeString('it-IT'));
-    console.log("Target Year:", targetYear);
-    console.log("Target Month (0-11):", targetMonth);
-    console.log("Mese target:", monthYearTitle);
-    console.log("Primo giorno del mese:", firstDayOfMonth.toISOString());
-    console.log("Primo giorno (locale):", firstDayOfMonth.toLocaleDateString('it-IT'), firstDayOfMonth.toLocaleTimeString('it-IT'));
-    console.log("Ultimo giorno del mese:", lastDayOfMonth.toISOString());
-    console.log("Ultimo giorno (locale):", lastDayOfMonth.toLocaleDateString('it-IT'), lastDayOfMonth.toLocaleTimeString('it-IT'));
-    console.log("Numero collaborazioni trovate:", collaborazioni.length);
-    console.log("========================");
+    console.log("=== EXPORT DATA DEBUG (SNAPSHOT) ===");
+    console.log("Mese esportato:", snapshot.meseNome);
+    console.log("Snapshot ID:", snapshot._id);
+    console.log("Data creazione snapshot:", snapshot.data_creazione);
+    console.log("Ultimo aggiornamento:", snapshot.data_ultimo_aggiornamento);
+    console.log("Numero collaborazioni nello snapshot:", snapshot.collaborazioni_snapshot.length);
+    console.log("====================================");
 
     // Genera il file Excel in un buffer
     const buffer = await workbook.xlsx.writeBuffer();
+    
+    // *** MARCA LO SNAPSHOT COME ESPORTATO SOLO PER MESI COMPLETATI ***
+    const currentMonth = getCurrentMonth();
+    const isCurrentMonth = (targetMonth.mese === currentMonth.mese && targetMonth.anno === currentMonth.anno);
+    
+    if (!isCurrentMonth) {
+      // Solo per mesi passati, marca come esportato
+      await markSnapshotAsExported(targetMonth.mese, targetMonth.anno);
+      console.log(`Snapshot per ${snapshot.meseNome} marcato come esportato`);
+    } else {
+      console.log(`Mese corrente (${snapshot.meseNome}) - non marcato come esportato`);
+    }
 
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": 'attachment; filename="collaborazioni.xlsx"',
+        "Content-Disposition": `attachment; filename="collaborazioni_${snapshot.meseNome.replace(' ', '_')}.xlsx"`,
       },
     });
   } catch (error) {

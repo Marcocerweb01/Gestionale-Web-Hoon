@@ -1,0 +1,17 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "restartPolicyType": "ON_FAILURE"
+  },
+  "cron": [
+    {
+      "name": "monthly-snapshot",
+      "schedule": "0 1 1 * *",
+      "command": "npm run cron-monthly"
+    }
+  ]
+}

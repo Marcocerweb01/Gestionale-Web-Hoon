@@ -1,4 +1,5 @@
 import { connectToDB } from "@/utils/database";
+import { updateSnapshot } from "@/utils/snapshotManager";
 import Collaborazione from "@/models/Collaborazioni";
 
 export async function DELETE(req, { params }) {
@@ -12,6 +13,15 @@ export async function DELETE(req, { params }) {
 
     if (!deletedCollaborazione) {
       return new Response(JSON.stringify({ message: "Collaborazione non trovata" }), { status: 404 });
+    }
+
+    // Aggiorna automaticamente lo snapshot dopo l'eliminazione
+    try {
+      await updateSnapshot();
+      console.log("Snapshot aggiornato dopo eliminazione collaborazione");
+    } catch (snapshotError) {
+      console.error("Errore aggiornamento snapshot:", snapshotError);
+      // Non interrompiamo l'operazione se lo snapshot fallisce
     }
 
     return new Response(JSON.stringify({ message: "Collaborazione eliminata con successo" }), { status: 200 });

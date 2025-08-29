@@ -1,0 +1,24 @@
+name: Monthly Snapshot Cron Job
+
+on:
+  schedule:
+    # Ogni 1° del mese alle 01:00 UTC
+    - cron: '0 1 1 * *'
+  
+  # Permette di eseguire manualmente per test
+  workflow_dispatch:
+
+jobs:
+  monthly-snapshot:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Trigger Monthly Snapshot
+      run: |
+        curl -X POST "${{ secrets.RAILWAY_APP_URL }}/api/cron-monthly" \
+          -H "Content-Type: application/json" \
+          -d '{"source": "github-actions"}' \
+          --fail-with-body
+        
+    - name: Log completion
+      run: echo "Monthly snapshot cron job completed successfully"

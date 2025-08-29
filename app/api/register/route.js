@@ -1,5 +1,6 @@
 import { Azienda, Collaboratore, Contatto, Amministratore } from "@models/User.js";
 import { connectToDB } from "@/utils/database";
+import { updateSnapshot } from "@/utils/snapshotManager";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 
@@ -109,6 +110,18 @@ export async function POST(req) {
     }
 
     // Risposta di successo
+    
+    // 🔄 TRIGGER: Aggiorna snapshot se è stato aggiunto un nuovo collaboratore
+    if (ruolo.nome === "collaboratore") {
+      try {
+        await updateSnapshot();
+        console.log(`Snapshot aggiornato dopo aggiunta nuovo ${ruolo.dettagli.subRole}: ${nome} ${cognome}`);
+      } catch (snapshotError) {
+        console.error("Errore aggiornamento snapshot:", snapshotError);
+        // Non interrompiamo l'operazione se lo snapshot fallisce
+      }
+    }
+    
     return NextResponse.json(
       { message: "Utente registrato con successo", utente: nuovoUtente },
       { status: 201 }

@@ -1,6 +1,7 @@
 import Collaborazione from "@/models/Collaborazioni";
 import { Azienda, Collaboratore } from "@/models/User";
 import { connectToDB } from "@/utils/database";
+import { updateSnapshot } from "@/utils/snapshotManager";
 import mongoose from "mongoose";
 
 export async function POST(req) {
@@ -47,9 +48,17 @@ export async function POST(req) {
         post_linkedin_fatti:0,
 
       });
-      
 
     console.log("Collaborazione creata:", nuovaCollaborazione);
+
+    // Aggiorna automaticamente lo snapshot quando viene creata una nuova collaborazione
+    try {
+      await updateSnapshot();
+      console.log("Snapshot aggiornato dopo creazione collaborazione");
+    } catch (snapshotError) {
+      console.error("Errore aggiornamento snapshot:", snapshotError);
+      // Non interrompiamo l'operazione se lo snapshot fallisce
+    }
 
     return new Response(JSON.stringify({ message: "Collaborazione creata con successo", collaborazione: nuovaCollaborazione }), {
       status: 201,
