@@ -469,7 +469,7 @@ const FeedPage = ({ params }) => {
                         </h3>
                         <p className="text-xs text-gray-500 truncate">
                           <span className="hidden sm:inline">ID: {selectedCollaborationId}</span>
-                          <span className="sm:hidden lg:hidden">👆 Tocca "Clienti" per cambiare</span>
+                          <span className="sm:hidden lg:hidden">👆 Tocca &ldquo;Clienti&rdquo; per cambiare</span>
                           <span className="hidden lg:inline">ID: {selectedCollaborationId}</span>
                         </p>
                       </div>
@@ -486,7 +486,7 @@ const FeedPage = ({ params }) => {
                         </h3>
                         <p className="text-xs text-gray-500">
                           <span className="hidden sm:inline lg:inline">Seleziona un cliente per iniziare</span>
-                          <span className="sm:hidden lg:hidden">Tocca "Clienti" per iniziare</span>
+                          <span className="sm:hidden lg:hidden">Tocca &ldquo;Clienti&rdquo; per iniziare</span>
                         </p>
                       </div>
                     </div>
@@ -603,7 +603,7 @@ const FeedPage = ({ params }) => {
                     <span className="text-xs sm:text-sm font-medium truncate">
                       <span className="hidden xs:inline">Filtri attivi:</span>
                       <span className="xs:hidden">Filtri:</span>
-                      {searchQuery && <span className="ml-1 italic">"{searchQuery.length > 10 ? searchQuery.substring(0, 10) + '...' : searchQuery}"</span>}
+                      {searchQuery && <span className="ml-1 italic">&ldquo;{searchQuery.length > 10 ? searchQuery.substring(0, 10) + '...' : searchQuery}&rdquo;</span>}
                       {typeFilter && <span className="ml-1">• {typeFilter}</span>}
                     </span>
                   </div>
