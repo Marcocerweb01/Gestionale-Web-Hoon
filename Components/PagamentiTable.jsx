@@ -13,14 +13,36 @@ const PagamentiTable = () => {
     fetch("/api/pagamenti")
       .then((res) => res.json())
       .then((data) => {
-        setPagamenti(data);
+        // Rimuovi duplicati mantenendo solo il record più recente per cliente
+        const pagamentiUnivoci = {};
+        
+        data.forEach((pagamento) => {
+          const cliente = pagamento.cliente;
+          const id = pagamento.id || pagamento._id;
+          
+          if (!pagamentiUnivoci[cliente]) {
+            pagamentiUnivoci[cliente] = pagamento;
+          } else {
+            // Se esiste già, mantieni quello con ID più recente (stringa più grande)
+            if (id > (pagamentiUnivoci[cliente].id || pagamentiUnivoci[cliente]._id)) {
+              pagamentiUnivoci[cliente] = pagamento;
+            }
+          }
+        });
+        
+        // Converti l'oggetto in array
+        const pagamentiFiltrati = Object.values(pagamentiUnivoci);
+        
+        console.log(`Ridotti da ${data.length} a ${pagamentiFiltrati.length} pagamenti`);
+        
+        setPagamenti(pagamentiFiltrati);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  const handleCheckboxChange = (id) => {
-    setCheckedPagamenti((prev) => ({ ...prev, [id]: !prev[id] }));
+  const handleStatusChange = (id, status) => {
+    setCheckedPagamenti((prev) => ({ ...prev, [id]: status }));
   };
 
   // Ordinamento in base al filtro selezionato
@@ -44,6 +66,15 @@ const PagamentiTable = () => {
     pagamentiOrdinati.sort((a, b) => {
       if (a.stato !== "si" && b.stato === "si") return -1;
       if (a.stato === "si" && b.stato !== "si") return 1;
+      // Se uguale, ordina alfabeticamente
+      if ((a.cliente || "") < (b.cliente || "")) return -1;
+      if ((a.cliente || "") > (b.cliente || "")) return 1;
+      return 0;
+    });
+  } else if (filtro === "ragazzi") {
+    pagamentiOrdinati.sort((a, b) => {
+      if (a.stato === "ragazzi" && b.stato !== "ragazzi") return -1;
+      if (a.stato !== "ragazzi" && b.stato === "ragazzi") return 1;
       // Se uguale, ordina alfabeticamente
       if ((a.cliente || "") < (b.cliente || "")) return -1;
       if ((a.cliente || "") > (b.cliente || "")) return 1;
@@ -94,6 +125,16 @@ const PagamentiTable = () => {
           >
             ❌ Non Pagati Prima
           </button>
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filtro === "ragazzi" 
+                ? "bg-purple-500 text-white shadow-md" 
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
+            onClick={() => setFiltro("ragazzi")}
+          >
+            👥 Ragazzi Prima
+          </button>
         </div>
       </div>
 
@@ -104,8 +145,11 @@ const PagamentiTable = () => {
             className="btn-primary mr-4"
             onClick={() => {
               const initialChecked = {};
-              pagamentiOrdinati.forEach((p) => {
-                if (p.stato === "si") initialChecked[p.id || p._id] = true;
+              // Usa l'array originale NON ordinato per evitare inconsistenze
+              pagamenti.forEach((p) => {
+                // Assicurati che ogni pagamento abbia un valore definito
+                const id = p.id || p._id;
+                initialChecked[id] = p.stato || "no";
               });
               setCheckedPagamenti(initialChecked);
               setInitialCheckedPagamenti(initialChecked);
@@ -124,19 +168,34 @@ const PagamentiTable = () => {
               onClick={async () => {
                 setLoading(true);
                 const today = new Date().toISOString().slice(0, 10);
-                const updates = pagamentiOrdinati
-                  .filter((p) => checkedPagamenti[p.id || p._id] !== initialCheckedPagamenti[p.id || p._id])
-                  .map((p) =>
-                    fetch(`/api/pagamenti/${p.id || p._id}`, {
+                const updates = pagamenti
+                  .filter((p) => {
+                    const id = p.id || p._id;
+                    const currentStatus = checkedPagamenti[id];
+                    const originalStatus = initialCheckedPagamenti[id];
+                    
+                    // Solo se entrambi sono definiti e diversi
+                    return currentStatus !== undefined && 
+                           originalStatus !== undefined && 
+                           currentStatus !== originalStatus;
+                  })
+                  .map((p) => {
+                    const id = p.id || p._id;
+                    const newStatus = checkedPagamenti[id];
+                    let updateData = { stato: newStatus };
+                    
+                    if (newStatus === "si") {
+                      updateData.data_pagato = today;
+                    } else {
+                      updateData.data_pagato = null;
+                    }
+                    
+                    return fetch(`/api/pagamenti/${id}`, {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(
-                        checkedPagamenti[p.id || p._id]
-                          ? { data_pagato: today, stato: "si" }
-                          : { data_pagato: null, stato: "no" }
-                      ),
-                    })
-                  );
+                      body: JSON.stringify(updateData),
+                    });
+                  });
                 await Promise.all(updates);
                 setEditMode(false);
                 setCheckedPagamenti({});
@@ -178,13 +237,20 @@ const PagamentiTable = () => {
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Data Fattura</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Data Pagamento</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Stato</th>
-                {editMode && <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Pagato</th>}
+                {editMode && <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Stato</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {pagamentiOrdinati.map((p) => (
                 <tr key={p.id || p._id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-gray-900 font-medium">{p.cliente || "N/A"}</td>
+                  <td className="px-6 py-4 text-gray-900 font-medium">
+                    {p.cliente || "N/A"}
+                    {p.data_fattura && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Fattura: {new Date(p.data_fattura).toLocaleDateString('it-IT')}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-gray-600">
                     {p.data_fattura ? new Date(p.data_fattura).toLocaleDateString('it-IT') : "-"}
                   </td>
@@ -195,19 +261,26 @@ const PagamentiTable = () => {
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                       p.stato === "si" 
                         ? "bg-green-100 text-green-800" 
+                        : p.stato === "ragazzi"
+                        ? "bg-purple-100 text-purple-800"
                         : "bg-red-100 text-red-800"
                     }`}>
-                      {p.stato === "si" ? "✅ Pagato" : "❌ Non pagato"}
+                      {p.stato === "si" ? "✅ Pagato" : 
+                       p.stato === "ragazzi" ? "👥 Ragazzi" : 
+                       "❌ Non pagato"}
                     </span>
                   </td>
                   {editMode && (
                     <td className="px-6 py-4 text-center">
-                      <input
-                        type="checkbox"
-                        checked={!!checkedPagamenti[p.id || p._id]}
-                        onChange={() => handleCheckboxChange(p.id || p._id)}
-                        className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
-                      />
+                      <select
+                        value={checkedPagamenti[p.id || p._id] !== undefined ? checkedPagamenti[p.id || p._id] : (p.stato || "no")}
+                        onChange={(e) => handleStatusChange(p.id || p._id, e.target.value)}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="no">❌ Non pagato</option>
+                        <option value="si">✅ Pagato</option>
+                        <option value="ragazzi">👥 Ragazzi</option>
+                      </select>
                     </td>
                   )}
                 </tr>

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import Link from "@node_modules/next/link";
 import Lista_clienti from "./Lista-clienti";
+import ListaClientiWebDesigner from "./Lista-clienti-webdesigner";
 
 // Se serve una mappa per modificare l'etichetta dei ruoli
 const roleMap = {
@@ -172,7 +173,11 @@ const CollaboratoreItem = ({ id, nome, ruolo }) => {
         <div className="border-t border-gray-200 bg-gray-50">
           <div className="p-4">
             <h4 className="text-sm font-medium text-gray-700 mb-3">Lista Clienti</h4>
-            <Lista_clienti id={id} amministratore={true} />
+            {ruolo === "web designer" ? (
+              <ListaClientiWebDesigner userId={id} showWebDesignerLink={true} />
+            ) : (
+              <Lista_clienti id={id} amministratore={true} />
+            )}
           </div>
         </div>
       )}

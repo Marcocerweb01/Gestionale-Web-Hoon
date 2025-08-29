@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ListaCollaboratori from './Lista-collaboratori';
 import ListaClienti from './Lista-clienti';
+import ListaClientiWebDesigner from './Lista-clienti-webdesigner';
 import TimelineWebDesigner from './timeline-web-designer';
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
@@ -18,7 +19,8 @@ import {
   PlusCircle,
   Clock,
   MessageSquare,
-  Settings
+  Settings,
+  Monitor
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -290,7 +292,7 @@ const Dashboard = () => {
           ) : (
             <h2 className="text-xl font-semibold text-gray-900 flex items-center">
               <Clock className="w-6 h-6 mr-2 text-orange-600" />
-              Timeline Web Designer
+              I tuoi progetti Web Design
             </h2>
           )}
         </div>
@@ -303,7 +305,7 @@ const Dashboard = () => {
           ) : session?.user?.subrole === "smm" ? (
             <ListaClienti id={session?.user.id} amministratore={false} />
           ) : (
-            <TimelineWebDesigner userId={session?.user.id} />
+            <ListaClientiWebDesigner userId={session?.user.id} showWebDesignerLink={false} />
           )}
         </div>
       </div>
