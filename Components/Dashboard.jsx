@@ -192,7 +192,9 @@ const Dashboard = () => {
             <Settings className="w-6 h-6 mr-2 text-blue-600" />
             Pannello Amministratore
           </h2>
-          
+
+        <div className="p-5 border-b border-gray-200">
+          <h2 className="text-lg font-semibold mb-4">Pannello Amministratore</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <Link href="/AddCollab">
               <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group">
@@ -237,6 +239,14 @@ const Dashboard = () => {
             </div>
 
             {isVisible && ( 
+            <button
+              onClick={() => setIsVisible(!isVisible)}
+              className="black_btn w-full"
+            >
+              {isVisible ? "Nascondi Opzioni avanzate" : "Mostra Opzioni avanazate"}
+            </button>
+            </div>
+             {isVisible && ( 
               <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <button 
               className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group" 
@@ -265,6 +275,8 @@ const Dashboard = () => {
             </button>
             </div>)}
           </div>
+             )}
+        </div>
       )}
 
       {/* Main Content */}
