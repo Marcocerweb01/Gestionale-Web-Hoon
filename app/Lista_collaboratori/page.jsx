@@ -33,8 +33,21 @@ const ListaCollaboratori = () => {
     fetchCollaboratori();
   }, []);
 
-  if (loading) return <div>Caricamento collaboratori...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center p-12">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <span className="ml-3 text-gray-600">Caricamento collaboratori...</span>
+    </div>
+  );
+  
+  if (error) return (
+    <div className="bg-red-50 border border-red-200 rounded-xl p-4 m-4">
+      <div className="flex items-center">
+        <div className="w-5 h-5 text-red-500">⚠️</div>
+        <p className="ml-2 text-red-700">{error}</p>
+      </div>
+    </div>
+  );
 
   // Ordina per nome e cognome
   const sorted = [...collaboratori].sort((a, b) =>
@@ -42,52 +55,92 @@ const ListaCollaboratori = () => {
   );
 
   return (
-    <div className="w-full max-w-3xl mx-auto bg-slate-50 shadow-md rounded-lg mt-10 p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Collaboratori</h2>
-        <button
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 font-semibold"
-          onClick={fetchCollaboratori}
-        >
-          Aggiorna
-        </button>
-      </div>
-      <table className="w-full text-left border border-gray-200 rounded-lg overflow-hidden bg-white">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="py-2 px-4">Nome</th>
-            <th className="py-2 px-4">Cognome</th>
-            <th className="py-2 px-4">Ruolo</th>
-            <th className="py-2 px-4">Email</th>
-            <th className="py-2 px-4">Dettaglio</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((collab) => (
-            <tr
-              key={collab.id}
-              className="border-t hover:bg-blue-50 cursor-pointer transition"
-              onClick={() => router.push(`/User/${collab.id}`)}
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ")
-                  router.push(`/User/${collab.id}`);
-              }}
-            >
-              <td className="py-2 px-4">{collab.nome}</td>
-              <td className="py-2 px-4">{collab.cognome}</td>
-              <td className="py-2 px-4 capitalize">{collab.subRole}</td>
-              <td className="py-2 px-4">{collab.email}</td>
-              <td className="py-2 px-4 text-blue-600 underline">Vai</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {sorted.length === 0 && (
-        <div className="text-gray-500 text-center mt-6">
-          Nessun collaboratore trovato.
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">👥</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Lista Collaboratori</h1>
+              <p className="text-sm text-gray-600">
+                Gestisci e visualizza tutti i collaboratori registrati
+              </p>
+            </div>
+          </div>
+          <button
+            className="btn-secondary"
+            onClick={fetchCollaboratori}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Aggiorna
+          </button>
         </div>
-      )}
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {sorted.length === 0 ? (
+          <div className="text-center p-12">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">👥</span>
+            </div>
+            <p className="text-gray-500 text-lg">Nessun collaboratore trovato.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Nome</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Cognome</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Ruolo</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Email</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Azioni</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {sorted.map((collab) => (
+                  <tr
+                    key={collab.id}
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => router.push(`/User/${collab.id}`)}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ")
+                        router.push(`/User/${collab.id}`);
+                    }}
+                  >
+                    <td className="px-6 py-4 text-gray-900 font-medium">{collab.nome}</td>
+                    <td className="px-6 py-4 text-gray-900 font-medium">{collab.cognome}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 capitalize">
+                        {collab.subRole}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">{collab.email}</td>
+                    <td className="px-6 py-4">
+                      <button 
+                        className="inline-flex items-center px-3 py-1.5 bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 rounded-lg"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/User/${collab.id}`);
+                        }}
+                      >
+                        Visualizza
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

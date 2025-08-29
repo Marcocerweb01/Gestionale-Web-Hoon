@@ -129,92 +129,136 @@ const handleDelete = async (rowId) => {
     };
   }, []);
 
-  if (loading) return <div>Caricamento in corso...</div>;
-  if (error) return <div>{error}</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Caricamento collaborazioni...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center">
+          <span className="text-red-500 text-xl mr-2">⚠️</span>
+          <p className="text-red-700">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border border-black text-left">
-        <thead>
-          <tr>
-            <th>Collaboratore</th>
-            <th>Azione</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="space-y-4">
+      {/* Header della sezione */}
+      <div className="flex items-center space-x-2 mb-4">
+        <span className="text-xl">🤝</span>
+        <h3 className="text-lg font-semibold text-gray-900">Collaboratori Assegnati</h3>
+      </div>
+
+      {/* Tabella con design moderno */}
+      <div className="overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Collaboratore</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
           {collaborazioni.map((row) => (
-            <tr key={row.id}>
-              <td>
+            <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+              <td className="px-4 py-4 whitespace-nowrap">
                 {editingRow === row.id ? (
                   <div className="relative" ref={collaboratoreDropdownRef}>
-                  <input
-                    type="text"
-                    value={collaboratoreSearch}
-                    onChange={(e) => {
-                      setCollaboratoreSearch(e.target.value);
-                      setShowCollaboratoriDropdown(true);
-                    }}
-                    onFocus={() => setShowCollaboratoriDropdown(true)}
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-                    placeholder="Cerca collaboratore..."
-                  />
-                  {showCollaboratoriDropdown && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-                      {filteredCollaboratori.length > 0 ? (
-                        filteredCollaboratori.map((collaboratore) => (
-                          <div
-                            key={collaboratore.id}
-                            className="p-2 hover:bg-blue-100 cursor-pointer"
-                            onClick={() => {
-                              setTempData((prev) => ({
-                                ...prev,
-                                collaboratoreId: collaboratore.id,
-                              }));
-                              setCollaboratoreSearch(`${collaboratore.nome} ${collaboratore.cognome}`);
-                              setShowCollaboratoriDropdown(false);
-                            }}
-                          >
-                            {`${collaboratore.nome} ${collaboratore.cognome}`}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-2 text-gray-500">Nessun collaboratore trovato</div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                    <input
+                      type="text"
+                      value={collaboratoreSearch}
+                      onChange={(e) => {
+                        setCollaboratoreSearch(e.target.value);
+                        setShowCollaboratoriDropdown(true);
+                      }}
+                      onFocus={() => setShowCollaboratoriDropdown(true)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                      placeholder="Cerca collaboratore..."
+                    />
+                    {showCollaboratoriDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                        {filteredCollaboratori.length > 0 ? (
+                          filteredCollaboratori.map((collaboratore) => (
+                            <div
+                              key={collaboratore.id}
+                              className="p-2 hover:bg-blue-100 cursor-pointer"
+                              onClick={() => {
+                                setTempData((prev) => ({
+                                  ...prev,
+                                  collaboratoreId: collaboratore.id,
+                                }));
+                                setCollaboratoreSearch(`${collaboratore.nome} ${collaboratore.cognome}`);
+                                setShowCollaboratoriDropdown(false);
+                              }}
+                            >
+                              {`${collaboratore.nome} ${collaboratore.cognome}`}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-2 text-gray-500">Nessun collaboratore trovato</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  `${row.collaboratorenome} ${row.collaboratorecognome}`
+                  <div className="text-sm font-medium text-gray-900">
+                    {`${row.collaboratorenome} ${row.collaboratorecognome}`}
+                  </div>
                 )}
               </td>
-              <td>
-  {editingRow === row.id ? (
-    <button
-      onClick={handleSave}
-      className="bg-green-500 text-white px-2 py-1 rounded"
-    >
-      Salva
-    </button>
-  ) : (
-    <button
-      onClick={() => handleEditClick(row.id)}
-      className="bg-blue-500 text-white px-2 py-1 rounded"
-    >
-      Modifica
-    </button>
-  )}
-  <button
-    onClick={() => handleDelete(row.id)}
-    className="bg-red-500 text-white px-2 py-1 rounded ml-2"
-  >
-    Elimina
-  </button>
-                
+              <td className="px-4 py-4 whitespace-nowrap">
+                <div className="flex items-center space-x-2">
+                  {editingRow === row.id ? (
+                    <button
+                      onClick={handleSave}
+                      className="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
+                    >
+                      ✅ Salva
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleEditClick(row.id)}
+                      className="inline-flex items-center px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
+                    >
+                      ✏️ Modifica
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(row.id)}
+                    className="inline-flex items-center px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
+                  >
+                    🗑️ Elimina
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
+    </div>
+
+    {/* Messaggio se non ci sono dati */}
+    {collaborazioni.length === 0 && (
+      <div className="text-center py-8">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-4">
+          <span className="text-xl">🤝</span>
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun collaboratore assegnato</h3>
+        <p className="text-gray-500">Non ci sono ancora collaboratori assegnati a questa azienda.</p>
+      </div>
+    )}
     </div>
   );
 };

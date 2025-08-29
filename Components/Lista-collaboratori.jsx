@@ -28,99 +28,91 @@ const Lista_collaboratori = ({ collaboratori }) => {
   const toggleComm = () => setOpenComm((prev) => !prev);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 p-4">
       {/* Area Web Designers */}
-      <div className="rounded p-3">
-        <div className="flex justify-between items-center bg-gray-100 p-2 rounded" style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#f3f4f6", // bg-gray-100 tipicamente corrisponde a #f3f4f6
-    padding: "0.5rem",         // p-2 corrisponde a 0.5rem (8px)
-    borderRadius: "0.25rem",   // rounded corrisponde a 4px
-  }}>
-          <h2 className="font-bold text-lg cursor-pointer" onClick={toggleWeb}>
-            Web Designer ({webDesigners.length})
-          </h2>
-          <button className="black_btn" onClick={toggleWeb}>
-            {openWeb ? "Chiudi Lista" : "Apri Lista"}
-          </button>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 p-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={toggleWeb}>
+              💻 Web Designer ({webDesigners.length})
+            </h2>
+            <button 
+              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+              onClick={toggleWeb}
+            >
+              {openWeb ? "Chiudi Lista" : "Apri Lista"}
+            </button>
+          </div>
         </div>
-        {/* Se aperto, mostra i web designer */}
         {openWeb && webDesigners.length > 0 && (
-          <div className="mt-3 space-y-3">
+          <div className="p-4 space-y-4">
             {webDesigners.map((collab) => (
-              <CollaboratoreItem id={collab.id} nome={collab.nome + " " + collab.cognome} ruolo={collab.subRole} />
+              <CollaboratoreItem key={collab.id} id={collab.id} nome={collab.nome + " " + collab.cognome} ruolo={collab.subRole} />
             ))}
           </div>
         )}
-        {/* Nessun collaboratore */}
         {openWeb && webDesigners.length === 0 && (
-          <p className="mt-3 text-gray-500 italic">
-            Nessun collaboratore in questa categoria
-          </p>
+          <div className="p-6 text-center">
+            <p className="text-gray-500 italic">Nessun collaboratore in questa categoria</p>
+          </div>
         )}
       </div>
 
       {/* Area Social Media Manager */}
-      <div className=" rounded p-3">
-        <div className="flex justify-between items-center bg-gray-100 p-2 rounded" style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#f3f4f6", // bg-gray-100 tipicamente corrisponde a #f3f4f6
-    padding: "0.5rem",         // p-2 corrisponde a 0.5rem (8px)
-    borderRadius: "0.25rem",   // rounded corrisponde a 4px
-  }}>
-          <h2 className="font-bold text-lg cursor-pointer" onClick={toggleSmm}>
-            Social Media Manager ({smms.length})
-          </h2>
-          <button className="black_btn" onClick={toggleSmm}>
-            {openSmm ? "Chiudi Lista" : "Apri Lista"}
-          </button>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-pink-50 to-rose-50 border-b border-gray-200 p-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={toggleSmm}>
+              📱 Social Media Manager ({smms.length})
+            </h2>
+            <button 
+              className="inline-flex items-center px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm font-medium rounded-lg transition-colors"
+              onClick={toggleSmm}
+            >
+              {openSmm ? "Chiudi Lista" : "Apri Lista"}
+            </button>
+          </div>
         </div>
         {openSmm && smms.length > 0 && (
-          <div className="mt-3 space-y-3 w-full">
+          <div className="p-4 space-y-4">
             {smms.map((collab) => (
-              <CollaboratoreItem id={collab.id} nome={collab.nome + " " + collab.cognome}  ruolo={collab.subRole} />
+              <CollaboratoreItem key={collab.id} id={collab.id} nome={collab.nome + " " + collab.cognome} ruolo={collab.subRole} />
             ))}
           </div>
         )}
         {openSmm && smms.length === 0 && (
-          <p className="mt-3 text-gray-500 italic">
-            Nessun collaboratore in questa categoria
-          </p>
+          <div className="p-6 text-center">
+            <p className="text-gray-500 italic">Nessun collaboratore in questa categoria</p>
+          </div>
         )}
       </div>
 
       {/* Area Commerciale */}
-      <div className=" rounded p-3">
-        <div className="flex justify-between items-center bg-gray-100 p-2 rounded" style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#f3f4f6", // bg-gray-100 tipicamente corrisponde a #f3f4f6
-    padding: "0.5rem",         // p-2 corrisponde a 0.5rem (8px)
-    borderRadius: "0.25rem",   // rounded corrisponde a 4px
-  }}>
-          <h2 className="font-bold text-lg cursor-pointer" onClick={toggleComm}>
-            Commerciale ({commercials.length})
-          </h2>
-          <button className="black_btn" onClick={toggleComm}>
-            {openComm ? "Chiudi Lista" : "Apri Lista"}
-          </button>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-200 p-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={toggleComm}>
+              💼 Commerciale ({commercials.length})
+            </h2>
+            <button 
+              className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+              onClick={toggleComm}
+            >
+              {openComm ? "Chiudi Lista" : "Apri Lista"}
+            </button>
+          </div>
         </div>
         {openComm && commercials.length > 0 && (
-          <div className="mt-3 space-y-3">
+          <div className="p-4 space-y-4">
             {commercials.map((collab) => (
-              <CollaboratoreItem id={collab.id} nome={collab.nome + " " + collab.cognome} ruolo={collab.subRole} />
+              <CollaboratoreItem key={collab.id} id={collab.id} nome={collab.nome + " " + collab.cognome} ruolo={collab.subRole} />
             ))}
           </div>
         )}
         {openComm && commercials.length === 0 && (
-          <p className="mt-3 text-gray-500 italic">
-            Nessun collaboratore in questa categoria
-          </p>
+          <div className="p-6 text-center">
+            <p className="text-gray-500 italic">Nessun collaboratore in questa categoria</p>
+          </div>
         )}
       </div>
     </div>
@@ -141,44 +133,49 @@ const CollaboratoreItem = ({ id, nome, ruolo }) => {
   const toggleAccordion = () => setIsOpen(!isOpen);
 
   return (
-    <div className="p-4 rounded shadow flex bg-white">
-      {/* Testo a sinistra */}
-      <div className="flex-1 pr-2" style={{
-    flex: "1 1 0%",    // flex-1 in Tailwind corrisponde a flex-grow: 1, flex-shrink: 1, flex-basis: 0%
-    paddingRight: "0.5rem",  // pr-2 in Tailwind corrisponde a padding-right: 0.5rem
-  }}>
-        <Link href={`/User/${id}`}>
-          <h2 className="subhead_text">{nome}</h2>
-        </Link>
-        <h3>
-          <b>Ruolo:</b> {displayRole}
-        </h3>
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      {/* Header del collaboratore */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <Link href={`/User/${id}`} className="block">
+              <h3 className="text-lg font-semibold text-gray-900 hover:text-primary transition-colors">
+                {nome}
+              </h3>
+            </Link>
+            <p className="text-sm text-gray-600 mt-1">
+              <span className="font-medium">Ruolo:</span> {displayRole}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 ml-4">
+            {ruolo === "commerciale" ? (
+              <Link href={`/Feed-comm/${id}?nome=${encodeURIComponent(nome)}`}>
+                <button className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
+                  📊 Vai al Feed
+                </button>
+              </Link>
+            ) : (
+              <button 
+                className="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+                onClick={toggleAccordion}
+              >
+                {isOpen ? "📁 Chiudi Lista" : "📂 Apri Lista"}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Pulsante e (eventuale) lista clienti in verticale */}
-      <div className="flex flex-col items-end gap-2"  style={{
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-end",
-    gap: "0.5rem", // gap-2 corrisponde tipicamente a 0.5rem in Tailwind
-  }}>
-        {ruolo === "commerciale" ? (
-          <Link href={`/Feed-comm/${id}?nome=${encodeURIComponent(nome)}`}>
-            <button className="black_btn">Vai al Feed</button>
-          </Link>
-        ) : (
-          <button className="black_btn" onClick={toggleAccordion}>
-            {isOpen ? "Chiudi Lista" : "Apri Lista"}
-          </button>
-        )}
-
-        {/* Se isOpen è true, appare SOTTO il pulsante */}
-        {isOpen && (
-          <div className="w-full border border-gray-300 p-2 bg-gray-50 rounded">
+      {/* Lista clienti che si apre sotto */}
+      {isOpen && (
+        <div className="border-t border-gray-200 bg-gray-50">
+          <div className="p-4">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Lista Clienti</h4>
             <Lista_clienti id={id} amministratore={true} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

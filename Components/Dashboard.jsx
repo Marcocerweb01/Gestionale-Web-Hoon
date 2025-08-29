@@ -7,6 +7,19 @@ import TimelineWebDesigner from './timeline-web-designer';
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import FeedCommerciale from './feed-commerciale';
+import { 
+  UserPlus, 
+  Users, 
+  Building2, 
+  CreditCard, 
+  Download, 
+  RotateCcw, 
+  DollarSign,
+  PlusCircle,
+  Clock,
+  MessageSquare,
+  Settings
+} from 'lucide-react';
 
 const Dashboard = () => {
   const [data, setData] = useState([]);
@@ -14,6 +27,7 @@ const Dashboard = () => {
   const [error, setError] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const { data: session, status } = useSession();
+  const [isVisible, setIsVisible] = useState(false);
 
   // Funzione per recuperare la lista dei collaboratori
   const fetchCollaboratori = async () => {
@@ -91,7 +105,7 @@ const Dashboard = () => {
 
     if (!conferma) return;
 
-    setResetLoading(true); // Riusiamo lo stesso stato di loading
+    setResetLoading(true);
     try {
       const response = await fetch("/api/pagamenti/genera_mensili", {
         method: "POST",
@@ -125,9 +139,10 @@ const Dashboard = () => {
   // Loading state
   if (loading || status === "loading") {
     return (
-      <div className="w-full h-full bg-slate-50 shadow-md rounded-lg mt-10 px-6 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Caricamento in corso...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Caricamento in corso...</p>
         </div>
       </div>
     );
@@ -136,90 +151,159 @@ const Dashboard = () => {
   // Error state
   if (error) {
     return (
-      <div className="w-full h-full bg-slate-50 shadow-md rounded-lg mt-10 px-6 py-8">
-        <div className="text-red-500 text-center">{error}</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+          <div className="text-red-800 text-center">{error}</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full bg-slate-50 shadow-md rounded-lg mt-10 px-2 lg:px-6">
-      {/* Header */}
-      <div className="p-5 border-b border-gray-200">
-        <h1 className="head_text">Ciao {session?.user?.nome}</h1>
-        <p className="text-gray-600 mt-2">
-          Ruolo: {session?.user?.role} 
-          {session?.user?.subrole && ` - ${session?.user?.subrole}`}
-        </p>
+    <div className="space-y-8">
+      {/* Welcome Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Benvenuto, {session?.user?.nome}
+            </h1>
+            <p className="text-gray-600 mt-2 flex items-center space-x-2">
+              <span>Ruolo: <span className="font-medium">{session?.user?.role}</span></span>
+              {session?.user?.subrole && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {session?.user?.subrole}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="hidden sm:block">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+              <Users className="w-8 h-8 text-white" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Bottoni Amministratore */}
+      {/* Admin Panel */}
       {session?.user?.role === "amministratore" && (
-        <div className="p-5 border-b border-gray-200">
-          <h2 className="text-lg font-semibold mb-4">Pannello Amministratore</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+            <Settings className="w-6 h-6 mr-2 text-blue-600" />
+            Pannello Amministratore
+          </h2>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <Link href="/AddCollab">
-              <button className="black_btn w-full">Crea Collaborazione</button>
+              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group">
+                <PlusCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Crea Collaborazione</span>
+              </button>
             </Link>
+            
             <Link href="/Register">
-              <button className="black_btn w-full">Registra Utente</button>
+              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 group">
+                <UserPlus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Registra Utente</span>
+              </button>
             </Link>
+            
             <Link href="/Lista_clienti">
-              <button className="black_btn w-full">Lista Clienti</button>
+              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group">
+                <Building2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Lista Clienti</span>
+              </button>
             </Link>
+            
             <Link href="/Pagamenti">
-              <button className="black_btn w-full">Pagamenti</button>
+              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 group">
+                <CreditCard className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Pagamenti</span>
+              </button>
             </Link>
+            
             <Link href="/Lista_collaboratori">
-              <button className="black_btn w-full">Lista Collaboratori</button>
+              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 group">
+                <Users className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Lista Collaboratori</span>
+              </button>
             </Link>
+             <button
+              onClick={() => setIsVisible(!isVisible)}
+              className="black_btn w-full"
+            >
+              {isVisible ? "Nascondi Opzioni avanzate" : "Mostra Opzioni avanzate"}
+            </button>
+            </div>
+
+            {isVisible && ( 
+              <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <button 
-              className="black_btn w-full bg-blue-600 hover:bg-blue-700" 
+              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group" 
               onClick={downloadxlsx}
             >
-              📊 Download Dati
+              <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium">Download Dati</span>
             </button>
+            
             <button 
-              className="black_btn w-full bg-red-500 hover:bg-red-600" 
+              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 group" 
               onClick={handleResetPosts}
               disabled={resetLoading}
             >
-              {resetLoading ? "Reset..." : "🔄 Reset Post"}
+              <RotateCcw className={`w-5 h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
+              <span className="font-medium">{resetLoading ? "Reset..." : "Reset Post"}</span>
             </button>
+            
             <button 
-              className="black_btn w-full bg-green-600 hover:bg-green-700" 
+              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 group" 
               onClick={handleGeneraPagamenti}
               disabled={resetLoading}
             >
-              {resetLoading ? "Generando..." : "💰 Genera Pagamenti"}
+              <DollarSign className={`w-5 h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
+              <span className="font-medium">{resetLoading ? "Generando..." : "Genera Pagamenti"}</span>
             </button>
+            </div>)}
           </div>
-        </div>
       )}
 
-      {/* Contenuto principale */}
-      <div className="p-5">
-        {session?.user?.role === "amministratore" ? (
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Lista Collaboratori</h2>
+      {/* Main Content */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          {session?.user?.role === "amministratore" ? (
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+              <Users className="w-6 h-6 mr-2 text-blue-600" />
+              Lista Collaboratori
+            </h2>
+          ) : session?.user?.subrole === "commerciale" ? (
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+              <MessageSquare className="w-6 h-6 mr-2 text-green-600" />
+              Feed Commerciale
+            </h2>
+          ) : session?.user?.subrole === "smm" ? (
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+              <Building2 className="w-6 h-6 mr-2 text-purple-600" />
+              Lista Clienti
+            </h2>
+          ) : (
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+              <Clock className="w-6 h-6 mr-2 text-orange-600" />
+              Timeline Web Designer
+            </h2>
+          )}
+        </div>
+        
+        <div className="p-6">
+          {session?.user?.role === "amministratore" ? (
             <ListaCollaboratori collaboratori={data} />
-          </div>
-        ) : session?.user?.subrole === "commerciale" ? (
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Feed Commerciale</h2>
+          ) : session?.user?.subrole === "commerciale" ? (
             <FeedCommerciale id={session?.user.id} />
-          </div>
-        ) : session?.user?.subrole === "smm" ? (
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Lista Clienti</h2>
+          ) : session?.user?.subrole === "smm" ? (
             <ListaClienti id={session?.user.id} amministratore={false} />
-          </div>
-        ) : (
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Timeline Web Designer</h2>
+          ) : (
             <TimelineWebDesigner userId={session?.user.id} />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

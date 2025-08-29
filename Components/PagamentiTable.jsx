@@ -51,35 +51,57 @@ const PagamentiTable = () => {
     });
   }
 
-  if (loading) return <div>Caricamento...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center p-12">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <span className="ml-3 text-gray-600">Caricamento pagamenti...</span>
+    </div>
+  );
 
   return (
-    <section className="bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto mt-8">
-      {/* Bottoni filtro */}
-      <div className="flex justify-center gap-4 mb-6">
-        <button
-          className={`py-2 px-4 rounded font-bold shadow transition ${filtro === "alfabetico" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-          onClick={() => setFiltro("alfabetico")}
-        >
-          Ordine Alfabetico
-        </button>
-        <button
-          className={`py-2 px-4 rounded font-bold shadow transition ${filtro === "pagati" ? "bg-green-500 text-white" : "bg-gray-200"}`}
-          onClick={() => setFiltro("pagati")}
-        >
-          Pagati Prima
-        </button>
-        <button
-          className={`py-2 px-4 rounded font-bold shadow transition ${filtro === "nonpagati" ? "bg-red-500 text-white" : "bg-gray-200"}`}
-          onClick={() => setFiltro("nonpagati")}
-        >
-          Non Pagati Prima
-        </button>
+    <div className="space-y-6">
+      {/* Filtri */}
+      <div className="bg-gray-50 rounded-lg p-4">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Ordina per:</h3>
+        <div className="flex flex-wrap gap-3">
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filtro === "alfabetico" 
+                ? "bg-cyan-500 text-white shadow-md" 
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
+            onClick={() => setFiltro("alfabetico")}
+          >
+            📝 Alfabetico
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filtro === "pagati" 
+                ? "bg-green-500 text-white shadow-md" 
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
+            onClick={() => setFiltro("pagati")}
+          >
+            ✅ Pagati Prima
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filtro === "nonpagati" 
+                ? "bg-red-500 text-white shadow-md" 
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
+            onClick={() => setFiltro("nonpagati")}
+          >
+            ❌ Non Pagati Prima
+          </button>
+        </div>
       </div>
-      <div className="flex justify-center gap-4 mb-6">
+
+      {/* Azioni */}
+      <div className="flex justify-end gap-3">
         {!editMode ? (
           <button
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded shadow transition"
+            className="btn-primary mr-4"
             onClick={() => {
               const initialChecked = {};
               pagamentiOrdinati.forEach((p) => {
@@ -90,86 +112,111 @@ const PagamentiTable = () => {
               setEditMode(true);
             }}
           >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Modifica Pagamenti
           </button>
         ) : (
-          <button
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded shadow transition"
-            onClick={async () => {
-              setLoading(true);
-              const today = new Date().toISOString().slice(0, 10);
-              const updates = pagamentiOrdinati
-                .filter((p) => checkedPagamenti[p.id || p._id] !== initialCheckedPagamenti[p.id || p._id])
-                .map((p) =>
-                  fetch(`/api/pagamenti/${p.id || p._id}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(
-                      checkedPagamenti[p.id || p._id]
-                        ? { data_pagato: today, stato: "si" }
-                        : { data_pagato: null, stato: "no" }
-                    ),
-                  })
-                );
-              await Promise.all(updates);
-              setEditMode(false);
-              setCheckedPagamenti({});
-              setInitialCheckedPagamenti({});
-              fetch("/api/pagamenti")
-                .then((res) => res.json())
-                .then((data) => {
-                  setPagamenti(data);
-                  setLoading(false);
-                });
-            }}
-          >
-            Salva Modifiche
-          </button>
-        )}
-        {editMode && (
-          <button
-            className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded shadow transition"
-            onClick={() => {
-              setEditMode(false);
-              setCheckedPagamenti({});
-              setInitialCheckedPagamenti({});
-            }}
-          >
-            Annulla
-          </button>
+          <div className="flex gap-3">
+            <button
+              className="btn-success"
+              onClick={async () => {
+                setLoading(true);
+                const today = new Date().toISOString().slice(0, 10);
+                const updates = pagamentiOrdinati
+                  .filter((p) => checkedPagamenti[p.id || p._id] !== initialCheckedPagamenti[p.id || p._id])
+                  .map((p) =>
+                    fetch(`/api/pagamenti/${p.id || p._id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(
+                        checkedPagamenti[p.id || p._id]
+                          ? { data_pagato: today, stato: "si" }
+                          : { data_pagato: null, stato: "no" }
+                      ),
+                    })
+                  );
+                await Promise.all(updates);
+                setEditMode(false);
+                setCheckedPagamenti({});
+                setInitialCheckedPagamenti({});
+                fetch("/api/pagamenti")
+                  .then((res) => res.json())
+                  .then((data) => {
+                    setPagamenti(data);
+                    setLoading(false);
+                  });
+              }}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Salva Modifiche
+            </button>
+            <button
+              className="btn-secondary"
+              onClick={() => {
+                setEditMode(false);
+                setCheckedPagamenti({});
+                setInitialCheckedPagamenti({});
+              }}
+            >
+              Annulla
+            </button>
+          </div>
         )}
       </div>
-      <table className="w-full border border-gray-300 rounded-lg overflow-hidden">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="py-2 px-4">Cliente</th>
-            <th className="py-2 px-4">Data Fattura</th>
-            <th className="py-2 px-4">Data Pagato</th>
-            <th className="py-2 px-4">Stato</th>
-            {editMode && <th className="py-2 px-4">Seleziona</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {pagamentiOrdinati.map((p) => (
-            <tr key={p.id || p._id} className="border-t">
-              <td className="py-2 px-4">{p.cliente || "N/A"}</td>
-              <td className="py-2 px-4">{p.data_fattura ? new Date(p.data_fattura).toLocaleDateString() : ""}</td>
-              <td className="py-2 px-4">{p.data_pagato ? new Date(p.data_pagato).toLocaleDateString() : "-"}</td>
-              <td className="py-2 px-4">{p.stato === "si" ? "Pagato" : "Non pagato"}</td>
-              {editMode && (
-                <td className="py-2 px-4 text-center">
-                  <input
-                    type="checkbox"
-                    checked={!!checkedPagamenti[p.id || p._id]}
-                    onChange={() => handleCheckboxChange(p.id || p._id)}
-                  />
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+
+      {/* Tabella */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Cliente</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Data Fattura</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Data Pagamento</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Stato</th>
+                {editMode && <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Pagato</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {pagamentiOrdinati.map((p) => (
+                <tr key={p.id || p._id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-gray-900 font-medium">{p.cliente || "N/A"}</td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {p.data_fattura ? new Date(p.data_fattura).toLocaleDateString('it-IT') : "-"}
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {p.data_pagato ? new Date(p.data_pagato).toLocaleDateString('it-IT') : "-"}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      p.stato === "si" 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                      {p.stato === "si" ? "✅ Pagato" : "❌ Non pagato"}
+                    </span>
+                  </td>
+                  {editMode && (
+                    <td className="px-6 py-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={!!checkedPagamenti[p.id || p._id]}
+                        onChange={() => handleCheckboxChange(p.id || p._id)}
+                        className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                      />
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 };
 

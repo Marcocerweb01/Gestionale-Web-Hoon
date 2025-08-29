@@ -140,170 +140,217 @@ const selectCollaboratore = (collaboratore) => {
 };
 
   return (
-    <div className="w-2/3 mx-auto p-6 border rounded-lg shadow-md" style={{ width: "66.6667%"}}>
-      <h2 className="text-2xl font-bold mb-6">Nuova Collaborazione</h2>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Azienda Searchable Dropdown */}
-        <div className="relative" ref={aziendaDropdownRef}>
-          <label className="block text-sm font-medium mb-1">
-            Azienda:
-          </label>
-          <input
-            type="text"
-            value={aziendaSearch}
-            onChange={(e) => {
-              setAziendaSearch(e.target.value);
-              setShowAziendeDropdown(true);
-            }}
-            onFocus={() => setShowAziendeDropdown(true)}
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Cerca azienda..."
-          />
-          {showAziendeDropdown && (
-            <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-              {filteredAziende.map((azienda) => (
-                <div
-                  key={azienda._id}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => selectAzienda(azienda)}
-                >
-                  {azienda.etichetta}
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+     {/* Header */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 p-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <span className="text-blue-600 text-xl">📱</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Nuova Collaborazione SMM</h2>
+              <p className="text-gray-600 mt-1">Crea una nuova collaborazione per gestioni social </p>
+            </div>
+          </div>
+        </div>
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          {/* Azienda Searchable Dropdown */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">
+              🏢 Azienda <span className="text-red-500">*</span>
+            </label>
+            <div className="relative" ref={aziendaDropdownRef}>
+              <input
+                type="text"
+                value={aziendaSearch}
+                onChange={(e) => {
+                  setAziendaSearch(e.target.value);
+                  setShowAziendeDropdown(true);
+                }}
+                onFocus={() => setShowAziendeDropdown(true)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder-gray-400"
+                placeholder="Cerca e seleziona un'azienda..."
+              />
+              {showAziendeDropdown && (
+                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                  {filteredAziende.length > 0 ? (
+                    filteredAziende.map((azienda) => (
+                      <div
+                        key={azienda._id}
+                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                        onClick={() => selectAzienda(azienda)}
+                      >
+                        <div className="font-medium text-gray-900">{azienda.etichetta}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-gray-500 text-center">Nessuna azienda trovata</div>
+                  )}
                 </div>
-              ))}
+              )}
+            </div>
+          </div>
+
+          {/* Collaboratore Searchable Dropdown */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">
+              📱 Collaboratore <span className="text-red-500">*</span>
+            </label>
+            <div className="relative" ref={collaboratoreDropdownRef}>
+              <input
+                type="text"
+                value={collaboratoreSearch}
+                onChange={(e) => {
+                  setCollaboratoreSearch(e.target.value);
+                  setShowCollaboratoriDropdown(true);
+                }}
+                onFocus={() => setShowCollaboratoriDropdown(true)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder-gray-400"
+                placeholder="Cerca e seleziona un collaboratore..."
+              />
+              {showCollaboratoriDropdown && (
+                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                  {filteredCollaboratori.length > 0 ? (
+                    filteredCollaboratori.map((collaboratore) => (
+                      <div
+                        key={collaboratore._id}
+                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                        onClick={() => selectCollaboratore(collaboratore)}
+                      >
+                        <div className="font-medium text-gray-900">
+                          {`${collaboratore.nome} ${collaboratore.cognome}`}
+                        </div>
+                        <div className="text-sm text-gray-500">{collaboratore.email}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-gray-500 text-center">Nessun collaboratore trovato</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Grid per i campi numerici */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                📅 Numero Appuntamenti mensili
+              </label>
+              <input
+                type='number'
+                min="0"
+                name="appuntamenti"
+                value={formData.numero_appuntamenti}
+                onChange={(e) => setFormData(prev => ({ ...prev, numero_appuntamenti: Math.max(0, Number(e.target.value)) }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                placeholder="0"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                ​📁​ Post Instagram & Facebook
+              </label>
+              <input
+                type='number'
+                min="0"
+                name="post_if&fb"
+                value={formData.post_ig_fb}
+                onChange={(e) => setFormData(prev => ({ ...prev, post_ig_fb: Math.max(0, Number(e.target.value)) }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                placeholder="0"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                ​📁​ Post TikTok
+              </label>
+              <input
+                type='number'
+                min="0"
+                name="post_tiktok"
+                value={formData.post_tiktok}
+                onChange={(e) => setFormData(prev => ({ ...prev, post_tiktok: Math.max(0, Number(e.target.value)) }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                placeholder="0"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                ​📁​ Post LinkedIn
+              </label>
+              <input
+                type='number'
+                min="0"
+                name="post_linkedin"
+                value={formData.post_linkedin}
+                onChange={(e) => setFormData(prev => ({ ...prev, post_linkedin: Math.max(0, Number(e.target.value))}))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {/* Note */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">
+              📝 Note <span className="text-gray-500">(opzionale)</span>
+            </label>
+            <textarea
+              name="note"
+              value={formData.note}
+              onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
+              rows={4}
+              placeholder="Inserisci eventuali note aggiuntive..."
+            />
+          </div>
+
+          {/* Messages */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <div className="text-red-500 mr-2">⚠️</div>
+                <p className="text-red-700 font-medium">{error}</p>
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Collaboratore Searchable Dropdown */}
-        <div className="relative" ref={collaboratoreDropdownRef}>
-          <label className="block text-sm font-medium mb-1">
-            Collaboratore:
-          </label>
-          <input
-            type="text"
-            value={collaboratoreSearch}
-            onChange={(e) => {
-              setCollaboratoreSearch(e.target.value);
-              setShowCollaboratoriDropdown(true);
-            }}
-            onFocus={() => setShowCollaboratoriDropdown(true)}
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Cerca collaboratore..."
-          />
-          {showCollaboratoriDropdown && (
-            <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-              {filteredCollaboratori.map((collaboratore) => (
-                <div
-                  key={collaboratore._id}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => selectCollaboratore(collaboratore)}
-                >
-                  {`${collaboratore.nome} ${collaboratore.cognome}`}
-                </div>
-              ))}
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <div className="text-green-500 mr-2">✅</div>
+                <p className="text-green-700 font-medium">{success}</p>
+              </div>
             </div>
           )}
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Numero Appuntamenti mensili:
-          </label>
-          <input
-          type='number'
-           min="0"
-            name="appuntamenti"
-            value={formData.numero_appuntamenti}
-            onChange={(e) => setFormData(prev => ({ ...prev, numero_appuntamenti:  Math.max(0, Number(e.target.value)) }))}
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={4}
-            placeholder="Inserisci numero appuntamenti"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-           Numero post Instagram & Facebook:
-          </label>
-          <input
-          
-          type='number'
-           min="0"
-            name="post_if&fb"
-            value={formData.post_ig_fb}
-            onChange={(e) => setFormData(prev => ({ ...prev, post_ig_fb: Math.max(0, Number(e.target.value)) }))}
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={4}
-            placeholder="Inserisci numero post"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-1">
-           Numero post Tik Tok:
-          </label>
-          <input
-          
-          type='number'
-           min="0"
-            name="post_tiktok"
-            value={formData.post_tiktok}
-            onChange={(e) => setFormData(prev => ({ ...prev, post_tiktok: Math.max(0, Number(e.target.value)) }))}
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={4}
-            placeholder="Inserisci numero post"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-           Numero post Linkedin:
-          </label>
-          <input
-          type='number'
-           min="0"
-            name="post_linkedin"
-            value={formData.post_linkedin}
-            onChange={(e) => setFormData(prev => ({ ...prev, post_linkedin: Math.max(0, Number(e.target.value))}))}
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={4}
-            placeholder="Inserisci numero post"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Note (opzionale):
-          </label>
-          <textarea
-            name="note"
-            value={formData.note}
-            onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={4}
-            placeholder="Inserisci eventuali note"
-          />
-        </div>
-       
-        
 
-        {error && (
-          <div className="p-3 bg-red-100 text-red-700 rounded">
-            {error}
+          {/* Submit Button */}
+          <div className="flex justify-end pt-4 border-t border-gray-200">
+            <button
+              type="submit"
+              disabled={loading || !formData.aziendaId || !formData.collaboratoreId}
+              className="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creazione in corso...
+                </>
+              ) : (
+                <>
+                  <span className="mr-2">👥</span>
+                  Crea Collaborazione
+                </>
+              )}
+            </button>
           </div>
-        )}
-
-        {success && (
-          <div className="p-3 bg-green-100 text-green-700 rounded">
-            {success}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading || !formData.aziendaId || !formData.collaboratoreId}
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Creazione in corso...' : 'Crea Collaborazione'}
-        </button>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };
