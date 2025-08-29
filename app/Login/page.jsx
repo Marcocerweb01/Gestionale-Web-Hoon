@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { Eye, EyeOff, Mail, Lock, LogIn } from "lucide-react";
 
 const Login = () => {
   const router = useRouter();
@@ -12,6 +13,7 @@ const Login = () => {
   });
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleInput = (e) => {
     const { name, value } = e.target;
@@ -53,46 +55,119 @@ const Login = () => {
       setPending(false);
     }
   };
-  
+
   return (
-    <div className="flex items-center justify-center h-full">
-      <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
-        <h3 className="text-2xl font-semibold text-center text-gray-700 mb-6">
-          Accedi al tuo account
-        </h3>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-gray-600 font-medium mb-2">Email</label>
-            <input
-              type="email"
-              name="email"
-              onChange={handleInput}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8 p-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+            <LogIn className="h-8 w-8 text-white" />
           </div>
-          
-          <div>
-            <label className="block text-gray-600 font-medium mb-2">Password</label>
-            <input
-              type="password"
-              name="password"
-              onChange={handleInput}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+            Accedi al tuo account
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Inserisci le tue credenziali per continuare
+          </p>
+        </div>
+
+        {/* Form */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Indirizzo Email
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  name="email"
+                  value={credentials.email}
+                  onChange={handleInput}
+                  required
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm placeholder-gray-400 transition-all duration-200"
+                  placeholder="nome@azienda.com"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={credentials.password}
+                  onChange={handleInput}
+                  required
+                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm placeholder-gray-400 transition-all duration-200"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={pending}
+              className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            >
+              {pending ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Accesso in corso...</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <LogIn className="h-4 w-4" />
+                  <span>Accedi</span>
+                </div>
+              )}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Non hai un account?{" "}
+              <Link 
+                href="/Register" 
+                className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
+              >
+                Registrati qui
+              </Link>
+            </p>
           </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={pending}
-          >
-            {pending ? "Accesso in corso..." : "Accedi"}
-          </button>
-
-          {error && <p className="text-red-500 text-center mt-2">{error}</p>}
-        </form>
+        </div>
       </div>
     </div>
   );

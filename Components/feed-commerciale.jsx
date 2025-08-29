@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { Plus, Trash2, Pencil, Search } from 'lucide-react';
 
 dayjs.extend(utc);
 
@@ -105,73 +106,119 @@ const FeedCommerciale = ({ id }) => {
   };
 
   return (
-    <div className="relative w-full h-3/5">
-      <h2 className="text-xl font-bold mb-4">Trovate {count} note</h2>
-      <div className="flex justify-between items-center mb-4">
-      <h2 className="text-xl font-bold">Feed delle Note</h2>
-      <button
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          onClick={() => setIsPopupOpen(true)}
-        >
-          Aggiungi Nota
-        </button>
-        <button
-          onClick={() => setShowFilters((prev) => !prev)}
-          className="bg-gray-300 text-black px-3 py-1 rounded  text-sm lg:hidden"
-        >
-          {showFilters ? "Nascondi filtri" : "Mostra filtri"}
-        </button>
+    <div className="flex flex-col h-full bg-gray-50">
+      {/* Header mobile-friendly riprogettato */}
+      <div className="bg-white shadow-sm border-b px-4 py-3 flex-shrink-0">
+        {/* Titolo e contatore */}
+        <div className="flex items-center justify-center mb-3">
+          <h2 className="text-xl font-bold text-gray-900 mr-2">📝 Note Commerciali</h2>
+          <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full font-medium">
+            {count}
+          </span>
         </div>
-      <div className={`${ showFilters ? "sm:visible" : "sm:hidden"
-        }`}>
-      <div className={`flex justify-between items-center mb-4`}>
         
-        {session?.user?.role === "amministratore" && (
-          <div className="flex space-x-4">
-            <div>
-              <label className="block font-medium">Data Inizio</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="border p-2 rounded"
-              />
+        {/* Bottoni sotto il titolo */}
+        <div className="flex items-center justify-center space-x-3">
+          <button
+            className="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors text-sm touch-manipulation shadow-sm"
+            onClick={() => setIsPopupOpen(true)}
+          >
+            <span className="mr-1"><Plus /></span>
+            <span>Aggiungi</span>
+          </button>
+          <button
+            onClick={() => setShowFilters((prev) => !prev)}
+            className="inline-flex items-center px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors text-sm touch-manipulation shadow-sm"
+          >
+            <span className="mr-1"><Search /></span>
+            <span>{showFilters ? "Nascondi" : "Filtri"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Popup filtri per tutte le dimensioni dello schermo */}
+      {showFilters && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm overflow-hidden">
+            {/* Header popup */}
+            <div className="flex items-center justify-between p-4 border-b bg-white">
+              <h3 className="text-lg font-bold text-gray-900">🔍 Filtri</h3>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none touch-manipulation"
+              >
+                ×
+              </button>
             </div>
-            <div>
-              <label className="block font-medium">Data Fine</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="border p-2 rounded"
-              />
+
+            {/* Content popup */}
+            <div className="p-4 space-y-4">
+              {/* Date filters per amministratori */}
+              {session?.user?.role === "amministratore" && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-gray-900">Filtro per Data</h4>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Data Inizio</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Data Fine</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Search and filter */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-900">Ricerca e Filtri</h4>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cerca nel testo</label>
+                  <input
+                    type="text"
+                    placeholder="Scrivi qui per cercare..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo di nota</label>
+                  <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Tutti i tipi</option>
+                    <option value="appuntamento">📅 Appuntamento</option>
+                    <option value="contatto">📞 Contatto</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer popup */}
+            <div className="border-t bg-gray-50 p-4">
+              <button
+                onClick={() => setShowFilters(false)}
+                className="w-full inline-flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors touch-manipulation"
+              >
+                ✅ Applica Filtri
+              </button>
             </div>
           </div>
-        )}
-
-        
-      </div>
-
-      {/* Campi per ricerca e filtro */}
-      <div className="flex gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Cerca note..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="border p-2 rounded flex-1"
-        />
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="border p-2 rounded"
-        >
-          <option value="">Tutti i tipi</option>
-          <option value="appuntamento">Appuntamento</option>
-          <option value="contatto">Contatto</option>
-        </select>
-      </div>
-      </div>    
+        </div>
+      )}    
+      {/* Popups */}
       {isPopupOpen && (
         <PopupForm
           onClose={() => setIsPopupOpen(false)}
@@ -188,91 +235,103 @@ const FeedCommerciale = ({ id }) => {
         />
       )}
 
-      <div
-        id="feed-container"
-        className="overflow-y-auto w-full lg:w-3/4 p-2 lg:p-6"
-        style={{
-          height: "75vh",
-          overflowY: "auto",
-          width: "100%",
-        }}
-      >
-        {loadingNotes ? (
-          <div className="animate-pulse">
-            <div className="h-6 bg-gray-300 rounded mb-4 w-3/4"></div>
-            <div className="h-6 bg-gray-300 rounded mb-4 w-1/2"></div>
-          </div>
-        ) : filteredNotes.length === 0 ? (
-          <p className="text-gray-500">Nessuna nota trovata per questo Utente.</p>
-        ) : (
-          <ul className="space-y-4">
-            {filteredNotes.map((note) => (
-              <li
-                key={note._id}
-                className={`p-4 rounded shadow w-full lg:w-2/4 ${
-                  note.autoreId === session?.user?.id
-                    ? "bg-blue-100 ml-auto text-right"
-                    : "bg-gray-100 mr-auto text-left"
-                }`}
-              >
-                <h3 className="font-bold">
-                  {note.mainCategoria === "appuntamento" ? "Appuntamento" : "Contatto"}
-                </h3>
-                {note.mainCategoria === "appuntamento" && (
-                  <>
-                  <p className="text-sm text-gray-500">
-                    Data Appuntamento:{" "}
-                    {dayjs(note.data_appuntamento).utc().format("DD/MM/YYYY HH:mm")}
-                  </p>
-                  <p className="text-sm text-gray-500">Luogo: {note.luogo_appuntamento}</p>
-                  </>
-                )}
-                <p>{note.nota}</p>
-                <p className="text-sm text-gray-500">Autore: {note.autore}</p>
-                <p className="text-sm text-gray-500">
-                  Data: {dayjs(note.data).utc().format("DD/MM/YYYY HH:mm")}
-                </p>
-                <div
-                  className="mt-2 flex justify-end space-x-2"
-                  style={{
-                    marginTop: "1rem",
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: "0.5rem",
-                  }}
-                >
-                  {session?.user?.role === "amministratore" && (
-                    <button
-                      onClick={() => handleDelete(note._id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                      style={{
-                        backgroundColor: "#ef4444",
-                        color: "#fff",
-                        padding: "0.25rem 0.75rem",
-                        borderRadius: "0.25rem",
-                      }}
-                    >
-                      Elimina
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleEdit(note)}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                    style={{
-                      backgroundColor: "#f59e0b",
-                      color: "#fff",
-                      padding: "0.25rem 0.75rem",
-                      borderRadius: "0.25rem",
-                      transition: "background-color 0.2s ease",
-                    }}
-                  >
-                    Modifica
-                  </button>
+      {/* Feed container - occupa tutto lo spazio rimanente */}
+      <div className="flex-1 overflow-hidden">
+        <div
+          id="feed-container"
+          className="h-full overflow-y-auto px-4 py-3"
+        >
+          {loadingNotes ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-4 bg-gray-300 rounded mb-2 w-3/4"></div>
+                  <div className="h-4 bg-gray-300 rounded mb-2 w-1/2"></div>
+                  <div className="h-16 bg-gray-300 rounded"></div>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
+              ))}
+            </div>
+          ) : filteredNotes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <div className="text-6xl mb-4">📝</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Nessuna nota trovata</h3>
+              <p className="text-gray-500 mb-6 max-w-sm">
+                Non ci sono note per questo utente. Inizia creando la prima nota!
+              </p>
+              <button
+                className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                onClick={() => setIsPopupOpen(true)}
+              >
+                <Plus /> Crea prima nota
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4 pb-4">
+              {filteredNotes.map((note) => (
+                <div
+                  key={note._id}
+                  className={`p-4 rounded-lg shadow-sm border max-w-md ${
+                    note.autoreId === session?.user?.id
+                      ? "bg-blue-50 border-blue-200 ml-auto"
+                      : "bg-gray-50 border-gray-200 mr-auto"
+                  }`}
+                >
+                  {/* Header della nota */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      note.mainCategoria === "appuntamento" 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-blue-100 text-blue-800"
+                    }`}>
+                      {note.mainCategoria === "appuntamento" ? "📅 Appuntamento" : "📞 Contatto"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {dayjs(note.data).utc().format("DD/MM HH:mm")}
+                    </span>
+                  </div>
+
+                  {/* Contenuto appuntamento */}
+                  {note.mainCategoria === "appuntamento" && (
+                    <div className="mb-3 p-2 bg-white rounded border-l-4 border-green-500">
+                      <p className="text-sm text-gray-600 mb-1">
+                        📅 {dayjs(note.data_appuntamento).utc().format("DD/MM/YYYY HH:mm")}
+                      </p>
+                      {note.luogo_appuntamento && (
+                        <p className="text-sm text-gray-600">📍 {note.luogo_appuntamento}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Contenuto della nota */}
+                  <div className="mb-3">
+                    <p className="text-gray-900 text-sm leading-relaxed">{note.nota}</p>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>👤 {note.autore}</span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEdit(note)}
+                        className="inline-flex items-center px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded text-xs transition-colors touch-manipulation"
+                      >
+                        <Pencil />
+                      </button>
+                      {session?.user?.role === "amministratore" && (
+                        <button
+                          onClick={() => handleDelete(note._id)}
+                          className="inline-flex items-center px-2 py-1 bg-red-500 hover:bg-red-600 text-white font-medium rounded text-xs transition-colors touch-manipulation"
+                        >
+                          <Trash2 />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -342,190 +401,193 @@ const EditForm = ({ note, onClose, onUpdateNote }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-y-auto max-h-[90vh] p-6">
-        <h3 className="text-xl font-bold mb-4">Modifica Nota</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block font-medium">Categoria Principale:</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={mainCategoria}
-              onChange={(e) => setMainCategoria(e.target.value)}
-            >
-              <option value="appuntamento">Appuntamento</option>
-              <option value="contatto">Contatto</option>
-            </select>
-          </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header fisso */}
+        <div className="flex items-center justify-between p-4 border-b bg-white">
+          <h3 className="text-lg font-bold text-gray-900">✏️ Modifica Nota</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none touch-manipulation"
+          >
+            ×
+          </button>
+        </div>
 
-          {mainCategoria === "contatto" && (
-            <>
-              <div>
-                <label className="block font-medium">Tipo di Contatto:</label>
-                <select
-                  className="w-full p-2 border rounded"
-                  value={tipoContatto}
-                  onChange={(e) => setTipoContatto(e.target.value)}
-                >
-                  <option value="chiamata">Chiamata</option>
-                  <option value="visita">Visita</option>
-                </select>
-              </div>
-              <div>
-                <label className="block font-medium">Come è Arrivato:</label>
-                <select
-                  className="w-full p-2 border rounded"
-                  value={comeArrivato}
-                  onChange={(e) => setComeArrivato(e.target.value)}
-                >
-                  <option value="ricerca">Ricerca</option>
-                  <option value="referal">Referal</option>
-                  <option value="chiamata">Chiamata</option>
-                  <option value="in azienda">In Azienda</option>
-                </select>
-              </div>
-              {comeArrivato === "referal" && (
+        {/* Form scrollabile */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Categoria Principale:</label>
+              <select
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                value={mainCategoria}
+                onChange={(e) => setMainCategoria(e.target.value)}
+              >
+                <option value="appuntamento">📅 Appuntamento</option>
+                <option value="contatto">📞 Contatto</option>
+              </select>
+            </div>
+
+            {mainCategoria === "contatto" && (
+              <>
                 <div>
-                  <label className="block font-medium">Referal:</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo di Contatto:</label>
+                  <select
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={tipoContatto}
+                    onChange={(e) => setTipoContatto(e.target.value)}
+                  >
+                    <option value="chiamata">📞 Chiamata</option>
+                    <option value="visita">🏢 Visita</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Come è Arrivato:</label>
+                  <select
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={comeArrivato}
+                    onChange={(e) => setComeArrivato(e.target.value)}
+                  >
+                    <option value="ricerca">🔍 Ricerca</option>
+                    <option value="referal">👥 Referal</option>
+                    <option value="chiamata">📞 Chiamata</option>
+                    <option value="in azienda">🏢 In Azienda</option>
+                  </select>
+                </div>
+                {comeArrivato === "referal" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Referal:</label>
+                    <input
+                      type="text"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                      value={referal}
+                      onChange={(e) => setReferal(e.target.value)}
+                      placeholder="Nome del referral"
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome Azienda:</label>
                   <input
                     type="text"
-                    className="w-full p-2 border rounded"
-                    value={referal}
-                    onChange={(e) => setReferal(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={nomeAzienda}
+                    onChange={(e) => setNomeAzienda(e.target.value)}
+                    placeholder="Nome dell'azienda"
                   />
                 </div>
-              )}
-              <div>
-                <label className="block font-medium">Nome Azienda:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={nomeAzienda}
-                  onChange={(e) => setNomeAzienda(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Luogo:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={luogo}
-                  onChange={(e) => setLuogo(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Indirizzo:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={indirizzo}
-                  onChange={(e) => setIndirizzo(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Numero di Telefono:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={numeroTelefono}
-                  onChange={(e) => setNumeroTelefono(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Referente:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={referente}
-                  onChange={(e) => setReferente(e.target.value)}
-                />
-              </div>
-            </>
-          )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Luogo:</label>
+                  <input
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={luogo}
+                    onChange={(e) => setLuogo(e.target.value)}
+                    placeholder="Città"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Indirizzo:</label>
+                  <input
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={indirizzo}
+                    onChange={(e) => setIndirizzo(e.target.value)}
+                    placeholder="Via, numero civico"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Numero di Telefono:</label>
+                  <input
+                    type="tel"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={numeroTelefono}
+                    onChange={(e) => setNumeroTelefono(e.target.value)}
+                    placeholder="+39 123 456 7890"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Referente:</label>
+                  <input
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={referente}
+                    onChange={(e) => setReferente(e.target.value)}
+                    placeholder="Nome del referente"
+                  />
+                </div>
+              </>
+            )}
 
-          {mainCategoria === "appuntamento" && (
-            <>
-              <div>
-                <label className="block font-medium">Data Appuntamento:</label>
-                <input
-                  type="date"
-                  className="w-full p-2 border rounded"
-                  value={dataAppuntamento}
-                  onChange={(e) => setDataAppuntamento(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Ora Appuntamento:</label>
-                <input
-                  type="time"
-                  className="w-full p-2 border rounded"
-                  value={oraAppuntamento}
-                  onChange={(e) => setOraAppuntamento(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Luogo Appuntamento:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={luogo_appuntamento}
-                  onChange={(e) => setLuogoAppuntamento(e.target.value)}
-                />
-              </div>
-             
-            </>
-          )}
+            {mainCategoria === "appuntamento" && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data Appuntamento:</label>
+                  <input
+                    type="date"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={dataAppuntamento}
+                    onChange={(e) => setDataAppuntamento(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ora Appuntamento:</label>
+                  <input
+                    type="time"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={oraAppuntamento}
+                    onChange={(e) => setOraAppuntamento(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Luogo Appuntamento:</label>
+                  <input
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={luogo_appuntamento}
+                    onChange={(e) => setLuogoAppuntamento(e.target.value)}
+                    placeholder="Dove si svolgerà l'appuntamento"
+                  />
+                </div>
+              </>
+            )}
 
-          <div>
-            <label className="block font-medium">Nota:</label>
-            <textarea
-              className="w-full p-2 border rounded"
-              value={nota}
-              onChange={(e) => setNota(e.target.value)}
-              required
-            />
-          </div>
-          {error && <p className="text-red-500">{error}</p>}
-          <div
-  style={{
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "1rem", // space-x-4 => 1rem (16px)
-  }}
->
-  <button
-    type="button"
-    style={{
-      backgroundColor: "#6b7280", // bg-gray-500 => #6b7280
-      color: "#fff",             // text-white
-      padding: "0.5rem 1rem",    // px-4 => 1rem, py-2 => 0.5rem
-      borderRadius: "0.25rem",   // rounded => 4px
-      transition: "background-color 0.2s ease",
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4b5563")} // hover:bg-gray-600 => #4b5563
-    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#6b7280")}
-    onClick={onClose}
-  >
-    Annulla
-  </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nota:</label>
+              <textarea
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base min-h-[100px] resize-y"
+                value={nota}
+                onChange={(e) => setNota(e.target.value)}
+                placeholder="Scrivi qui i dettagli..."
+                required
+              />
+            </div>
 
-  <button
-    type="submit"
-    style={{
-      backgroundColor: "#3b82f6", // bg-blue-500 => #3b82f6
-      color: "#fff",
-      padding: "0.5rem 1rem",
-      borderRadius: "0.25rem",
-      transition: "background-color 0.2s ease",
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")} // hover:bg-blue-600 => #2563eb
-    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#3b82f6")}
-  >
-    Salva
-  </button>
-</div>
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-800 text-sm">❌ {error}</p>
+              </div>
+            )}
+          </form>
+        </div>
 
-        </form>
+        {/* Footer fisso con buttons */}
+        <div className="border-t bg-gray-50 p-4 flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors touch-manipulation"
+          >
+            ❌ Annulla
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="flex-1 inline-flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors touch-manipulation"
+          >
+            ✅ Salva
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -619,204 +681,208 @@ const PopupForm = ({ onClose, onAddNote, autoreId, autoreNome }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 pt-32">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-y-auto max-h-[90vh] p-6 pt-24" style={{
-    backgroundColor: "white", // bg-white
-    borderRadius: "0.5rem", // rounded-lg (equivale a 8px)
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", // shadow-lg
-    width: "100%", // w-full
-    maxWidth: "28rem", // max-w-md (equivale a 448px)
-    overflowY: "auto", // overflow-y-auto
-    maxHeight: "90vh", // max-h-[90vh]
-    padding: "1.5rem", // p-6 (24px)
-    paddingTop: "6rem", // pt-24 (96px)
-  }}>
-        <div className="flex flex-row mb-5">
-          <h3 className="text-xl font-bold w-5/6">Crea Nota</h3>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header fisso */}
+        <div className="flex items-center justify-between p-4 border-b bg-white">
+          <h3 className="text-lg font-bold text-gray-900">➕ Crea Nota</h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-800 w-1/6 text-4xl flex items-center justify-center" style={{
-
-              color: "rgb(107, 114, 128)", // text-gray-500
-              width: "16.666667%", // w-1/6
-              fontSize: "2.25rem", // text-4xl
-              display: "flex", // flex
-              alignItems: "center", // items-center
-              justifyContent: "center", // justify-center
-            }}
-            onMouseEnter={(e) => (e.target.style.color = "rgb(31, 41, 55)")} // hover:text-gray-800
-            onMouseLeave={(e) => (e.target.style.color = "rgb(107, 114, 128)")}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none touch-manipulation"
           >
-            &times;
+            ×
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block font-medium">Categoria Principale:</label>
-            <select
-              className="w-full p-2 border rounded sm:p-3"
-              value={mainCategoria}
-              onChange={(e) => setMainCategoria(e.target.value)}
-            >
-              <option value="appuntamento">Appuntamento</option>
-              <option value="contatto">Contatto</option>
-            </select>
-          </div>
 
-          {mainCategoria === "contatto" && (
-            <>
-              <div>
-                <label className="block font-medium">Tipo di Contatto:</label>
-                <select
-                  className="w-full p-2 border rounded"
-                  value={tipoContatto}
-                  onChange={(e) => handleTipoContattoChange(e.target.value)}
-                >
-                  <option value="chiamata">Chiamata</option>
-                  <option value="visita">Visita</option>
-                </select>
-              </div>
-              <div>
-                <label className="block font-medium">Come è Arrivato:</label>
-                <select
-                  className="w-full p-2 border rounded"
-                  value={comeArrivato}
-                  onChange={(e) => {
-                    setComeArrivato(e.target.value);
-                    if (e.target.value !== 'referal') {
-                      setReferal(''); // Reset referral quando si cambia l'origine
-                    }
-                  }}
-                >
-                  {tipoContatto === 'visita' ? (
-                    <>
-                      <option value="in azienda">In Azienda</option>
-                      <option value="chiamata">Chiamata</option>
-                      <option value="referal">Referal</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="ricerca">Ricerca</option>
-                      <option value="referal">Referal</option>
-                    </>
-                  )}
-                </select>
-              </div>
-              
-              {/* Campo Referral condizionale */}
-              {comeArrivato === 'referal' && (
+        {/* Form scrollabile */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Categoria Principale:</label>
+              <select
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                value={mainCategoria}
+                onChange={(e) => setMainCategoria(e.target.value)}
+              >
+                <option value="appuntamento">📅 Appuntamento</option>
+                <option value="contatto">📞 Contatto</option>
+              </select>
+            </div>
+
+            {mainCategoria === "contatto" && (
+              <>
                 <div>
-                  <label className="block font-medium">Nome Referal:</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo di Contatto:</label>
+                  <select
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={tipoContatto}
+                    onChange={(e) => handleTipoContattoChange(e.target.value)}
+                  >
+                    <option value="chiamata">📞 Chiamata</option>
+                    <option value="visita">🏢 Visita</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Come è Arrivato:</label>
+                  <select
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={comeArrivato}
+                    onChange={(e) => {
+                      setComeArrivato(e.target.value);
+                      if (e.target.value !== 'referal') {
+                        setReferal('');
+                      }
+                    }}
+                  >
+                    {tipoContatto === 'visita' ? (
+                      <>
+                        <option value="in azienda">🏢 In Azienda</option>
+                        <option value="chiamata">📞 Chiamata</option>
+                        <option value="referal">👥 Referal</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="ricerca">🔍 Ricerca</option>
+                        <option value="referal">👥 Referal</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+                
+                {comeArrivato === 'referal' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome Referal:</label>
+                    <input
+                      type="text"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                      value={referal}
+                      onChange={(e) => setReferal(e.target.value)}
+                      placeholder="Chi ci ha raccomandato?"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome Azienda:</label>
                   <input
                     type="text"
-                    className="w-full p-2 border rounded"
-                    value={referal}
-                    onChange={(e) => setReferal(e.target.value)}
-                    placeholder="Inserisci il nome del referral"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={nomeAzienda}
+                    onChange={(e) => setNomeAzienda(e.target.value)}
+                    placeholder="Nome dell'azienda"
                   />
                 </div>
-              )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Luogo:</label>
+                  <input
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={luogo}
+                    onChange={(e) => setLuogo(e.target.value)}
+                    placeholder="Città"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Indirizzo:</label>
+                  <input
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={indirizzo}
+                    onChange={(e) => setIndirizzo(e.target.value)}
+                    placeholder="Via, numero civico"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Numero di Telefono:</label>
+                  <input
+                    type="tel"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={numeroTelefono}
+                    onChange={(e) => setNumeroTelefono(e.target.value)}
+                    placeholder="+39 123 456 7890"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Referente:</label>
+                  <input
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={referente}
+                    onChange={(e) => setReferente(e.target.value)}
+                    placeholder="Nome del referente"
+                  />
+                </div>
+              </>
+            )}
 
-              <div>
-                <label className="block font-medium">Nome Azienda:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={nomeAzienda}
-                  onChange={(e) => setNomeAzienda(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Luogo:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={luogo}
-                  onChange={(e) => setLuogo(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Indirizzo:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={indirizzo}
-                  onChange={(e) => setIndirizzo(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Numero di Telefono:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={numeroTelefono}
-                  onChange={(e) => setNumeroTelefono(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Referente:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded"
-                  value={referente}
-                  onChange={(e) => setReferente(e.target.value)}
-                />
-              </div>
-            </>
-          )}
+            {mainCategoria === "appuntamento" && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data Appuntamento:</label>
+                  <input
+                    type="date"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={dataAppuntamento}
+                    onChange={(e) => setDataAppuntamento(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ora Appuntamento:</label>
+                  <input
+                    type="time"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={oraAppuntamento}
+                    onChange={(e) => setOraAppuntamento(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Luogo Appuntamento:</label>
+                  <input
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                    value={luogo_appuntamento}
+                    onChange={(e) => setLuogoAppuntamento(e.target.value)}
+                    placeholder="Dove si svolgerà l'appuntamento"
+                  />
+                </div>
+              </>
+            )}
 
-          {mainCategoria === "appuntamento" && (
-            <>
-              <div>
-                <label className="block font-medium">Data Appuntamento:</label>
-                <input
-                  type="date"
-                  className="w-full p-2 border rounded sm:p-3"
-                  value={dataAppuntamento}
-                  onChange={(e) => setDataAppuntamento(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Ora Appuntamento:</label>
-                <input
-                  type="time"
-                  className="w-full p-2 border rounded sm:p-3"
-                  value={oraAppuntamento}
-                  onChange={(e) => setOraAppuntamento(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block font-medium">Luogo Appuntamento:</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded sm:p-3"
-                  value={luogo_appuntamento}
-                  onChange={(e) => setLuogoAppuntamento(e.target.value)}
-                />
-              </div>
-            </>
-          )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nota:</label>
+              <textarea
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base min-h-[100px] resize-y"
+                value={nota}
+                onChange={(e) => setNota(e.target.value)}
+                placeholder="Scrivi qui i dettagli..."
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block font-medium">Nota:</label>
-            <textarea
-              className="w-full p-2 border rounded sm:p-3"
-              value={nota}
-              onChange={(e) => setNota(e.target.value)}
-              required
-            />
-          </div>
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-800 text-sm">❌ {error}</p>
+              </div>
+            )}
+          </form>
+        </div>
 
-          <div className="sticky bottom-0 bg-white p-4 border-t">
-            <button
-              type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full"
-            >
-              Salva
-            </button>
-          </div>
-        </form>
-        {error && <p className="text-red-500 mt-4">{error}</p>}
+        {/* Footer fisso con buttons */}
+        <div className="border-t bg-gray-50 p-4 flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors touch-manipulation"
+          >
+            ❌ Annulla
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="flex-1 inline-flex items-center justify-center px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors touch-manipulation"
+          >
+            ✅ Crea Nota
+          </button>
+        </div>
       </div>
     </div>
   );

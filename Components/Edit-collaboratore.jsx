@@ -143,9 +143,9 @@ const EditUserForm = ({ userId }) => {
         </div>
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded mt-4"
+          className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors mt-6"
         >
-          Aggiorna Utente
+          ✅ Aggiorna Utente
         </button>
       </form>
     </div>
