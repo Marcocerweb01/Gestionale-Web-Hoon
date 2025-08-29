@@ -218,7 +218,7 @@ export default function ManageSnapshots() {
               <p><strong>🔄 Durante il Mese:</strong></p>
               <ul className="ml-4 list-disc space-y-1">
                 <li>Gli SMM lavorano normalmente, aggiornando i post fatti</li>
-                <li>Puoi scaricare lo "Stato Corrente" in qualsiasi momento</li>
+                <li>Puoi scaricare lo &ldquo;Stato Corrente&rdquo; in qualsiasi momento</li>
                 <li>I dati si aggiornano in tempo reale</li>
               </ul>
             </div>
@@ -229,7 +229,7 @@ export default function ManageSnapshots() {
                 <li>Cron job automatico alle 00:01</li>
                 <li>Crea lo snapshot del mese precedente (dati fissi)</li>
                 <li>Azzera tutti i post_*_fatti per il nuovo mese</li>
-                <li>Il mese precedente appare nella lista "Snapshot Storici"</li>
+                <li>Il mese precedente appare nella lista &ldquo;Snapshot Storici&rdquo;</li>
               </ul>
             </div>
 
