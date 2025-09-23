@@ -59,6 +59,10 @@ const Registrazione = () => {
       });
       console.log(res)
       if (res.ok) {
+        // ✨ Invalida cache collaboratori dopo inserimento
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('collaboratori-updated'));
+        }
         router.push("/");
       } else {
         const errorData = await res.json();

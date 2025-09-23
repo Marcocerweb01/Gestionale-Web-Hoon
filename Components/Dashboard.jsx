@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useCollaboratoriWithGlobalRefresh } from '@/hooks/useCollaboratori'; // ✨ Importa il nuovo hook
 import ListaCollaboratori from './Lista-collaboratori';
 import ListaClienti from './Lista-clienti';
 import TimelineWebDesigner from './timeline-web-designer'; // ✨ Uso TimelineWebDesigner al posto di ListaClientiWebDesigner
@@ -23,29 +24,12 @@ import {
 } from 'lucide-react';
 
 const Dashboard = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [resetLoading, setResetLoading] = useState(false);
   const { data: session, status } = useSession();
   const [isVisible, setIsVisible] = useState(false);
-
-  // Funzione per recuperare la lista dei collaboratori
-  const fetchCollaboratori = async () => {
-    try {
-      const response = await fetch(`/api/lista_collaboratori`);
-      if (!response.ok) {
-        throw new Error("Errore nel recupero dei collaboratori");
-      }
-      const result = await response.json();
-      setData(result);
-    } catch (err) {
-      console.error("Errore:", err);
-      setError("Non è stato possibile recuperare i dati dei collaboratori.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [resetLoading, setResetLoading] = useState(false);
+  
+  // ✨ Usa il nuovo hook con refresh automatico
+  const { collaboratori: data, loading, error, refreshCollaboratori } = useCollaboratoriWithGlobalRefresh();
 
   // Funzione per avviare il download
   const downloadxlsx = async () => {
@@ -127,15 +111,6 @@ const Dashboard = () => {
       setResetLoading(false);
     }
   };
-
-  // Effetto per chiamare l'API al caricamento se amministratore
-  useEffect(() => {
-    if (status === "authenticated" && session?.user?.role === "amministratore") {
-      fetchCollaboratori();
-    } else {
-      setLoading(false);
-    }
-  }, [status, session]);
 
   // Loading state
   if (loading || status === "loading") {

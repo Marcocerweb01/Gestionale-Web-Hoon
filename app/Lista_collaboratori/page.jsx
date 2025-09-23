@@ -3,36 +3,14 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCollaboratoriWithGlobalRefresh } from "@/hooks/useCollaboratori"; // ✨ Usa il nuovo hook
 
 const ListaCollaboratori = () => {
-  const [collaboratori, setCollaboratori] = useState([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
   const [showInactive, setShowInactive] = useState(false); // ✨ Stato per mostrare inattivi
   const router = useRouter();
-
-  const fetchCollaboratori = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("/api/lista_collaboratori", {
-        method: "GET",
-        cache: "no-store",
-        headers: { "Cache-Control": "no-cache" },
-      });
-      if (!response.ok) throw new Error("Errore nel recupero dei collaboratori");
-      const result = await response.json();
-      setCollaboratori(result);
-    } catch (err) {
-      setError("Non è stato possibile recuperare i collaboratori");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCollaboratori();
-  }, []);
+  
+  // ✨ Usa il nuovo hook con refresh automatico
+  const { collaboratori, loading, error, refreshCollaboratori } = useCollaboratoriWithGlobalRefresh();
 
   if (loading) return (
     <div className="flex items-center justify-center p-12">
@@ -88,7 +66,7 @@ const ListaCollaboratori = () => {
             </button>
             <button
               className="btn-secondary"
-              onClick={fetchCollaboratori}
+              onClick={refreshCollaboratori}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

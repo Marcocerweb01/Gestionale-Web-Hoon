@@ -20,8 +20,15 @@ export async function GET(req) {
       status: collaboratore.status || 'attivo', // ✨ Aggiungi il campo status
     }));
     console.log("Dati formattati per il frontend:", result);
-    return new Response(JSON.stringify(result), { status: 200, headers: {
-      "Cache-Control": "no-store",}});
+    return new Response(JSON.stringify(result), { 
+      status: 200, 
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+        "Surrogate-Control": "no-store",
+      }
+    });
   } catch (error) {
     console.error("Errore durante il recupero dei collaboratori:", error);
     return new Response(
