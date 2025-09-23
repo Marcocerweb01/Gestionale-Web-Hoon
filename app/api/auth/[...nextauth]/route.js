@@ -22,8 +22,21 @@ async function login(credentials) {
         const isCorrect = await bcrypt.compare(credentials.password, user.password);
         if (!isCorrect) throw new Error("Password errata");
 
+        // ✨ CONTROLLO STATUS PER COLLABORATORI
+        if (role === "collaboratore" && user.status === "non_attivo") {
+          throw new Error("Account disattivato. Contatta l'amministratore.");
+        }
+
         // Restituisci i dati utente con il ruolo specifico
-        return { _id: user._id, email: user.email, nome: user.nome, cognome:user.cognome ,role, subrole:user.subRole };
+        return { 
+          _id: user._id, 
+          email: user.email, 
+          nome: user.nome, 
+          cognome: user.cognome,
+          role, 
+          subrole: user.subRole,
+          status: user.status || "attivo" // Per compatibilità con utenti esistenti
+        };
       }
     }
 
@@ -61,7 +74,8 @@ export const authOptions = {
         token.nome = user.nome;
         token.cognome = user.cognome;
         token.role = user.role;
-        token.subrole= user.subrole; // Aggiungi il ruolo al token
+        token.subrole = user.subrole; // Aggiungi il ruolo al token
+        token.status = user.status; // Aggiungi lo status al token
       }
       return token;
     },
@@ -72,7 +86,8 @@ export const authOptions = {
         session.user.nome = token.nome;
         session.user.cognome = token.cognome;
         session.user.role = token.role;
-        session.user.subrole = token.subrole // Aggiungi il ruolo alla sessione
+        session.user.subrole = token.subrole; // Aggiungi il ruolo alla sessione
+        session.user.status = token.status; // Aggiungi lo status alla sessione
       }
       return session;
     },

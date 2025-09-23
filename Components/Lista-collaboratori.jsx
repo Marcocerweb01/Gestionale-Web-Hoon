@@ -48,7 +48,13 @@ const Lista_collaboratori = ({ collaboratori }) => {
         {openWeb && webDesigners.length > 0 && (
           <div className="p-4 space-y-4">
             {webDesigners.map((collab) => (
-              <CollaboratoreItem key={collab.id} id={collab.id} nome={collab.nome + " " + collab.cognome} ruolo={collab.subRole} />
+              <CollaboratoreItem 
+                key={collab.id} 
+                id={collab.id} 
+                nome={collab.nome + " " + collab.cognome} 
+                ruolo={collab.subRole}
+                status={collab.status}
+              />
             ))}
           </div>
         )}
@@ -77,7 +83,13 @@ const Lista_collaboratori = ({ collaboratori }) => {
         {openSmm && smms.length > 0 && (
           <div className="p-4 space-y-4">
             {smms.map((collab) => (
-              <CollaboratoreItem key={collab.id} id={collab.id} nome={collab.nome + " " + collab.cognome} ruolo={collab.subRole} />
+              <CollaboratoreItem 
+                key={collab.id} 
+                id={collab.id} 
+                nome={collab.nome + " " + collab.cognome} 
+                ruolo={collab.subRole}
+                status={collab.status}
+              />
             ))}
           </div>
         )}
@@ -106,7 +118,13 @@ const Lista_collaboratori = ({ collaboratori }) => {
         {openComm && commercials.length > 0 && (
           <div className="p-4 space-y-4">
             {commercials.map((collab) => (
-              <CollaboratoreItem key={collab.id} id={collab.id} nome={collab.nome + " " + collab.cognome} ruolo={collab.subRole} />
+              <CollaboratoreItem 
+                key={collab.id} 
+                id={collab.id} 
+                nome={collab.nome + " " + collab.cognome} 
+                ruolo={collab.subRole}
+                status={collab.status}
+              />
             ))}
           </div>
         )}
@@ -124,19 +142,39 @@ const Lista_collaboratori = ({ collaboratori }) => {
  * Singolo collaboratore. Riprende la logica di feed o toggle.
  * Al posto di "Lista_clienti", se serve, potresti passare "id".
  */
-const CollaboratoreItem = ({ id, nome, ruolo }) => {
+const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo" }) => {
   // Mappa ruoli
   const displayRole =
     roleMap[ruolo] || ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
+
+  // Status display
+  const statusConfig = {
+    attivo: { 
+      icon: "🟢", 
+      text: "Attivo", 
+      bgColor: "bg-green-50", 
+      textColor: "text-green-700",
+      borderColor: "border-green-200"
+    },
+    non_attivo: { 
+      icon: "🔴", 
+      text: "Non Attivo", 
+      bgColor: "bg-red-50", 
+      textColor: "text-red-700",
+      borderColor: "border-red-200"
+    }
+  };
+
+  const currentStatus = statusConfig[status] || statusConfig.attivo;
 
   // Se vuoi replicare la logica di "Apri Lista" come facevi in precedenza
   const [isOpen, setIsOpen] = useState(false);
   const toggleAccordion = () => setIsOpen(!isOpen);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div className={`bg-white rounded-lg border shadow-sm overflow-hidden ${currentStatus.borderColor}`}>
       {/* Header del collaboratore */}
-      <div className="p-4 border-b border-gray-200">
+      <div className={`p-4 border-b border-gray-200 ${currentStatus.bgColor}`}>
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <Link href={`/User/${id}`} className="block">
@@ -144,9 +182,14 @@ const CollaboratoreItem = ({ id, nome, ruolo }) => {
                 {nome}
               </h3>
             </Link>
-            <p className="text-sm text-gray-600 mt-1">
-              <span className="font-medium">Ruolo:</span> {displayRole}
-            </p>
+            <div className="flex items-center gap-4 mt-2">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {displayRole}
+              </span>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${currentStatus.bgColor} ${currentStatus.textColor}`}>
+                {currentStatus.icon} {currentStatus.text}
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 ml-4">

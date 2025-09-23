@@ -11,6 +11,7 @@ const EditUserForm = ({ userId }) => {
     password: "",
     partitaIva: "",
     subRole: "",
+    status: "attivo", // Nuovo campo status
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -32,6 +33,7 @@ const EditUserForm = ({ userId }) => {
           email: data.email || "",
           partitaIva: data.partitaIva || "",
           subRole: data.subRole || "",
+          status: data.status || "attivo", // Nuovo campo status
         });
       } catch (err) {
         console.error(err);
@@ -131,6 +133,21 @@ const EditUserForm = ({ userId }) => {
             value={formData.subRole}
             onChange={handleInputChange}
           />
+        </div>
+        <div className="inputWrapper">
+          <label>Status Account</label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="attivo">🟢 Attivo</option>
+            <option value="non_attivo">🔴 Non Attivo</option>
+          </select>
+          <small className="text-gray-600 mt-1 block">
+            I collaboratori con status "Non Attivo" non possono effettuare il login
+          </small>
         </div>
         <div className="inputWrapper">
           <label>Nuova Password</label>

@@ -3,8 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ListaCollaboratori from './Lista-collaboratori';
 import ListaClienti from './Lista-clienti';
-import ListaClientiWebDesigner from './Lista-clienti-webdesigner';
-import TimelineWebDesigner from './timeline-web-designer';
+import TimelineWebDesigner from './timeline-web-designer'; // ✨ Uso TimelineWebDesigner al posto di ListaClientiWebDesigner
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import FeedCommerciale from './feed-commerciale';
@@ -305,7 +304,7 @@ const Dashboard = () => {
           ) : session?.user?.subrole === "smm" ? (
             <ListaClienti id={session?.user.id} amministratore={false} />
           ) : (
-            <ListaClientiWebDesigner userId={session?.user.id} showWebDesignerLink={false} />
+            <TimelineWebDesigner userId={session?.user.id} />
           )}
         </div>
       </div>

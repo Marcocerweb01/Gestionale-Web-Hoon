@@ -87,6 +87,31 @@ const UserDetails = ({ params }) => {
     }
   };
 
+  // Toggle rapido dello status
+  const toggleStatus = async () => {
+    try {
+      const newStatus = user.status === 'attivo' ? 'non_attivo' : 'attivo';
+      const response = await fetch(`/api/users/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Errore durante l'aggiornamento dello status");
+      }
+
+      const updatedUser = await response.json();
+      setUser(updatedUser);
+      setFormData(updatedUser);
+    } catch (err) {
+      console.error(err);
+      setError("Non è stato possibile aggiornare lo status del collaboratore.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -136,12 +161,26 @@ const UserDetails = ({ params }) => {
               </div>
               
               {session?.user?.role === "amministratore" && !editMode && (
-                <button
-                  onClick={() => setEditMode(true)}
-                      className="w-1/12 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  Modifica
-                </button>
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                  {user?.subRole && (
+                    <button
+                      onClick={() => toggleStatus()}
+                      className={`px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors ${
+                        user.status === 'attivo' 
+                          ? 'bg-red-500 hover:bg-red-600' 
+                          : 'bg-green-500 hover:bg-green-600'
+                      }`}
+                    >
+                      {user.status === 'attivo' ? '🔴 Disattiva' : '🟢 Attiva'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setEditMode(true)}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    ✏️ Modifica
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -215,7 +254,7 @@ const UserDetails = ({ params }) => {
                       </div>
                       
                       {user.subRole && (
-                        <div className="sm:col-span-2">
+                        <div>
                           <label className="block text-sm font-semibold text-gray-900 mb-2">
                             💼 Ruolo
                           </label>
@@ -229,6 +268,26 @@ const UserDetails = ({ params }) => {
                             <option value="smm">📱 Social Media Manager</option>
                             <option value="web designer">💻 Web Designer</option>
                           </select>
+                        </div>
+                      )}
+                      
+                      {user.subRole && session?.user?.role === "amministratore" && (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-900 mb-2">
+                            🔄 Status Collaboratore
+                          </label>
+                          <select
+                            name="status"
+                            value={formData.status || "attivo"}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base"
+                          >
+                            <option value="attivo">🟢 Attivo - Il collaboratore può accedere normalmente</option>
+                            <option value="non_attivo">🔴 Non Attivo - Il collaboratore non può accedere</option>
+                          </select>
+                          <p className="text-xs text-gray-500 mt-2">
+                            ⚠️ <strong>Importante:</strong> I collaboratori con status "Non Attivo" non potranno effettuare il login
+                          </p>
                         </div>
                       )}
                       
@@ -365,6 +424,26 @@ const UserDetails = ({ params }) => {
                                user.subRole === 'smm' ? '📱 Social Media Manager' : 
                                user.subRole === 'commerciale' ? '💼 Commerciale' : user.subRole}
                             </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {user.subRole && (
+                      <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg flex-shrink-0">🔄</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-gray-600">Status</p>
+                            <p className={`font-semibold text-sm sm:text-base flex items-center space-x-1 ${
+                              user.status === 'attivo' ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              <span>{user.status === 'attivo' ? '🟢' : '🔴'}</span>
+                              <span>{user.status === 'attivo' ? 'Attivo' : 'Non Attivo'}</span>
+                            </p>
+                            {user.status === 'non_attivo' && (
+                              <p className="text-xs text-red-500 mt-1">⚠️ Non può accedere al sistema</p>
+                            )}
                           </div>
                         </div>
                       </div>

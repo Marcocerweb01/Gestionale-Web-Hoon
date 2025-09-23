@@ -17,6 +17,7 @@ export async function GET(req) {
       email: collaboratore.email,
       subRole: collaboratore.subRole,
       partitaIva: collaboratore.partitaIva,
+      status: collaboratore.status || 'attivo', // ✨ Aggiungi il campo status
     }));
     console.log("Dati formattati per il frontend:", result);
     return new Response(JSON.stringify(result), { status: 200, headers: {

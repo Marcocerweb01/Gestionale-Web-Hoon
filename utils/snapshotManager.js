@@ -118,11 +118,21 @@ export const createSnapshotForMonth = async (targetMese, targetAnno) => {
       });
     }
     
-    // Recupera tutte le collaborazioni
-    const collaborazioni = await Collaborazione.find({});
+    // Recupera tutte le collaborazioni con collaboratori attivi
+    const collaborazioni = await Collaborazione.find({})
+      .populate({
+        path: 'collaboratore',
+        match: { status: 'attivo' }, // ✨ FILTRA SOLO COLLABORATORI ATTIVI
+        select: 'nome cognome email status'
+      })
+      .populate('cliente', 'nome_azienda');
+    
+    // Filtra solo collaborazioni con collaboratori attivi (non null dopo il match)
+    const collaborazioniAttive = collaborazioni.filter(collab => collab.collaboratore !== null);
+    
     snapshot.collaborazioni_snapshot = [];
     
-    for (const collab of collaborazioni) {
+    for (const collab of collaborazioniAttive) {
       // Calcola gli appuntamenti fatti nel mese specifico
       const appuntamentiFatti = await calcolaAppuntamentiFatti(
         collab._id, 
@@ -185,9 +195,24 @@ export const updateSnapshot = async (collaborazioneId = null) => {
     // Se è specificata una collaborazione, aggiorna solo quella, altrimenti tutte
     const collaborazioni = collaborazioneId 
       ? await Collaborazione.find({ _id: collaborazioneId })
-      : await Collaborazione.find({});
+        .populate({
+          path: 'collaboratore',
+          match: { status: 'attivo' }, // ✨ FILTRA SOLO COLLABORATORI ATTIVI
+          select: 'nome cognome email status'
+        })
+        .populate('cliente', 'nome_azienda')
+      : await Collaborazione.find({})
+        .populate({
+          path: 'collaboratore',
+          match: { status: 'attivo' }, // ✨ FILTRA SOLO COLLABORATORI ATTIVI
+          select: 'nome cognome email status'
+        })
+        .populate('cliente', 'nome_azienda');
     
-    for (const collab of collaborazioni) {
+    // Filtra solo collaborazioni con collaboratori attivi
+    const collaborazioniAttive = collaborazioni.filter(collab => collab.collaboratore !== null);
+    
+    for (const collab of collaborazioniAttive) {
       const appuntamentiFatti = await calcolaAppuntamentiFatti(
         collab._id, 
         currentMonth.mese, 

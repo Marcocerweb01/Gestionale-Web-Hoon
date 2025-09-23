@@ -24,6 +24,12 @@ const CollaboratoreSchema = new Schema({
     enum: ["commerciale", "smm", "web designer"],
     required: true,
   },
+  status: {
+    type: String,
+    enum: ["attivo", "non_attivo"],
+    default: "attivo",
+    required: true
+  },
   livelloAccesso: { type: Number, default: 2 },
 }, { timestamps: true });
 

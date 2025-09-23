@@ -99,6 +99,7 @@ const ListaCollaboratori = () => {
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Nome</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Cognome</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Ruolo</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Email</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Azioni</th>
                 </tr>
@@ -120,6 +121,15 @@ const ListaCollaboratori = () => {
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 capitalize">
                         {collab.subRole}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                        collab.status === 'attivo' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {collab.status === 'attivo' ? '🟢 Attivo' : '🔴 Non Attivo'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-600">{collab.email}</td>
