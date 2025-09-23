@@ -59,11 +59,20 @@ const Registrazione = () => {
       });
       console.log(res)
       if (res.ok) {
-        // ✨ Invalida cache collaboratori dopo inserimento
+        // ✨ Invalida cache per TUTTI i tipi di utente, non solo collaboratori
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('collaboratori-updated'));
+          // Evento specifico per collaboratori
+          if (info.ruolo.nome === 'collaboratore') {
+            window.dispatchEvent(new CustomEvent('collaboratori-updated'));
+          }
+          // Evento generico per tutti gli utenti
+          window.dispatchEvent(new CustomEvent('users-updated'));
         }
-        router.push("/");
+        
+        // ✨ Piccolo delay per assicurarsi che il database sia aggiornato
+        setTimeout(() => {
+          router.push("/");
+        }, 500);
       } else {
         const errorData = await res.json();
         setError(errorData.message || "Errore nella registrazione.");

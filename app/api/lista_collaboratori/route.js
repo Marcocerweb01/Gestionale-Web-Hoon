@@ -6,8 +6,11 @@ export async function GET(req) {
     // Connessione al database
     await connectToDB();
 
-    // Recupera tutti i collaboratori dal database
-    const collaboratori = await Collaboratore.find();
+    // ✨ Forza la riconnessione per evitare cache di connessione
+    await connectToDB();
+
+    // Recupera tutti i collaboratori dal database con una query fresh
+    const collaboratori = await Collaboratore.find().lean(); // .lean() per performance
 
     // Formatta i dati per il frontend
     const result = collaboratori.map((collaboratore) => ({
@@ -19,7 +22,9 @@ export async function GET(req) {
       partitaIva: collaboratore.partitaIva,
       status: collaboratore.status || 'attivo', // ✨ Aggiungi il campo status
     }));
-    console.log("Dati formattati per il frontend:", result);
+    
+    console.log(`📊 Lista collaboratori recuperata: ${result.length} elementi`);
+    
     return new Response(JSON.stringify(result), { 
       status: 200, 
       headers: {
@@ -27,6 +32,7 @@ export async function GET(req) {
         "Pragma": "no-cache",
         "Expires": "0",
         "Surrogate-Control": "no-store",
+        "X-Timestamp": Date.now().toString(), // ✨ Timestamp per debug
       }
     });
   } catch (error) {

@@ -111,15 +111,17 @@ export async function POST(req) {
 
     // Risposta di successo
     
-    // 🔄 TRIGGER: Aggiorna snapshot se è stato aggiunto un nuovo collaboratore
+    // 🔄 TRIGGER: Aggiorna snapshot in background se è stato aggiunto un nuovo collaboratore
     if (ruolo.nome === "collaboratore") {
-      try {
-        await updateSnapshot();
-        console.log(`Snapshot aggiornato dopo aggiunta nuovo ${ruolo.dettagli.subRole}: ${nome} ${cognome}`);
-      } catch (snapshotError) {
-        console.error("Errore aggiornamento snapshot:", snapshotError);
-        // Non interrompiamo l'operazione se lo snapshot fallisce
-      }
+      // ✨ Non aspettare l'update dello snapshot - fallo in background
+      setImmediate(async () => {
+        try {
+          await updateSnapshot();
+          console.log(`Snapshot aggiornato dopo aggiunta nuovo ${ruolo.dettagli.subRole}: ${nome} ${cognome}`);
+        } catch (snapshotError) {
+          console.error("Errore aggiornamento snapshot:", snapshotError);
+        }
+      });
     }
     
     return NextResponse.json(
