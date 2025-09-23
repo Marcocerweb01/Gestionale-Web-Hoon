@@ -1,6 +1,6 @@
 import SnapshotCollaborazioni from '../models/SnapshotCollaborazioni.js';
 import Collaborazioni from '../models/Collaborazioni.js';
-import { getCurrentMonth, updateCurrentMonthSnapshot } from '../utils/snapshotManager.js';
+import { getCurrentMonth, updateSnapshot } from '../utils/snapshotManager.js';
 
 // Sistema di verifica consistenza tra database e snapshot
 export async function verifySnapshotConsistency() {
@@ -21,7 +21,7 @@ export async function verifySnapshotConsistency() {
     
     if (!snapshot) {
       console.warn("⚠️ Snapshot mancante, creazione automatica...");
-      await updateCurrentMonthSnapshot();
+      await updateSnapshot();
       return { consistent: false, fixed: true, reason: "snapshot_missing" };
     }
     
@@ -31,7 +31,7 @@ export async function verifySnapshotConsistency() {
     
     if (dbCount !== snapshotCount) {
       console.warn(`⚠️ Inconsistenza conteggio: DB=${dbCount}, Snapshot=${snapshotCount}`);
-      await updateCurrentMonthSnapshot();
+      await updateSnapshot();
       return { consistent: false, fixed: true, reason: "count_mismatch" };
     }
     
@@ -47,7 +47,7 @@ export async function verifySnapshotConsistency() {
       
       if (dbPosts !== snapshotPosts) {
         console.warn(`⚠️ Dati disallineati per ${sampleCollab.collaboratore?.nome}: DB=${dbPosts}, Snapshot=${snapshotPosts}`);
-        await updateCurrentMonthSnapshot();
+        await updateSnapshot();
         return { consistent: false, fixed: true, reason: "data_mismatch" };
       }
     }

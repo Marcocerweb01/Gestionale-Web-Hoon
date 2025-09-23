@@ -286,7 +286,7 @@ const UserDetails = ({ params }) => {
                             <option value="non_attivo">🔴 Non Attivo - Il collaboratore non può accedere</option>
                           </select>
                           <p className="text-xs text-gray-500 mt-2">
-                            ⚠️ <strong>Importante:</strong> I collaboratori con status "Non Attivo" non potranno effettuare il login
+                            ⚠️ <strong>Importante:</strong> I collaboratori con status &quot;Non Attivo&quot; non potranno effettuare il login
                           </p>
                         </div>
                       )}
