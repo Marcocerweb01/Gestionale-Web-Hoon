@@ -18,10 +18,10 @@ const Lista_collaboratori = ({ collaboratori }) => {
   const [openSmm, setOpenSmm] = useState(false);
   const [openComm, setOpenComm] = useState(false);
 
-  // Filtra i collaboratori in base al ruolo
-  const webDesigners = collaboratori.filter((c) => c.subRole === "web designer");
-  const smms = collaboratori.filter((c) => c.subRole === "smm");
-  const commercials = collaboratori.filter((c) => c.subRole === "commerciale");
+  // Filtra i collaboratori in base al ruolo E allo status attivo
+  const webDesigners = collaboratori.filter((c) => c.subRole === "web designer" && c.status === "attivo");
+  const smms = collaboratori.filter((c) => c.subRole === "smm" && c.status === "attivo");
+  const commercials = collaboratori.filter((c) => c.subRole === "commerciale" && c.status === "attivo");
 
   // Funzioni per togglare l'apertura/chiusura di ciascuna sezione
   const toggleWeb = () => setOpenWeb((prev) => !prev);

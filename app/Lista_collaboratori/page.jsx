@@ -8,6 +8,7 @@ const ListaCollaboratori = () => {
   const [collaboratori, setCollaboratori] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showInactive, setShowInactive] = useState(false); // ✨ Stato per mostrare inattivi
   const router = useRouter();
 
   const fetchCollaboratori = async () => {
@@ -49,10 +50,12 @@ const ListaCollaboratori = () => {
     </div>
   );
 
-  // Ordina per nome e cognome
-  const sorted = [...collaboratori].sort((a, b) =>
-    (a.nome + " " + a.cognome).localeCompare(b.nome + " " + b.cognome)
-  );
+  // Ordina per nome e cognome E filtra in base al toggle
+  const sorted = [...collaboratori]
+    .filter(collab => showInactive ? true : collab.status === "attivo") // ✨ Filtra in base al toggle
+    .sort((a, b) =>
+      (a.nome + " " + a.cognome).localeCompare(b.nome + " " + b.cognome)
+    );
 
   return (
     <div className="space-y-6">
@@ -64,21 +67,35 @@ const ListaCollaboratori = () => {
               <span className="text-white font-bold">👥</span>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Lista Collaboratori</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Lista Collaboratori {showInactive ? "" : "Attivi"}
+              </h1>
               <p className="text-sm text-gray-600">
-                Gestisci e visualizza tutti i collaboratori registrati
+                Gestisci e visualizza {showInactive ? "tutti i collaboratori" : "i collaboratori attivi"}
               </p>
             </div>
           </div>
-          <button
-            className="btn-secondary"
-            onClick={fetchCollaboratori}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Aggiorna
-          </button>
+          <div className="flex space-x-3">
+            <button
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                showInactive 
+                  ? 'bg-gray-600 hover:bg-gray-700 text-white' 
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+              onClick={() => setShowInactive(!showInactive)}
+            >
+              {showInactive ? '👁️ Mostra Solo Attivi' : '👀 Mostra Tutti'}
+            </button>
+            <button
+              className="btn-secondary"
+              onClick={fetchCollaboratori}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Aggiorna
+            </button>
+          </div>
         </div>
       </div>
 
@@ -99,7 +116,9 @@ const ListaCollaboratori = () => {
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Nome</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Cognome</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Ruolo</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
+                  {showInactive && (
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
+                  )}
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Email</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Azioni</th>
                 </tr>
@@ -123,15 +142,17 @@ const ListaCollaboratori = () => {
                         {collab.subRole}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        collab.status === 'attivo' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {collab.status === 'attivo' ? '🟢 Attivo' : '🔴 Non Attivo'}
-                      </span>
-                    </td>
+                    {showInactive && (
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          collab.status === 'attivo' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {collab.status === 'attivo' ? '🟢 Attivo' : '🔴 Non Attivo'}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-6 py-4 text-gray-600">{collab.email}</td>
                     <td className="px-6 py-4">
                       <button 
