@@ -1,7 +1,10 @@
 import { connectToDB } from "@/utils/database";
 import { Azienda, Collaboratore, Contatto, Amministratore } from "@/models/User";
 import bcrypt from "bcrypt";
- 
+
+// ✨ FORZA DYNAMIC RENDERING - NO CACHE
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 
 export async function GET(req, { params }) {
@@ -22,11 +25,25 @@ export async function GET(req, { params }) {
     if (!user) {
       return new Response(
         JSON.stringify({ message: "Utente non trovato" }),
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          }
+        }
       );
     }
 
-    return new Response(JSON.stringify(user), { status: 200 });
+    return new Response(JSON.stringify(user), { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (error) {
     console.error("Errore durante il recupero dell'utente:", error);
     return new Response(
@@ -79,7 +96,14 @@ export async function PUT(req, { params }) {
         new: true,
       });
   
-      return new Response(JSON.stringify(updatedUser), { status: 200 });
+      return new Response(JSON.stringify(updatedUser), { 
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      });
     } catch (error) {
       console.error("Errore durante l'aggiornamento dell'utente:", error);
       return new Response(
@@ -122,7 +146,14 @@ export async function PUT(req, { params }) {
         runValidators: true, // Assicura che i dati rispettino lo schema
       });
   
-      return new Response(JSON.stringify(updatedUser), { status: 200 });
+      return new Response(JSON.stringify(updatedUser), { 
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      });
     } catch (error) {
       console.error("Errore durante l'aggiornamento dell'utente:", error);
       return new Response(

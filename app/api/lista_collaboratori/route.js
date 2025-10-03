@@ -1,6 +1,10 @@
 import { Collaboratore } from "@/models/User"; // Assicurati che Collaboratore sia importato correttamente
 import { connectToDB } from "@/utils/database";
 
+// ✨ FORZA DYNAMIC RENDERING - NO CACHE SU VERCEL
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req) {
   try {
     // Connessione al database
