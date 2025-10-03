@@ -72,7 +72,7 @@ const ListaClienti = ({ id, amministratore }) => {
       setError("ID utente non fornito.");
       setLoading(false);
     }
-  }, [id],[fetchCollaborazioni]);
+  }, [id, fetchCollaborazioni]); // ✨ Fix: sintassi corretta per le dipendenze
 
 
   useEffect(() => {

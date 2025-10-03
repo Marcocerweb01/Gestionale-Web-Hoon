@@ -1,5 +1,5 @@
 // Hook per aggiornare automaticamente lo snapshot quando cambiano le collaborazioni
-import { updateCurrentMonthSnapshot } from '../utils/snapshotManager.js';
+import { updateSnapshot } from '../utils/snapshotManager.js'; // ✨ Fix: usa updateSnapshot invece di updateCurrentMonthSnapshot
 
 // Sistema di debounce per evitare troppi aggiornamenti simultanei
 let updateTimeout = null;
@@ -21,7 +21,7 @@ async function debouncedUpdateSnapshot() {
     try {
       isUpdating = true;
       console.log("🔄 Eseguendo aggiornamento snapshot (debounced)...");
-      await updateCurrentMonthSnapshot();
+      await updateSnapshot(); // ✨ Fix: usa updateSnapshot
       console.log("✅ Aggiornamento snapshot completato");
     } catch (error) {
       console.error("❌ Errore aggiornamento snapshot:", error);

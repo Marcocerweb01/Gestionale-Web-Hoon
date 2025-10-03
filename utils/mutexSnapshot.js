@@ -1,4 +1,6 @@
 // Sistema di lock per evitare aggiornamenti simultanei
+import { updateSnapshot } from './snapshotManager.js'; // ✨ Fix: import corretto
+
 class SnapshotMutex {
   constructor() {
     this.locked = false;
@@ -33,7 +35,7 @@ export async function lockedUpdateSnapshot() {
   
   try {
     console.log("🔒 Lock acquisito, aggiornando snapshot...");
-    await updateCurrentMonthSnapshot();
+    await updateSnapshot(); // ✨ Fix: funzione corretta
     console.log("✅ Snapshot aggiornato con successo");
   } catch (error) {
     console.error("❌ Errore aggiornamento snapshot:", error);

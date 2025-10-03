@@ -146,7 +146,7 @@ const EditUserForm = ({ userId }) => {
             <option value="non_attivo">🔴 Non Attivo</option>
           </select>
           <small className="text-gray-600 mt-1 block">
-            I collaboratori con status "Non Attivo" non possono effettuare il login
+            I collaboratori con status &quot;Non Attivo&quot; non possono effettuare il login
           </small>
         </div>
         <div className="inputWrapper">

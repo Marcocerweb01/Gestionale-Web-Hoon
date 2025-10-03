@@ -16,7 +16,7 @@ export async function verifySnapshotConsistency() {
     // 2. Prendi dati live dal database
     const collaborazioni = await Collaborazioni.find({ stato_collaborazione: 'attiva' })
       .populate('collaboratore', 'nome cognome')
-      .populate('cliente', 'nome_azienda')
+      .populate('azienda', 'ragioneSociale')
       .lean();
     
     if (!snapshot) {

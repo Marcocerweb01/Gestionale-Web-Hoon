@@ -1,4 +1,6 @@
 // Sistema di debounce per evitare troppi aggiornamenti simultanei
+import { updateSnapshot } from './snapshotManager.js'; // ✨ Fix: import corretto
+
 let updateTimeout = null;
 let isUpdating = false;
 
@@ -18,7 +20,7 @@ export async function debouncedUpdateSnapshot() {
     try {
       isUpdating = true;
       console.log("🔄 Eseguendo aggiornamento snapshot (debounced)...");
-      await updateCurrentMonthSnapshot();
+      await updateSnapshot(); // ✨ Fix: funzione corretta
       console.log("✅ Aggiornamento snapshot completato");
     } catch (error) {
       console.error("❌ Errore aggiornamento snapshot:", error);
@@ -32,7 +34,7 @@ export async function debouncedUpdateSnapshot() {
 export async function safeUpdateSnapshot(retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
-      await updateCurrentMonthSnapshot();
+      await updateSnapshot(); // ✨ Fix: funzione corretta
       return;
     } catch (error) {
       console.warn(`⚠️ Tentativo ${i + 1}/${retries} fallito:`, error.message);

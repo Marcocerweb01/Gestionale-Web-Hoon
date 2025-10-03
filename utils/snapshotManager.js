@@ -2,6 +2,7 @@ import { connectToDB } from "@/utils/database";
 import SnapshotCollaborazioni from "@/models/SnapshotCollaborazioni";
 import Collaborazione from "@/models/Collaborazioni";
 import Nota from "@/models/Note";
+import { Collaboratore } from "@/models/User";
 
 // Funzione per ottenere il mese corrente
 export const getCurrentMonth = () => {
@@ -125,7 +126,7 @@ export const createSnapshotForMonth = async (targetMese, targetAnno) => {
         match: { status: 'attivo' }, // ✨ FILTRA SOLO COLLABORATORI ATTIVI
         select: 'nome cognome email status'
       })
-      .populate('cliente', 'nome_azienda');
+      .populate('azienda', 'ragioneSociale');
     
     // Filtra solo collaborazioni con collaboratori attivi (non null dopo il match)
     const collaborazioniAttive = collaborazioni.filter(collab => collab.collaboratore !== null);
@@ -200,14 +201,14 @@ export const updateSnapshot = async (collaborazioneId = null) => {
           match: { status: 'attivo' }, // ✨ FILTRA SOLO COLLABORATORI ATTIVI
           select: 'nome cognome email status'
         })
-        .populate('cliente', 'nome_azienda')
+        .populate('azienda', 'ragioneSociale')
       : await Collaborazione.find({})
         .populate({
           path: 'collaboratore',
           match: { status: 'attivo' }, // ✨ FILTRA SOLO COLLABORATORI ATTIVI
           select: 'nome cognome email status'
         })
-        .populate('cliente', 'nome_azienda');
+        .populate('azienda', 'ragioneSociale');
     
     // Filtra solo collaborazioni con collaboratori attivi
     const collaborazioniAttive = collaborazioni.filter(collab => collab.collaboratore !== null);

@@ -33,7 +33,7 @@ export async function transactionalUpdateSnapshot() {
         stato_collaborazione: 'attiva' 
       })
       .populate('collaboratore', 'nome cognome email')
-      .populate('cliente', 'nome_azienda')
+      .populate('azienda', 'ragioneSociale')
       .session(session);
       
       // 3. Aggiorna snapshot con versioning

@@ -1,5 +1,5 @@
 // Sistema ibrido: aggiornamento immediato + debounce per performance
-import { updateCurrentMonthSnapshot } from '../utils/snapshotManager.js';
+import { updateSnapshot } from '../utils/snapshotManager.js'; // ✨ Fix: import corretto
 
 let updateTimeout = null;
 let isUpdating = false;
@@ -9,7 +9,7 @@ let pendingUpdates = new Set();
 async function immediateUpdateSnapshot(action, data) {
   try {
     console.log(`🚨 Aggiornamento IMMEDIATO per: ${action}`);
-    await updateCurrentMonthSnapshot();
+    await updateSnapshot(); // ✨ Fix: funzione corretta
     console.log(`✅ Snapshot aggiornato immediatamente`);
     return true;
   } catch (error) {
@@ -22,7 +22,7 @@ async function immediateUpdateSnapshot(action, data) {
 async function backupUpdateWithRetry(action, data, retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
-      await updateCurrentMonthSnapshot();
+      await updateSnapshot(); // ✨ Fix: funzione corretta
       console.log(`✅ Backup update riuscito (tentativo ${i + 1})`);
       return true;
     } catch (error) {

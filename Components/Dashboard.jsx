@@ -34,22 +34,40 @@ const Dashboard = () => {
   // Funzione per avviare il download
   const downloadxlsx = async () => {
     try {
-      const response = await fetch(`/api/export_data`);
+      console.log("🔄 Avvio download dati...");
+      const response = await fetch(`/api/download-excel`);
+      
+      console.log("📊 Response status:", response.status);
+      console.log("📊 Response headers:", Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        throw new Error("Download non riuscito");
+        // ✨ Ottieni dettagli dell'errore
+        const errorText = await response.text();
+        console.error("❌ Errore API export:", errorText);
+        throw new Error(`Errore server: ${response.status} - ${errorText}`);
       }
+      
       const blob = await response.blob();
+      console.log("📁 Blob creato, dimensione:", blob.size);
+      
+      if (blob.size === 0) {
+        throw new Error("File Excel vuoto ricevuto dal server");
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "collaborazioni.xlsx";
+      a.download = `collaborazioni_${new Date().toISOString().split('T')[0]}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      
+      console.log("✅ Download completato con successo");
+      alert("✅ Download completato con successo!");
     } catch (err) {
-      console.error("Errore:", err);
-      alert("❌ Errore durante il download. Riprova.");
+      console.error("❌ Errore dettagliato:", err);
+      alert(`❌ Errore durante il download: ${err.message}`);
     }
   };
 

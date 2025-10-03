@@ -50,7 +50,7 @@ const AziendaCollab = ({ aziendaId }) => {
   useEffect(() => {
     fetchCollaborazioni();
     fetchCollaboratori();
-  }, [aziendaId]);
+  }, [aziendaId, fetchCollaborazioni]); // ✨ Fix: aggiungi fetchCollaborazioni alle dipendenze
 
   // Gestione modifica
   const handleEditClick = (rowId) => {
