@@ -7,8 +7,15 @@ export const useCollaboratori = () => {
   const [collaboratori, setCollaboratori] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [lastCount, setLastCount] = useState(0); // ✨ Traccia il numero di collaboratori
+  const [lastHash, setLastHash] = useState(""); // ✨ Traccia un hash dei dati, non solo il count
   const intervalRef = useRef(null);
+
+  // ✨ Funzione per creare un hash semplice dei dati
+  const createDataHash = (data) => {
+    if (!data || data.length === 0) return "empty";
+    // Crea un hash basato su: numero + tutti gli status + tutti gli id
+    return data.map(c => `${c.id}-${c.status || 'attivo'}`).join('|');
+  };
 
   const fetchCollaboratori = useCallback(async (isPolling = false) => {
     if (!isPolling) setLoading(true);
@@ -29,15 +36,16 @@ export const useCollaboratori = () => {
       if (!response.ok) throw new Error("Errore nel recupero dei collaboratori");
       
       const result = await response.json();
+      const currentHash = createDataHash(result);
       
-      // ✨ Se stiamo facendo polling e il numero è cambiato, aggiorna
-      if (isPolling && result.length !== lastCount) {
-        console.log(`🔄 Rilevati cambiamenti: ${lastCount} → ${result.length} collaboratori`);
+      // ✨ Aggiorna se l'hash è diverso (numero O status cambiati)
+      if (isPolling && currentHash !== lastHash) {
+        console.log(`🔄 Rilevati cambiamenti nei dati collaboratori`);
         setCollaboratori(result);
-        setLastCount(result.length);
+        setLastHash(currentHash);
       } else if (!isPolling) {
         setCollaboratori(result);
-        setLastCount(result.length);
+        setLastHash(currentHash);
       }
       
     } catch (err) {
@@ -46,7 +54,7 @@ export const useCollaboratori = () => {
     } finally {
       if (!isPolling) setLoading(false);
     }
-  }, [lastCount]);
+  }, [lastHash]);
 
   // ✨ Polling intelligente ogni 3 secondi
   useEffect(() => {
