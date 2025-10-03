@@ -10,11 +10,12 @@ export async function GET(req) {
     // Connessione al database
     await connectToDB();
 
-    // ✨ Forza la riconnessione per evitare cache di connessione
-    await connectToDB();
-
-    // Recupera tutti i collaboratori dal database con una query fresh
-    const collaboratori = await Collaboratore.find().lean(); // .lean() per performance
+    // ✨ Recupera tutti i collaboratori con opzioni anti-cache per Railway
+    const collaboratori = await Collaboratore
+      .find()
+      .read('primary') // ✨ FORZA lettura dal primary node, non da replica
+      .lean() // ✨ Ritorna plain JS objects, no Mongoose docs
+      .exec(); // ✨ Esegui subito la query
 
     // Formatta i dati per il frontend
     const result = collaboratori.map((collaboratore) => ({

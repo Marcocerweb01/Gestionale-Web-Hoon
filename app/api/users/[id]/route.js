@@ -120,13 +120,15 @@ export async function PUT(req, { params }) {
   
       const userId = params.id; // ID dell'utente dalla route
       const updates = await req.json(); // Dati da aggiornare
+      
+      console.log(`🔄 [PATCH] Aggiornamento utente ${userId}:`, updates);
   
-      // Cerca l'utente in tutte le collezioni
+      // Cerca l'utente in tutte le collezioni con read primary
       const models = [Azienda, Collaboratore, Contatto, Amministratore];
       let userModel = null;
   
       for (const model of models) {
-        const user = await model.findById(userId);
+        const user = await model.findById(userId).read('primary'); // ✨ FORZA primary read
         if (user) {
           userModel = model;
           break;
@@ -134,17 +136,21 @@ export async function PUT(req, { params }) {
       }
   
       if (!userModel) {
+        console.log(`❌ Utente ${userId} non trovato`);
         return new Response(
           JSON.stringify({ message: "Utente non trovato" }),
           { status: 404 }
         );
       }
   
-      // Aggiorna solo i campi specificati
+      // ✨ Aggiorna con writeConcern per garantire la scrittura
       const updatedUser = await userModel.findByIdAndUpdate(userId, updates, {
         new: true,
-        runValidators: true, // Assicura che i dati rispettino lo schema
+        runValidators: true,
+        writeConcern: { w: 'majority' }, // ✨ Aspetta conferma da majority dei nodi
       });
+      
+      console.log(`✅ Utente ${userId} aggiornato con successo. Nuovo status:`, updatedUser.status);
   
       return new Response(JSON.stringify(updatedUser), { 
         status: 200,

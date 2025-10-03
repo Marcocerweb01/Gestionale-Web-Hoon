@@ -6,8 +6,17 @@ let cached = global.mongoose || { conn: null, promise: null };
 export const connectToDB = async () => {
   mongoose.set('strictQuery', true);
 
+  // ✨ DISABILITA CACHE QUERY PER RAILWAY - forza fresh data
+  mongoose.set('autoIndex', true);
+
   if (cached.conn) {
-    return cached.conn;
+    // ✨ Verifica che la connessione sia ancora valida
+    if (mongoose.connection.readyState === 1) {
+      return cached.conn;
+    }
+    // Se non è valida, resetta
+    cached.conn = null;
+    cached.promise = null;
   }
 
   if (!cached.promise) {
@@ -15,11 +24,18 @@ export const connectToDB = async () => {
       dbName: "Webarea",
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      // ✨ CONFIGURAZIONI ANTI-CACHE PER RAILWAY
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
     }).then((mongoose) => {
-      console.log("✅ Connessione Mongo avvenuta");
+      console.log("✅ Connessione Mongo avvenuta (Railway)");
       return mongoose;
     }).catch((err) => {
       console.error("❌ Errore Mongo:", err);
+      // ✨ Reset cache on error
+      cached.conn = null;
+      cached.promise = null;
       throw err;
     });
   }
