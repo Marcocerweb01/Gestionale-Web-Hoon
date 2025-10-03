@@ -334,7 +334,7 @@ const selectCollaboratore = (collaboratore) => {
             <button
               type="submit"
               disabled={loading || !formData.aziendaId || !formData.collaboratoreId}
-              className="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:hover:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-sm"
             >
               {loading ? (
                 <>
