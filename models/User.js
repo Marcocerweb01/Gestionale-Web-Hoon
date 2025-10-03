@@ -30,6 +30,11 @@ const CollaboratoreSchema = new Schema({
     default: "attivo",
     required: true
   },
+  noteAmministratore: {
+    type: String,
+    default: "",
+    required: false
+  },
   livelloAccesso: { type: Number, default: 2 },
 }, { timestamps: true });
 

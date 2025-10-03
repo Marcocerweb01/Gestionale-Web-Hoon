@@ -27,6 +27,12 @@ const UserDetails = ({ params }) => {
           throw new Error("Errore nel recupero dei dettagli utente");
         }
         const data = await response.json();
+        
+        // ✨ Assicurati che noteAmministratore sia sempre presente
+        if (data.subRole && !data.noteAmministratore) {
+          data.noteAmministratore = "";
+        }
+        
         setUser(data);
         setFormData(data); // Imposta i dati iniziali del form
       } catch (err) {
@@ -60,12 +66,15 @@ const UserDetails = ({ params }) => {
   // Gestione input del form
   const handleChange = (e) => {
     const { name, value } = e.target;
+    console.log(`📝 Campo modificato: ${name} = "${value}"`);
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Salva modifiche
   const handleSave = async () => {
     try {
+      console.log('📤 Dati inviati per il salvataggio:', formData);
+      
       const response = await fetch(`/api/users/${id}`, {
         method: "PATCH",
         headers: {
@@ -79,7 +88,9 @@ const UserDetails = ({ params }) => {
       }
 
       const updatedUser = await response.json();
+      console.log('✅ Utente aggiornato ricevuto dal server:', updatedUser);
       setUser(updatedUser);
+      setFormData(updatedUser); // ✨ Aggiorna anche formData con i dati salvati
       setEditMode(false); // Esci dalla modalità modifica
     } catch (err) {
       console.error(err);
@@ -300,6 +311,25 @@ const UserDetails = ({ params }) => {
                         </div>
                       )}
                       
+                      {user.subRole && session?.user?.role === "amministratore" && (
+                        <div className="sm:col-span-2">
+                          <label className="block text-sm font-semibold text-gray-900 mb-2">
+                            📝 Note Amministratore
+                          </label>
+                          <textarea
+                            name="noteAmministratore"
+                            value={formData.noteAmministratore || ""}
+                            onChange={handleChange}
+                            rows={4}
+                            className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base resize-none"
+                            placeholder="Inserisci note private sul collaboratore (visibili solo agli amministratori)..."
+                          />
+                          <p className="text-xs text-gray-500 mt-2">
+                            🔒 Queste note sono <strong>private</strong> e visibili solo agli amministratori
+                          </p>
+                        </div>
+                      )}
+                      
                       {user.partitaIva && (
                         <div>
                           <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -453,6 +483,21 @@ const UserDetails = ({ params }) => {
                             {user.status === 'non_attivo' && (
                               <p className="text-xs text-red-500 mt-1">⚠️ Non può accedere al sistema</p>
                             )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {user.subRole && user.noteAmministratore && session?.user?.role === "amministratore" && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4 sm:col-span-2 lg:col-span-3">
+                        <div className="flex items-start space-x-2">
+                          <span className="text-lg flex-shrink-0">📝</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-amber-900 mb-2 flex items-center">
+                              Note Amministratore 
+                              <span className="ml-2 text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">🔒 Privato</span>
+                            </p>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{user.noteAmministratore}</p>
                           </div>
                         </div>
                       </div>

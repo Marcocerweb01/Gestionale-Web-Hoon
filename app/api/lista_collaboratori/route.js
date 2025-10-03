@@ -26,6 +26,7 @@ export async function GET(req) {
       subRole: collaboratore.subRole,
       partitaIva: collaboratore.partitaIva,
       status: collaboratore.status || 'attivo', // ✨ Aggiungi il campo status
+      noteAmministratore: collaboratore.noteAmministratore || '', // ✨ Aggiungi le note amministratore
     }));
     
     console.log(`📊 Lista collaboratori recuperata: ${result.length} elementi`);

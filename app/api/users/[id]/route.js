@@ -58,7 +58,10 @@ export async function PUT(req, { params }) {
       await connectToDB();
   
       const userId = params.id; // Estrai l'ID dalla route
-      const { nome, cognome, email, password, ...rest } = await req.json();
+      const body = await req.json();
+      const { nome, cognome, email, password, ...rest } = body;
+      
+      console.log(`🔄 [PUT] Aggiornamento utente ${userId}. Dati ricevuti:`, body);
   
       // Cerca l'utente in tutte le collezioni
       const models = [Azienda, Collaboratore, Contatto, Amministratore];
@@ -88,13 +91,22 @@ export async function PUT(req, { params }) {
         updates.password = await bcrypt.hash(password, 10);
       }
   
-      // Aggiungi altri campi specifici al ruolo
+      // Aggiungi altri campi specifici al ruolo (incluse noteAmministratore)
       Object.assign(updates, rest);
+      
+      console.log(`📝 Updates finali da salvare:`, updates);
   
       // Aggiorna l'utente nel database
-      const updatedUser = await userModel.findByIdAndUpdate(userId, updates, {
-        new: true,
-      });
+      const updatedUser = await userModel.findByIdAndUpdate(
+        userId, 
+        { $set: updates }, // ✨ Usa $set per forzare l'aggiornamento
+        {
+          new: true,
+          strict: false, // ✨ Permette campi non nello schema
+        }
+      );
+      
+      console.log(`✅ Utente aggiornato con successo:`, updatedUser);
   
       return new Response(JSON.stringify(updatedUser), { 
         status: 200,
@@ -121,7 +133,11 @@ export async function PUT(req, { params }) {
       const userId = params.id; // ID dell'utente dalla route
       const updates = await req.json(); // Dati da aggiornare
       
-      console.log(`🔄 [PATCH] Aggiornamento utente ${userId}:`, updates);
+      console.log(`🔄 [PATCH] Aggiornamento utente ${userId}. Dati ricevuti:`, updates);
+      console.log(`📝 noteAmministratore presenti?`, 'noteAmministratore' in updates ? 'SI' : 'NO');
+      if ('noteAmministratore' in updates) {
+        console.log(`📝 Valore noteAmministratore: "${updates.noteAmministratore}"`);
+      }
   
       // Cerca l'utente in tutte le collezioni con read primary
       const models = [Azienda, Collaboratore, Contatto, Amministratore];
@@ -131,6 +147,7 @@ export async function PUT(req, { params }) {
         const user = await model.findById(userId).read('primary'); // ✨ FORZA primary read
         if (user) {
           userModel = model;
+          console.log(`✅ Utente trovato nel modello: ${model.modelName}`);
           break;
         }
       }
@@ -144,13 +161,19 @@ export async function PUT(req, { params }) {
       }
   
       // ✨ Aggiorna con writeConcern per garantire la scrittura
-      const updatedUser = await userModel.findByIdAndUpdate(userId, updates, {
-        new: true,
-        runValidators: true,
-        writeConcern: { w: 'majority' }, // ✨ Aspetta conferma da majority dei nodi
-      });
+      const updatedUser = await userModel.findByIdAndUpdate(
+        userId, 
+        { $set: updates }, // ✨ Usa $set per forzare l'aggiornamento anche di campi non esistenti
+        {
+          new: true,
+          runValidators: false, // ✨ Disabilita validator per permettere campi opzionali
+          strict: false, // ✨ Permette di aggiungere campi non nello schema strict
+          writeConcern: { w: 'majority' },
+        }
+      );
       
-      console.log(`✅ Utente ${userId} aggiornato con successo. Nuovo status:`, updatedUser.status);
+      console.log(`✅ Utente ${userId} aggiornato con successo.`);
+      console.log(`📝 noteAmministratore salvate:`, updatedUser.noteAmministratore || '(vuoto)');
   
       return new Response(JSON.stringify(updatedUser), { 
         status: 200,

@@ -54,6 +54,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
                 nome={collab.nome + " " + collab.cognome} 
                 ruolo={collab.subRole}
                 status={collab.status}
+                noteAmministratore={collab.noteAmministratore}
               />
             ))}
           </div>
@@ -89,6 +90,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
                 nome={collab.nome + " " + collab.cognome} 
                 ruolo={collab.subRole}
                 status={collab.status}
+                noteAmministratore={collab.noteAmministratore}
               />
             ))}
           </div>
@@ -124,6 +126,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
                 nome={collab.nome + " " + collab.cognome} 
                 ruolo={collab.subRole}
                 status={collab.status}
+                noteAmministratore={collab.noteAmministratore}
               />
             ))}
           </div>
@@ -142,7 +145,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
  * Singolo collaboratore. Riprende la logica di feed o toggle.
  * Al posto di "Lista_clienti", se serve, potresti passare "id".
  */
-const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo" }) => {
+const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo", noteAmministratore = "" }) => {
   // Mappa ruoli
   const displayRole =
     roleMap[ruolo] || ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
@@ -190,6 +193,17 @@ const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo" }) => {
                 {currentStatus.icon} {currentStatus.text}
               </span>
             </div>
+            {/* ✨ Note Amministratore */}
+            {noteAmministratore && (
+              <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <span className="text-xs flex-shrink-0 mt-0.5">📝</span>
+                  <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+                    {noteAmministratore}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-2 ml-4">
