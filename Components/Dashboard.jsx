@@ -31,6 +31,9 @@ const Dashboard = () => {
   // ✨ Usa il nuovo hook con refresh automatico
   const { collaboratori: data, loading, error, refreshCollaboratori } = useCollaboratoriWithGlobalRefresh();
 
+  // ✨ Filtra solo collaboratori attivi per il Dashboard
+  const collaboratoriAttivi = data.filter(collab => collab.status === 'attivo');
+
   // Funzione per avviare il download
   const downloadxlsx = async () => {
     try {
@@ -291,7 +294,7 @@ const Dashboard = () => {
         
         <div className="p-6">
           {session?.user?.role === "amministratore" ? (
-            <ListaCollaboratori collaboratori={data} />
+            <ListaCollaboratori collaboratori={collaboratoriAttivi} />
           ) : session?.user?.subrole === "commerciale" ? (
             <FeedCommerciale id={session?.user.id} />
           ) : session?.user?.subrole === "smm" ? (
