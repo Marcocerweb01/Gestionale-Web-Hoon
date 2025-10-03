@@ -50,7 +50,7 @@ const AziendaCollab = ({ aziendaId }) => {
   useEffect(() => {
     fetchCollaborazioni();
     fetchCollaboratori();
-  }, [aziendaId, fetchCollaborazioni]); // ✨ Fix: aggiungi fetchCollaborazioni alle dipendenze
+  }, [aziendaId]); // Solo aziendaId come dipendenza per evitare loop infiniti
 
   // Gestione modifica
   const handleEditClick = (rowId) => {
@@ -159,9 +159,9 @@ const handleDelete = async (rowId) => {
         <h3 className="text-lg font-semibold text-gray-900">Collaboratori Assegnati</h3>
       </div>
 
-      {/* Tabella con design moderno */}
+      {/* Tabella con design moderno - ✨ Rimosso overflow-hidden per permettere dropdown */}
       <div className="overflow-x-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -172,7 +172,7 @@ const handleDelete = async (rowId) => {
             <tbody className="bg-white divide-y divide-gray-200">
           {collaborazioni.map((row) => (
             <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 whitespace-nowrap">
+              <td className="px-4 py-4 whitespace-nowrap relative">
                 {editingRow === row.id ? (
                   <div className="relative" ref={collaboratoreDropdownRef}>
                     <input
@@ -187,28 +187,44 @@ const handleDelete = async (rowId) => {
                       placeholder="Cerca collaboratore..."
                     />
                     {showCollaboratoriDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-                        {filteredCollaboratori.length > 0 ? (
-                          filteredCollaboratori.map((collaboratore) => (
-                            <div
-                              key={collaboratore.id}
-                              className="p-2 hover:bg-blue-100 cursor-pointer"
-                              onClick={() => {
-                                setTempData((prev) => ({
-                                  ...prev,
-                                  collaboratoreId: collaboratore.id,
-                                }));
-                                setCollaboratoreSearch(`${collaboratore.nome} ${collaboratore.cognome}`);
-                                setShowCollaboratoriDropdown(false);
-                              }}
-                            >
-                              {`${collaboratore.nome} ${collaboratore.cognome}`}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-2 text-gray-500">Nessun collaboratore trovato</div>
-                        )}
-                      </div>
+                      <>
+                        {/* Backdrop per chiudere cliccando fuori */}
+                        <div 
+                          className="fixed inset-0 z-40" 
+                          onClick={() => setShowCollaboratoriDropdown(false)}
+                        />
+                        {/* Dropdown che appare sopra tutto */}
+                        <div className="fixed z-50 bg-white border-2 border-blue-400 rounded-lg shadow-2xl max-h-60 overflow-auto min-w-[300px]"
+                          style={{
+                            top: collaboratoreDropdownRef.current?.getBoundingClientRect().bottom + 4,
+                            left: collaboratoreDropdownRef.current?.getBoundingClientRect().left,
+                            width: collaboratoreDropdownRef.current?.getBoundingClientRect().width
+                          }}
+                        >
+                          {filteredCollaboratori.length > 0 ? (
+                            filteredCollaboratori.map((collaboratore) => (
+                              <div
+                                key={collaboratore.id}
+                                className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                                onClick={() => {
+                                  setTempData((prev) => ({
+                                    ...prev,
+                                    collaboratoreId: collaboratore.id,
+                                  }));
+                                  setCollaboratoreSearch(`${collaboratore.nome} ${collaboratore.cognome}`);
+                                  setShowCollaboratoriDropdown(false);
+                                }}
+                              >
+                                <div className="font-medium text-gray-900">
+                                  {`${collaboratore.nome} ${collaboratore.cognome}`}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-3 text-gray-500 text-center">Nessun collaboratore trovato</div>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 ) : (
@@ -220,26 +236,40 @@ const handleDelete = async (rowId) => {
               <td className="px-4 py-4 whitespace-nowrap">
                 <div className="flex items-center space-x-2">
                   {editingRow === row.id ? (
-                    <button
-                      onClick={handleSave}
-                      className="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
-                    >
-                      ✅ Salva
-                    </button>
+                    <>
+                      <button
+                        onClick={handleSave}
+                        className="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
+                      >
+                        ✅ Salva
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingRow(null);
+                          setCollaboratoreSearch("");
+                          setShowCollaboratoriDropdown(false);
+                        }}
+                        className="inline-flex items-center px-3 py-1.5 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
+                      >
+                        ❌ Annulla
+                      </button>
+                    </>
                   ) : (
-                    <button
-                      onClick={() => handleEditClick(row.id)}
-                      className="inline-flex items-center px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
-                    >
-                      ✏️ Modifica
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleEditClick(row.id)}
+                        className="inline-flex items-center px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
+                      >
+                        ✏️ Modifica
+                      </button>
+                      <button
+                        onClick={() => handleDelete(row.id)}
+                        className="inline-flex items-center px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
+                      >
+                        🗑️ Elimina
+                      </button>
+                    </>
                   )}
-                  <button
-                    onClick={() => handleDelete(row.id)}
-                    className="inline-flex items-center px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
-                  >
-                    🗑️ Elimina
-                  </button>
                 </div>
               </td>
             </tr>

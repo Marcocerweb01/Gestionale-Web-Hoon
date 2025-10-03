@@ -20,19 +20,20 @@ export async function GET(req, { params }) {
     // Trasforma i dati per il frontend
     const result = collaborazioni.map((collaborazione) => ({
       id: collaborazione._id,
-      cliente: collaborazione.azienda.etichetta,
-      collaboratorenome: collaborazione.collaboratore.nome,
-      collaboratorecognome: collaborazione.collaboratore.cognome,
-      clienteId: collaborazione.azienda._id,
-      appuntamenti: collaborazione.numero_appuntamenti, // Esempio statico
+      cliente: collaborazione.azienda?.etichetta || "N/A",
+      collaboratorenome: collaborazione.collaboratore?.nome || "N/A",
+      collaboratorecognome: collaborazione.collaboratore?.cognome || "N/A",
+      collaboratoreId: collaborazione.collaboratore?._id || null,
+      clienteId: collaborazione.azienda?._id || null,
+      appuntamenti: collaborazione.numero_appuntamenti,
       postIg_fb: collaborazione.post_ig_fb,
       postTiktok: collaborazione.post_tiktok,
-      postLinkedin: collaborazione.post_linkedin, // Esempio statico
-      feed: collaborazione._id, // Esempio statico
-      pagato: collaborazione.pagato, // Esempio statico
-      post_ig_fb_fatti:collaborazione.post_ig_fb_fatti,
-      post_tiktok_fatti:collaborazione.post_tiktok_fatti,
-      post_linkedin_fatti:collaborazione.post_linkedin_fatti,
+      postLinkedin: collaborazione.post_linkedin,
+      feed: collaborazione._id,
+      pagato: collaborazione.pagato,
+      post_ig_fb_fatti: collaborazione.post_ig_fb_fatti,
+      post_tiktok_fatti: collaborazione.post_tiktok_fatti,
+      post_linkedin_fatti: collaborazione.post_linkedin_fatti,
     }));
 
     return new Response(JSON.stringify(result), { status: 200 });
