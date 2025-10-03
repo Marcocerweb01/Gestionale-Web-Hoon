@@ -14,13 +14,13 @@ export const useCollaboratori = () => {
     if (!isPolling) setLoading(true);
     setError("");
     try {
-      // ✨ Timestamp per evitare cache
-      const timestamp = new Date().getTime();
-      const response = await fetch(`/api/lista_collaboratori?t=${timestamp}`, {
+      // ✨ Timestamp più aggressivo per evitare cache
+      const timestamp = Date.now() + Math.random();
+      const response = await fetch(`/api/lista_collaboratori?t=${timestamp}&r=${Math.random()}`, {
         method: "GET",
         cache: "no-store",
         headers: { 
-          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
           "Pragma": "no-cache",
           "Expires": "0"
         },

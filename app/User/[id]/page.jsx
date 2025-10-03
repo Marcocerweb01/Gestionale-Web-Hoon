@@ -106,6 +106,15 @@ const UserDetails = ({ params }) => {
       const updatedUser = await response.json();
       setUser(updatedUser);
       setFormData(updatedUser);
+      
+      // ✨ FORZA AGGIORNAMENTO GLOBALE IMMEDIATO
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('collaboratori-updated'));
+        // Doppio trigger per sicurezza in produzione
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('collaboratori-updated'));
+        }, 100);
+      }
     } catch (err) {
       console.error(err);
       setError("Non è stato possibile aggiornare lo status del collaboratore.");
