@@ -6,6 +6,15 @@ export async function POST() {
   try {
     await connectToDB();
 
+    // ✨ Lista di aziende che devono avere stato "ragazzi"
+    const aziendeRagazzi = [
+      "678e0791ad7388a65515a6ae",
+      "679c9fdb986246f7c66dda68",
+      "678e06efad7388a65515a6a5",
+      "678e0697ad7388a65515a69f",
+      "678e019cad7388a65515a668"
+    ];
+
     // Recupera tutte le collaborazioni attive ESCLUDENDO il collaboratore specificato
     const collaborazioni = await Collaborazione.find({
       stato: "attiva",
@@ -39,10 +48,14 @@ export async function POST() {
       });
       
       if (!esiste) {
+        // ✨ Determina lo stato in base all'azienda
+        const aziendaId = collab.azienda._id.toString();
+        const statoIniziale = aziendeRagazzi.includes(aziendaId) ? "ragazzi" : "no";
+        
         const pagamento = await Pagamenti.create({
           cliente: collab.azienda._id,
           data_fattura: dataFattura,
-          stato: "no",
+          stato: statoIniziale,
         });
         pagamentiCreati.push(pagamento);
       }
