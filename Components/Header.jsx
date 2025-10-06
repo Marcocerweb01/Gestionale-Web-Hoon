@@ -35,6 +35,17 @@ const Header = () => {
               </div>
             ) : session ? (
               <div className="flex items-center space-x-4">
+                {/* Link Fatturazione - Solo per amministratori */}
+                {session.user.role === "amministratore" && (
+                  <Link 
+                    href="/Fatturazione"
+                    className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                  >
+                    <span className="text-lg">💰</span>
+                    <span className="hidden md:block">Fatturazione</span>
+                  </Link>
+                )}
+                
                 {/* User info */}
                 <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-700">
                   <User className="w-4 h-4" />

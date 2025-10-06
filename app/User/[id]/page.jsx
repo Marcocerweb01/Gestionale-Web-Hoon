@@ -16,8 +16,30 @@ const UserDetails = ({ params }) => {
   const [error, setError] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({}); // Stato del form per modifica
+  const [fatture, setFatture] = useState([]); // Stato per fatture
+  const [loadingFatture, setLoadingFatture] = useState(false); // Loading fatture
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  // Funzione per recuperare le fatture del collaboratore
+  const fetchFatture = async () => {
+    if (!id) return;
+    
+    try {
+      setLoadingFatture(true);
+      const response = await fetch(`/api/fatturazione/collaboratore/${id}`);
+      if (!response.ok) {
+        throw new Error("Errore nel recupero delle fatture");
+      }
+      const data = await response.json();
+      console.log('📊 Fatture recuperate:', data);
+      setFatture(data);
+    } catch (err) {
+      console.error("Errore recupero fatture:", err);
+    } finally {
+      setLoadingFatture(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -28,13 +50,25 @@ const UserDetails = ({ params }) => {
         }
         const data = await response.json();
         
+        console.log('👤 Utente caricato:', data);
+        console.log('🔍 SubRole:', data.subRole || data.subrole);
+        console.log('🔍 Ha subRole?', !!(data.subRole || data.subrole));
+        
         // ✨ Assicurati che noteAmministratore sia sempre presente
-        if (data.subRole && !data.noteAmministratore) {
+        if ((data.subRole || data.subrole) && !data.noteAmministratore) {
           data.noteAmministratore = "";
         }
         
         setUser(data);
         setFormData(data); // Imposta i dati iniziali del form
+        
+        // Se è un collaboratore, carica le fatture
+        if (data.subRole || data.subrole) {
+          console.log('✅ È un collaboratore, carico le fatture...');
+          fetchFatture();
+        } else {
+          console.log('❌ NON è un collaboratore, niente fatture');
+        }
       } catch (err) {
         console.error(err);
         setError("Non è stato possibile recuperare i dettagli utente.");
@@ -62,6 +96,36 @@ const UserDetails = ({ params }) => {
       fetchCollab();
     }
   }, [id]);
+
+  // Funzione per aggiornare lo stato fattura del collaboratore
+  const handleToggleStatoEmissione = async (fatturaId, statoAttuale) => {
+    try {
+      const nuovoStato = statoAttuale === "non emessa" ? "emessa" : "non emessa";
+      
+      const response = await fetch(`/api/fatturazione/${fatturaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statoCollaboratore: nuovoStato })
+      });
+
+      if (response.ok) {
+        fetchFatture(); // Ricarica le fatture
+      } else {
+        alert("Errore durante l'aggiornamento dello stato");
+      }
+    } catch (err) {
+      console.error("Errore:", err);
+      alert("Errore durante l'aggiornamento dello stato");
+    }
+  };
+
+  // Formatta mese da YYYY-MM a "Mese Anno"
+  const formatMese = (mese) => {
+    const [anno, meseNum] = mese.split('-');
+    const mesi = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+    return `${mesi[parseInt(meseNum) - 1]} ${anno}`;
+  };
 
   // Gestione input del form
   const handleChange = (e) => {
@@ -173,10 +237,25 @@ const UserDetails = ({ params }) => {
                   <h1 className="text-lg sm:text-2xl font-bold text-gray-900 leading-tight">
                     {editMode ? "🔧 Modifica Utente" : "👤 Dettagli Utente"}
                   </h1>
-                  <p className="text-gray-600 mt-1 text-sm sm:text-base truncate">
-                    {user?.subRole && `${user.subRole} • `}
-                    {user?.email}
-                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
+                    <p className="text-gray-600 text-sm sm:text-base truncate">
+                      {user?.subRole && `${user.subRole} • `}
+                      {user?.subrole && `${user.subrole} • `}
+                      {user?.email}
+                    </p>
+                    {(user?.subRole || user?.subrole) && (
+                      <a
+                        href="#fatturazione"
+                        className="inline-flex items-center px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-semibold rounded-full transition-colors self-start"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          document.getElementById('fatturazione')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                      >
+                        💰 Le mie fatture
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
               
@@ -568,9 +647,9 @@ const UserDetails = ({ params }) => {
               <div className="min-w-0 flex-1">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">Dashboard Collaborazioni</h2>
                 <p className="text-gray-600 mt-1 text-sm sm:text-base">
-                  {user?.subRole === "web designer" && "Gestisci i tuoi progetti di web design"}
-                  {user?.subRole === "commerciale" && "Monitora le tue attività commerciali"}
-                  {user?.subRole === "smm" && "Gestisci le campagne social media"}
+                  {(user?.subRole === "web designer" || user?.subrole === "web designer") && "Gestisci i tuoi progetti di web design"}
+                  {(user?.subRole === "commerciale" || user?.subrole === "commerciale") && "Monitora le tue attività commerciali"}
+                  {(user?.subRole === "smm" || user?.subrole === "smm") && "Gestisci le campagne social media"}
                   {user?.ragioneSociale && "Vista collaborazioni aziendali"}
                 </p>
               </div>
@@ -580,15 +659,15 @@ const UserDetails = ({ params }) => {
           {/* Contenuto della dashboard */}
           <div className="p-4 sm:p-6">
             {/* Render condizionale in base al ruolo */}
-            {user?.subRole === "web designer" && (
+            {(user?.subRole === "web designer" || user?.subrole === "web designer") && (
               <TimelineWebDesigner userId={user._id} />
             )}
 
-            {user?.subRole === "commerciale" && (
+            {(user?.subRole === "commerciale" || user?.subrole === "commerciale") && (
               <FeedCommerciale id={user._id} />
             )}
 
-            {user?.subRole === "smm" && (
+            {(user?.subRole === "smm" || user?.subrole === "smm") && (
               <AdminCollaborationsList id={user._id} amministratore={false} />
             )}
 
@@ -597,7 +676,7 @@ const UserDetails = ({ params }) => {
             )}
 
             {/* Messaggio di fallback - Ottimizzato per mobile */}
-            {!["web designer", "commerciale", "smm"].includes(user?.subRole) && !user?.ragioneSociale && (
+            {!["web designer", "commerciale", "smm"].includes(user?.subRole || user?.subrole) && !user?.ragioneSociale && (
               <div className="text-center py-8 sm:py-12">
                 <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
                   <span className="text-xl sm:text-2xl">📋</span>
@@ -608,6 +687,121 @@ const UserDetails = ({ params }) => {
             )}
           </div>
         </div>
+
+        {/* Sezione Fatturazione - Solo per collaboratori */}
+        {(user?.subRole || user?.subrole) && (
+          <div id="fatturazione" className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden scroll-mt-20">
+            {/* Header fatturazione */}
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                <span className="text-xl sm:text-2xl">💰</span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Fatturazione</h2>
+                  <p className="text-gray-600 mt-1 text-sm sm:text-base">
+                    Storico delle tue fatture mensili
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenuto fatturazione */}
+            <div className="p-4 sm:p-6">
+              {loadingFatture ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-500">Caricamento fatture...</div>
+                </div>
+              ) : fatture.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-4">
+                    <span className="text-xl">📄</span>
+                  </div>
+                  <h3 className="text-base font-medium text-gray-900 mb-2">Nessuna Fattura</h3>
+                  <p className="text-gray-500 text-sm">Non sono ancora state generate fatture per il tuo account.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {fatture.map((fattura) => (
+                    <div
+                      key={fattura.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                        {/* Info fattura */}
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="text-lg">📅</span>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {formatMese(fattura.mese)}
+                            </h3>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {/* Totale */}
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-600 font-medium min-w-[100px]">Totale:</span>
+                              {fattura.totale !== null ? (
+                                <span className="text-lg font-bold text-green-600">
+                                  € {fattura.totale.toFixed(2)}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full font-medium">
+                                  ⏳ Non ancora disponibile
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Stati */}
+                            {fattura.totale !== null && (
+                              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                                {/* Stato Emissione - Solo il collaboratore può modificare */}
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm text-gray-600 font-medium min-w-[100px]">Emissione:</span>
+                                  <button
+                                    onClick={() => handleToggleStatoEmissione(fattura.id, fattura.statoCollaboratore)}
+                                    className={`px-3 py-1 text-xs font-semibold rounded-full transition ${
+                                      fattura.statoCollaboratore === "emessa"
+                                        ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                        : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                                    }`}
+                                  >
+                                    {fattura.statoCollaboratore === "emessa" ? "✅ Emessa" : "⏳ Non Emessa"}
+                                  </button>
+                                </div>
+
+                                {/* Stato Pagamento - Solo visualizzazione */}
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm text-gray-600 font-medium min-w-[100px]">Pagamento:</span>
+                                  <span
+                                    className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                                      fattura.statoAmministratore === "pagata"
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    {fattura.statoAmministratore === "pagata" ? "✅ Pagata" : "⏳ Non Pagata"}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Info aggiuntiva */}
+                      {fattura.totale !== null && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <p className="text-xs text-gray-500">
+                            💡 Clicca su "Non Emessa" quando hai emesso la fattura. Lo stato pagamento verrà aggiornato dall'amministratore.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

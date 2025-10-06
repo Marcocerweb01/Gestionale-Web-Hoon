@@ -27,7 +27,7 @@ const AdminCollaborationsList = ({ id }) => {
   // Recupera le collaborazioni al caricamento del componente
   useEffect(() => {
     fetchCollaborazioni();
-  }, [id, fetchCollaborazioni]); // ✨ Fix: aggiungi fetchCollaborazioni alle dipendenze
+  }, [id]); // ✅ Fix: rimosso fetchCollaborazioni per evitare loop infinito
 
   // Gestione modifica
   const handleEditClick = (rowId) => {
