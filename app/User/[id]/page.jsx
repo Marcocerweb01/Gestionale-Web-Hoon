@@ -791,7 +791,7 @@ const UserDetails = ({ params }) => {
                       {fattura.totale !== null && (
                         <div className="mt-3 pt-3 border-t border-gray-100">
                           <p className="text-xs text-gray-500">
-                            💡 Clicca su "Non Emessa" quando hai emesso la fattura. Lo stato pagamento verrà aggiornato dall'amministratore.
+                            💡 Clicca su &quot;Non Emessa&quot; quando hai emesso la fattura. Lo stato pagamento verrà aggiornato dall&apos;amministratore.
                           </p>
                         </div>
                       )}

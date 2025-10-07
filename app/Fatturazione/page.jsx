@@ -437,10 +437,10 @@ const FatturazionePage = () => {
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="text-sm font-semibold text-blue-900 mb-2">ℹ️ Istruzioni:</h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Clicca "Genera Fatture Mese" per creare le fatture di tutti i collaboratori attivi</li>
+              <li>• Clicca &quot;Genera Fatture Mese&quot; per creare le fatture di tutti i collaboratori attivi</li>
               <li>• Inserisci il totale della fattura per ogni collaboratore</li>
-              <li>• Lo stato "emessa" viene aggiornato dal collaboratore sul suo profilo</li>
-              <li>• Clicca sullo stato pagamento per cambiarlo da "non pagata" a "pagata"</li>
+              <li>• Lo stato &quot;emessa&quot; viene aggiornato dal collaboratore sul suo profilo</li>
+              <li>• Clicca sullo stato pagamento per cambiarlo da &quot;non pagata&quot; a &quot;pagata&quot;</li>
             </ul>
           </div>
         </div>
