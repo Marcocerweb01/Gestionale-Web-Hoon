@@ -5,6 +5,7 @@ const AdminCollaborationsList = ({ id }) => {
   const [editingRow, setEditingRow] = useState();
   const [tempData, setTempData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false); // Stato per prevenire click multipli
   const [error, setError] = useState("");
 
   // Funzione per recuperare le collaborazioni
@@ -53,6 +54,9 @@ const AdminCollaborationsList = ({ id }) => {
 
   // Salva modifiche
   const handleSave = async () => {
+    if (saving) return; // Previeni click multipli
+    
+    setSaving(true);
     try {
       const response = await fetch(`/api/collaborazioni/adminedit/${editingRow}`, {
         method: "PATCH",
@@ -82,6 +86,8 @@ const AdminCollaborationsList = ({ id }) => {
     } catch (err) {
       console.error("Errore:", err);
       setError("Non è stato possibile aggiornare i dati.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -140,14 +146,16 @@ const AdminCollaborationsList = ({ id }) => {
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => handleDecrement("appuntamenti")}
-                      className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full transition-colors touch-manipulation"
+                      disabled={saving}
+                      className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       −
                     </button>
                     <span className="min-w-[2rem] text-center font-semibold">{tempData.appuntamenti}</span>
                     <button 
                       onClick={() => handleIncrement("appuntamenti")}
-                      className="inline-flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full transition-colors touch-manipulation"
+                      disabled={saving}
+                      className="inline-flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       +
                     </button>
@@ -161,14 +169,16 @@ const AdminCollaborationsList = ({ id }) => {
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => handleDecrement("postIg_fb")}
-                      className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full transition-colors touch-manipulation"
+                      disabled={saving}
+                      className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       −
                     </button>
                     <span className="min-w-[2rem] text-center font-semibold">{tempData.postIg_fb}</span>
                     <button 
                       onClick={() => handleIncrement("postIg_fb")}
-                      className="inline-flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full transition-colors touch-manipulation"
+                      disabled={saving}
+                      className="inline-flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       +
                     </button>
@@ -182,14 +192,16 @@ const AdminCollaborationsList = ({ id }) => {
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => handleDecrement("postTiktok")}
-                      className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full transition-colors touch-manipulation"
+                      disabled={saving}
+                      className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       −
                     </button>
                     <span className="min-w-[2rem] text-center font-semibold">{tempData.postTiktok}</span>
                     <button 
                       onClick={() => handleIncrement("postTiktok")}
-                      className="inline-flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full transition-colors touch-manipulation"
+                      disabled={saving}
+                      className="inline-flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       +
                     </button>
@@ -203,14 +215,16 @@ const AdminCollaborationsList = ({ id }) => {
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => handleDecrement("postLinkedin")}
-                      className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full transition-colors touch-manipulation"
+                      disabled={saving}
+                      className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white font-bold rounded-full transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       −
                     </button>
                     <span className="min-w-[2rem] text-center font-semibold">{tempData.postLinkedin}</span>
                     <button 
                       onClick={() => handleIncrement("postLinkedin")}
-                      className="inline-flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full transition-colors touch-manipulation"
+                      disabled={saving}
+                      className="inline-flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       +
                     </button>
@@ -223,14 +237,27 @@ const AdminCollaborationsList = ({ id }) => {
                 {editingRow === row.id ? (
                   <button 
                     onClick={handleSave}
-                    className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
+                    disabled={saving}
+                    className={`inline-flex items-center px-4 py-2 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation ${
+                      saving 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
                   >
-                    ✅ Salva
+                    {saving ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Salvataggio...
+                      </>
+                    ) : (
+                      <>✅ Salva</>
+                    )}
                   </button>
                 ) : (
                   <button 
                     onClick={() => handleEditClick(row.id)}
-                    className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation"
+                    disabled={saving}
+                    className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Modifica
                   </button>
