@@ -20,7 +20,8 @@ import {
   Clock,
   MessageSquare,
   Settings,
-  Monitor
+  Monitor,
+  Table
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -499,6 +500,13 @@ const Dashboard = () => {
               <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors duration-200 group">
                 <span className="text-xl group-hover:scale-110 transition-transform">💰</span>
                 <span className="font-medium">Fatturazione</span>
+              </button>
+            </Link>
+            
+            <Link href="/Tabella-collaborazioni" passHref>
+              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors duration-200 group">
+                <Table className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Tabella Collaborazioni</span>
               </button>
             </Link>
             </div>
