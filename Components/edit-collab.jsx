@@ -18,20 +18,43 @@ const AdminCollaborationsList = ({ id }) => {
     saving 
   });
 
-  // Funzione per recuperare le collaborazioni
-  const fetchCollaborazioni = async () => {
-    console.log("🌐 FETCH Collaborazioni - ID:", id);
+  // Funzione per recuperare le collaborazioni con retry logic
+  const fetchCollaborazioni = async (retryCount = 0) => {
+    console.log("🌐 FETCH Collaborazioni - ID:", id, "Retry:", retryCount);
     try {
-      const response = await fetch(`/api/collaborazioni/${id}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(`/api/collaborazioni/${id}`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error("Errore nel recupero delle collaborazioni");
+        if (response.status === 500 && retryCount < 3) {
+          // Retry con backoff esponenziale per errori 500
+          const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+          console.log(`⏱️ Retry ${retryCount + 1} dopo ${delay}ms per errore 500`);
+          setTimeout(() => fetchCollaborazioni(retryCount + 1), delay);
+          return;
+        }
+        throw new Error(`Errore ${response.status}: ${response.statusText}`);
       }
+      
       const result = await response.json();
       console.log("✅ Collaborazioni ricevute:", result);
       setData(result);
+      setError(null); // Reset error on success
     } catch (err) {
       console.error("❌ Errore fetch:", err);
-      setError("Non è stato possibile recuperare i dati.");
+      if (err.name === 'AbortError') {
+        setError("Richiesta timeout - Server non risponde");
+      } else if (retryCount >= 3) {
+        setError("Impossibile recuperare i dati dopo 3 tentativi. Verifica la connessione.");
+      } else {
+        setError("Errore temporaneo nel recupero dei dati.");
+      }
     } finally {
       setLoading(false);
     }

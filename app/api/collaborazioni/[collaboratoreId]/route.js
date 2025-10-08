@@ -1,4 +1,5 @@
 import Collaborazione from "@/models/Collaborazioni";
+import { Azienda } from "@/models/User";
 import { connectToDB } from "@/utils/database";
 
 
