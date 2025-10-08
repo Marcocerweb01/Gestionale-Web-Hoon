@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 
 const AdminCollaborationsList = ({ id }) => {
+  console.log("🔄 RENDER - AdminCollaborationsList", new Date().toLocaleTimeString());
+  
   const [data, setData] = useState([]);
   const [editingRow, setEditingRow] = useState();
   const [tempData, setTempData] = useState({});
@@ -8,17 +10,27 @@ const AdminCollaborationsList = ({ id }) => {
   const [saving, setSaving] = useState(false); // Stato per prevenire click multipli
   const [error, setError] = useState("");
 
+  console.log("   📊 State:", { 
+    dataLength: data.length, 
+    editingRow, 
+    tempData, 
+    loading, 
+    saving 
+  });
+
   // Funzione per recuperare le collaborazioni
   const fetchCollaborazioni = async () => {
+    console.log("🌐 FETCH Collaborazioni - ID:", id);
     try {
       const response = await fetch(`/api/collaborazioni/${id}`);
       if (!response.ok) {
         throw new Error("Errore nel recupero delle collaborazioni");
       }
       const result = await response.json();
+      console.log("✅ Collaborazioni ricevute:", result);
       setData(result);
     } catch (err) {
-      console.error(err);
+      console.error("❌ Errore fetch:", err);
       setError("Non è stato possibile recuperare i dati.");
     } finally {
       setLoading(false);
@@ -27,67 +39,109 @@ const AdminCollaborationsList = ({ id }) => {
 
   // Recupera le collaborazioni al caricamento del componente
   useEffect(() => {
+    console.log("⚡ useEffect triggered - ID:", id);
     fetchCollaborazioni();
   }, [id]); // ✅ Fix: rimosso fetchCollaborazioni per evitare loop infinito
 
   // Gestione modifica
   const handleEditClick = useCallback((rowId) => {
+    console.log("🔵 CLICK MODIFICA - rowId:", rowId);
+    console.log("📊 Data corrente:", data);
+    
     setEditingRow(rowId);
     const rowData = data.find((row) => row.id === rowId);
-    if (!rowData) return; // Protezione se la riga non esiste
+    
+    if (!rowData) {
+      console.error("❌ Riga non trovata per rowId:", rowId);
+      return;
+    }
+    
+    console.log("✅ Riga trovata:", rowData);
     
     // Salva solo i campi modificabili
-    setTempData({
+    const newTempData = {
       appuntamenti: rowData.appuntamenti || 0,
       postIg_fb: rowData.postIg_fb || 0,
       postTiktok: rowData.postTiktok || 0,
       postLinkedin: rowData.postLinkedin || 0
-    });
+    };
+    
+    console.log("📝 TempData impostato:", newTempData);
+    setTempData(newTempData);
   }, [data]);
 
   // Incrementa/Decrementa valori
   const handleIncrement = useCallback((field) => {
-    setTempData((prev) => ({
-      ...prev,
-      [field]: (prev[field] || 0) + 1,
-    }));
+    console.log("➕ INCREMENT - Campo:", field);
+    setTempData((prev) => {
+      const newValue = (prev[field] || 0) + 1;
+      console.log(`   ${field}: ${prev[field]} → ${newValue}`);
+      return {
+        ...prev,
+        [field]: newValue,
+      };
+    });
   }, []);
 
   const handleDecrement = useCallback((field) => {
-    setTempData((prev) => ({
-      ...prev,
-      [field]: Math.max(0, (prev[field] || 0) - 1),
-    }));
+    console.log("➖ DECREMENT - Campo:", field);
+    setTempData((prev) => {
+      const newValue = Math.max(0, (prev[field] || 0) - 1);
+      console.log(`   ${field}: ${prev[field]} → ${newValue}`);
+      return {
+        ...prev,
+        [field]: newValue,
+      };
+    });
   }, []);
 
   // Salva modifiche
   const handleSave = useCallback(async () => {
-    if (saving) return; // Previeni click multipli
+    console.log("💾 SALVA CLICCATO");
+    console.log("   Saving state:", saving);
+    console.log("   EditingRow:", editingRow);
+    console.log("   TempData:", tempData);
     
+    if (saving) {
+      console.warn("⚠️ Salvataggio già in corso, ignoro click");
+      return;
+    }
+    
+    console.log("🚀 Inizio salvataggio...");
     setSaving(true);
+    
     try {
+      const payload = {
+        numero_appuntamenti: tempData.appuntamenti,
+        post_ig_fb: tempData.postIg_fb,
+        post_tiktok: tempData.postTiktok,
+        post_linkedin: tempData.postLinkedin,
+      };
+      
+      console.log("📤 Payload da inviare:", payload);
+      
       const response = await fetch(`/api/collaborazioni/adminedit/${editingRow}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          numero_appuntamenti: tempData.appuntamenti,
-          post_ig_fb: tempData.postIg_fb,
-          post_tiktok: tempData.postTiktok,
-          post_linkedin: tempData.postLinkedin,
-        }),
+        body: JSON.stringify(payload),
       });
 
+      console.log("📥 Response status:", response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Errore response:", errorText);
         throw new Error("Errore durante l'aggiornamento");
       }
 
-      console.log("Modifica salvata con successo!");
+      const responseData = await response.json();
+      console.log("✅ Risposta server:", responseData);
 
       // Aggiorna solo la riga modificata invece di ricaricare tutto
-      setData(prevData => 
-        prevData.map(row => 
+      setData(prevData => {
+        const newData = prevData.map(row => 
           row.id === editingRow 
             ? { 
                 ...row, 
@@ -97,16 +151,21 @@ const AdminCollaborationsList = ({ id }) => {
                 postLinkedin: tempData.postLinkedin
               }
             : row
-        )
-      );
+        );
+        console.log("🔄 Data aggiornata localmente:", newData);
+        return newData;
+      });
 
       // Resetta lo stato di modifica
+      console.log("🧹 Reset stato modifica");
       setEditingRow(null);
       setTempData({});
+      
     } catch (err) {
-      console.error("Errore:", err);
+      console.error("❌ ERRORE CATCH:", err);
       setError("Non è stato possibile aggiornare i dati.");
     } finally {
+      console.log("🏁 Salvataggio completato, setSaving(false)");
       setSaving(false);
     }
   }, [saving, editingRow, tempData]);
