@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 const AdminCollaborationsList = ({ id }) => {
   const [data, setData] = useState([]);
@@ -31,29 +31,37 @@ const AdminCollaborationsList = ({ id }) => {
   }, [id]); // ✅ Fix: rimosso fetchCollaborazioni per evitare loop infinito
 
   // Gestione modifica
-  const handleEditClick = (rowId) => {
+  const handleEditClick = useCallback((rowId) => {
     setEditingRow(rowId);
     const rowData = data.find((row) => row.id === rowId);
-    setTempData({ ...rowData });
-  };
+    if (!rowData) return; // Protezione se la riga non esiste
+    
+    // Salva solo i campi modificabili
+    setTempData({
+      appuntamenti: rowData.appuntamenti || 0,
+      postIg_fb: rowData.postIg_fb || 0,
+      postTiktok: rowData.postTiktok || 0,
+      postLinkedin: rowData.postLinkedin || 0
+    });
+  }, [data]);
 
   // Incrementa/Decrementa valori
-  const handleIncrement = (field) => {
+  const handleIncrement = useCallback((field) => {
     setTempData((prev) => ({
       ...prev,
-      [field]: prev[field] + 1,
+      [field]: (prev[field] || 0) + 1,
     }));
-  };
+  }, []);
 
-  const handleDecrement = (field) => {
+  const handleDecrement = useCallback((field) => {
     setTempData((prev) => ({
       ...prev,
-      [field]: Math.max(0, prev[field] - 1),
+      [field]: Math.max(0, (prev[field] || 0) - 1),
     }));
-  };
+  }, []);
 
   // Salva modifiche
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (saving) return; // Previeni click multipli
     
     setSaving(true);
@@ -77,8 +85,20 @@ const AdminCollaborationsList = ({ id }) => {
 
       console.log("Modifica salvata con successo!");
 
-      // Richiama la funzione per aggiornare i dati
-      await fetchCollaborazioni();
+      // Aggiorna solo la riga modificata invece di ricaricare tutto
+      setData(prevData => 
+        prevData.map(row => 
+          row.id === editingRow 
+            ? { 
+                ...row, 
+                appuntamenti: tempData.appuntamenti,
+                postIg_fb: tempData.postIg_fb,
+                postTiktok: tempData.postTiktok,
+                postLinkedin: tempData.postLinkedin
+              }
+            : row
+        )
+      );
 
       // Resetta lo stato di modifica
       setEditingRow(null);
@@ -89,7 +109,7 @@ const AdminCollaborationsList = ({ id }) => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [saving, editingRow, tempData]);
 
   if (loading) {
     return (
