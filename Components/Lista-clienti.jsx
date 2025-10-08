@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 const ListaClienti = ({ id, amministratore }) => {
@@ -9,26 +9,50 @@ const ListaClienti = ({ id, amministratore }) => {
   const [loading, setLoading] = useState(true);
   const [editingRow, setEditingRow] = useState(null);
   const [tempData, setTempData] = useState({});
+  const [saving, setSaving] = useState(false); // Stato per prevenire click multipli
   const [appuntamenti, setAppuntamenti] = useState({});
   const [problemi, setProblemi]=useState({});
 
-  const fetchCollaborazioni = async () => {
-    console.log("PARTITO")
+  const fetchCollaborazioni = useCallback(async (retryCount = 0) => {
+    console.log("🌐 FETCH Lista Clienti - ID:", id, "Retry:", retryCount);
     try {
-      const response = await fetch(`/api/collaborazioni/${id}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(`/api/collaborazioni/${id}`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error("Errore nel recupero delle collaborazioni");
+        if (response.status === 500 && retryCount < 3) {
+          // Retry con backoff esponenziale per errori 500
+          const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+          console.log(`⏱️ Retry ${retryCount + 1} dopo ${delay}ms per errore 500`);
+          setTimeout(() => fetchCollaborazioni(retryCount + 1), delay);
+          return;
+        }
+        throw new Error(`Errore ${response.status}: ${response.statusText}`);
       }
+      
       const result = await response.json();
+      console.log("✅ Lista Clienti ricevuti:", result);
       setData(result);
+      setError(null); // Reset error on success
     } catch (err) {
-      console.error("Errore:", err);
-      setError("Non è stato possibile recuperare i dati.");
+      console.error("❌ Errore fetch Lista Clienti:", err);
+      if (err.name === 'AbortError') {
+        setError("Richiesta timeout - Server non risponde");
+      } else if (retryCount >= 3) {
+        setError("Impossibile recuperare i dati dopo 3 tentativi. Verifica la connessione.");
+      } else {
+        setError("Errore temporaneo nel recupero dei dati.");
+      }
     } finally {
       setLoading(false);
     }
-  };
-
+  }, [id]);
 
   const fetchAppuntamenti = async (collaborazioneId) => {
     try {
@@ -66,72 +90,97 @@ const ListaClienti = ({ id, amministratore }) => {
 
 
   useEffect(() => {
+    console.log("⚡ useEffect triggered - ID:", id);
     if (id) {
       fetchCollaborazioni();
     } else {
       setError("ID utente non fornito.");
       setLoading(false);
     }
-  }, [id, fetchCollaborazioni]); // ✨ Fix: sintassi corretta per le dipendenze
+  }, [id, fetchCollaborazioni]); // ✅ Fix: ora fetchCollaborazioni è useCallback
 
 
   useEffect(() => {
-    const loadAppuntamenti = async () => {
-      const appuntamentiData = {};
-      for (const row of data) {
-        const result = await fetchAppuntamenti(row.feed);
-        appuntamentiData[row.feed] = result || 0;
+    const loadAdditionalData = async () => {
+      if (data.length === 0) return;
+      
+      console.log("🔄 Caricamento dati aggiuntivi per", data.length, "collaborazioni");
+      
+      try {
+        // Crea le promesse per tutte le chiamate API in parallelo
+        const appuntamentiPromises = data.map(row => fetchAppuntamenti(row.feed));
+        const problemiPromises = data.map(row => fetchProblemi(row.feed));
+        
+        // Esegui tutte le chiamate in parallelo
+        const [appuntamentiResults, problemiResults] = await Promise.all([
+          Promise.all(appuntamentiPromises),
+          Promise.all(problemiPromises)
+        ]);
+        
+        // Costruisci gli oggetti dei risultati
+        const appuntamentiData = {};
+        const problemiData = {};
+        
+        data.forEach((row, index) => {
+          appuntamentiData[row.feed] = appuntamentiResults[index] || 0;
+          problemiData[row.feed] = problemiResults[index] || 0;
+        });
+        
+        console.log("✅ Dati aggiuntivi caricati:", { appuntamentiData, problemiData });
+        setAppuntamenti(appuntamentiData);
+        setProblemi(problemiData);
+        
+      } catch (err) {
+        console.error("❌ Errore nel caricamento dati aggiuntivi:", err);
+        setError("Errore nel caricamento di alcuni dati aggiuntivi");
       }
-      setAppuntamenti(appuntamentiData);
     };
 
-
-    if (data.length > 0) {
-      loadAppuntamenti();
-     
-    }
+    loadAdditionalData();
   }, [data]);
 
-  useEffect(() => {
-    const loadProblemi = async () => {
-      const problemiData = {};
-      for (const row of data) {
-        const result = await fetchProblemi(row.feed);
-        problemiData[row.feed] = result || 0;
-      }
-      setProblemi(problemiData);
-    };
-
-
-    if (data.length > 0) {
-      loadProblemi();
-    }
-  }, [data]);
-
-  const handleEditClick = (rowId) => {
+  const handleEditClick = useCallback((rowId) => {
+    console.log("🔵 CLICK MODIFICA Lista Clienti - rowId:", rowId);
     setEditingRow(rowId);
     const rowData = data.find((row) => row.id === rowId);
+    
+    if (!rowData) {
+      console.error("❌ Riga non trovata per rowId:", rowId);
+      return;
+    }
+    
     setTempData({ ...rowData });
-  };
+  }, [data]);
 
-
-  const handleIncrement = (field) => {
+  const handleIncrement = useCallback((field) => {
+    console.log("➕ INCREMENT Lista Clienti - Campo:", field);
     setTempData((prev) => ({
       ...prev,
       [field]: prev[field] + 1,
     }));
-  };
+  }, []);
 
-
-  const handleDecrement = (field) => {
+  const handleDecrement = useCallback((field) => {
+    console.log("➖ DECREMENT Lista Clienti - Campo:", field);
     setTempData((prev) => ({
       ...prev,
       [field]: Math.max(0, prev[field] - 1),
     }));
-  };
+  }, []);
 
-
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    console.log("💾 SALVA CLICCATO Lista Clienti");
+    console.log("   Saving state:", saving);
+    console.log("   EditingRow:", editingRow);
+    
+    if (saving) {
+      console.warn("⚠️ Salvataggio già in corso, ignoro click");
+      return;
+    }
+    
+    console.log("🚀 Inizio salvataggio Lista Clienti...");
+    setSaving(true);
+    
     try {
       const response = await fetch(`/api/collaborazioni/edit/${editingRow}`, {
         method: "PATCH",
@@ -145,14 +194,16 @@ const ListaClienti = ({ id, amministratore }) => {
         }),
       });
 
+      console.log("📥 Response status:", response.status);
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Errore response:", errorText);
         throw new Error("Errore durante l'aggiornamento");
       }
 
-
       const updatedCollaborazione = await response.json();
-
+      console.log("✅ Risposta server:", updatedCollaborazione);
 
       setData((prevData) =>
         prevData.map((item) =>
@@ -160,21 +211,26 @@ const ListaClienti = ({ id, amministratore }) => {
         )
       );
 
-
+      console.log("🧹 Reset stato modifica Lista Clienti");
       setEditingRow(null);
       setTempData({});
+      
     } catch (err) {
-      console.error("Errore:", err);
+      console.error("❌ ERRORE CATCH Lista Clienti:", err);
       setError("Non è stato possibile aggiornare i dati.");
+    } finally {
+      console.log("🏁 Salvataggio completato Lista Clienti, setSaving(false)");
+      setSaving(false);
     }
-  };
+  }, [saving, editingRow, tempData]);
 
 
-  const CounterEditor = ({ value, valuetot, onIncrement, onDecrement }) => (
+  const CounterEditor = ({ value, valuetot, onIncrement, onDecrement, disabled = false }) => (
     <div className="flex items-center space-x-3 w-full">
       <button 
-        className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors flex items-center justify-center"
+        className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={onDecrement}
+        disabled={disabled}
       >
         -
       </button>
@@ -182,8 +238,9 @@ const ListaClienti = ({ id, amministratore }) => {
         {valuetot === 0 ? "N/A" : value}
       </span>
       <button 
-        className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors flex items-center justify-center"
+        className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={onIncrement}
+        disabled={disabled}
       >
         +
       </button>
@@ -235,8 +292,9 @@ const ListaClienti = ({ id, amministratore }) => {
                   ) : (
                     <div className="flex items-center space-x-2">
                       <button
-                        className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors"
+                        className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleDecrement("post_ig_fb_fatti")}
+                        disabled={saving}
                       >
                         -
                       </button>
@@ -244,8 +302,9 @@ const ListaClienti = ({ id, amministratore }) => {
                         {tempData.post_ig_fb_fatti || 0}
                       </span>
                       <button
-                        className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors"
+                        className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleIncrement("post_ig_fb_fatti")}
+                        disabled={saving}
                       >
                         +
                       </button>
@@ -268,8 +327,9 @@ const ListaClienti = ({ id, amministratore }) => {
                     ) : (
                       <div className="flex items-center space-x-2">
                         <button
-                          className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors"
+                          className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={() => handleDecrement("post_tiktok_fatti")}
+                          disabled={saving}
                         >
                           -
                         </button>
@@ -277,8 +337,9 @@ const ListaClienti = ({ id, amministratore }) => {
                           {tempData.post_tiktok_fatti || 0}
                         </span>
                         <button
-                          className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors"
+                          className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={() => handleIncrement("post_tiktok_fatti")}
+                          disabled={saving}
                         >
                           +
                         </button>
@@ -301,8 +362,9 @@ const ListaClienti = ({ id, amministratore }) => {
                   ) : (
                     <div className="flex items-center space-x-2">
                       <button
-                        className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors"
+                        className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleDecrement("post_linkedin_fatti")}
+                        disabled={saving}
                       >
                         -
                       </button>
@@ -310,8 +372,9 @@ const ListaClienti = ({ id, amministratore }) => {
                         {tempData.post_linkedin_fatti || 0}
                       </span>
                       <button
-                        className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors"
+                        className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleIncrement("post_linkedin_fatti")}
+                        disabled={saving}
                       >
                         +
                       </button>
@@ -336,15 +399,28 @@ const ListaClienti = ({ id, amministratore }) => {
                 <td className="px-6 py-4">
                   {editingRow === row.id ? (
                     <button 
-                      onClick={handleSave} 
-                      className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                      onClick={handleSave}
+                      disabled={saving}
+                      className={`inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors ${
+                        saving 
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-green-600 hover:bg-green-700'
+                      }`}
                     >
-                      Salva
+                      {saving ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span>
+                          Salvataggio...
+                        </>
+                      ) : (
+                        'Salva'
+                      )}
                     </button>
                   ) : (
                     <button
                       onClick={() => handleEditClick(row.id)}
-                      className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+                      disabled={saving}
+                      className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Modifica
                     </button>
@@ -375,15 +451,28 @@ const ListaClienti = ({ id, amministratore }) => {
             </div>
             {editingRow === row.id ? (
               <button 
-                onClick={handleSave} 
-                className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                onClick={handleSave}
+                disabled={saving}
+                className={`inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors ${
+                  saving 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
               >
-                ✅ Salva
+                {saving ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Salva...
+                  </>
+                ) : (
+                  '✅ Salva'
+                )}
               </button>
             ) : (
               <button
                 onClick={() => handleEditClick(row.id)}
-                className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+                disabled={saving}
+                className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Modifica
               </button>
@@ -410,6 +499,7 @@ const ListaClienti = ({ id, amministratore }) => {
                     valuetot={tempData.postIg_fb}
                     onIncrement={() => handleIncrement("post_ig_fb_fatti")}
                     onDecrement={() => handleDecrement("post_ig_fb_fatti")}
+                    disabled={saving}
                   />
                 )
               ) : (
@@ -437,6 +527,7 @@ const ListaClienti = ({ id, amministratore }) => {
                     valuetot={tempData.postTiktok}
                     onIncrement={() => handleIncrement("post_tiktok_fatti")}
                     onDecrement={() => handleDecrement("post_tiktok_fatti")}
+                    disabled={saving}
                   />
                 )
               ) : (
@@ -464,6 +555,7 @@ const ListaClienti = ({ id, amministratore }) => {
                     valuetot={tempData.postLinkedin}
                     onIncrement={() => handleIncrement("post_linkedin_fatti")}
                     onDecrement={() => handleDecrement("post_linkedin_fatti")}
+                    disabled={saving}
                   />
                 )
               ) : (
