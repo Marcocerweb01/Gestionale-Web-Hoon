@@ -103,40 +103,7 @@ const PagamentiTable = () => {
 
   return (
     <div className="space-y-6">
-      {/* Barra di Ricerca */}
-      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-              🔍 Cerca per Cliente o Ragione Sociale
-            </label>
-            <input
-              id="search"
-              type="text"
-              placeholder="Digita il nome del cliente o la ragione sociale..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
-          </div>
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Cancella ricerca"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
-        {searchTerm && (
-          <div className="mt-2 text-sm text-gray-600">
-            📊 {pagamentiOrdinati.length} risultat{pagamentiOrdinati.length === 1 ? 'o' : 'i'} per "{searchTerm}"
-          </div>
-        )}
-      </div>
+      
 
       {/* Filtri */}
       <div className="bg-gray-50 rounded-lg p-4">
@@ -186,10 +153,45 @@ const PagamentiTable = () => {
       </div>
 
       {/* Azioni */}
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-between gap-3">
+        {/* Barra di Ricerca */}
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 ml-4 w-3/5">
+        <div className="flex items-center gap-4">
+            <label htmlFor="search" className="flex items-center justify-center text-lg font-medium text-gray-700">
+              🔍
+            </label>
+            <input
+              id="search"
+              type="text"
+              placeholder="Digita il nome del cliente o la ragione sociale..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+         
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Cancella ricerca"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+        {searchTerm && (
+          <div className="mt-2 text-sm text-gray-600">
+            📊 {pagamentiOrdinati.length} risultat{pagamentiOrdinati.length === 1 ? 'o' : 'i'} per "{searchTerm}"
+          </div>
+        )}
+      </div>
+      {/*bottone edit*/}
         {!editMode ? (
+          <div>
           <button
-            className="btn-primary mr-4"
+            className="btn-editpayments mr-4"
             onClick={() => {
               const initialChecked = {};
               // Usa l'array originale NON ordinato per evitare inconsistenze
@@ -208,6 +210,7 @@ const PagamentiTable = () => {
             </svg>
             Modifica Pagamenti
           </button>
+          </div>
         ) : (
           <div className="flex gap-3">
             <button
