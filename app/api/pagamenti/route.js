@@ -28,6 +28,7 @@ export async function GET() {
     const result = pagamenti.map((p) => ({
       id: p._id,
       cliente: p.cliente?.etichetta || "N/A", // <-- solo etichetta
+      ragione_sociale:p.cliente?.ragioneSociale || "N/A", // <-- Ragione Sociale
       data_fattura: p.data_fattura,
       data_pagato: p.data_pagato,
       stato: p.stato,
