@@ -28,11 +28,11 @@ export async function GET() {
 
     console.log(`📈 Trovate ${collaborazioni.length} collaborazioni`);
 
-    // Conta gli appuntamenti fatti per ogni collaborazione (nel mese precedente)
+    // Conta gli appuntamenti fatti per ogni collaborazione (nel mese PRECEDENTE)
     console.log("📅 Conteggio appuntamenti fatti...");
     const today = new Date();
     
-    // Calcola il mese precedente
+    // Calcola il mese precedente per gli appuntamenti
     let previousMonth = today.getMonth() - 1;
     let previousYear = today.getFullYear();
     
@@ -42,9 +42,9 @@ export async function GET() {
     }
     
     const firstDayOfPreviousMonth = new Date(previousYear, previousMonth, 1);
-    const lastDayOfPreviousMonth = new Date(previousYear, previousMonth + 1, 0); // Ultimo giorno del mese precedente
+    const lastDayOfPreviousMonth = new Date(previousYear, previousMonth + 1, 0);
     
-    console.log(`📅 Periodo conteggio: dal ${firstDayOfPreviousMonth.toLocaleDateString()} al ${lastDayOfPreviousMonth.toLocaleDateString()}`);
+    console.log(`📅 Periodo conteggio appuntamenti: dal ${firstDayOfPreviousMonth.toLocaleDateString()} al ${lastDayOfPreviousMonth.toLocaleDateString()}`);
     
     const appuntamentiFattiMap = new Map();
     
@@ -75,12 +75,14 @@ export async function GET() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Collaborazioni");
 
-    // Aggiungi il titolo con il mese precedente
+    // Aggiungi il titolo con il mese corrente (ma appuntamenti del mese precedente)
     const monthNames = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
       "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
     
-    const previousMonthName = `${monthNames[previousMonth]} ${previousYear}`;
-    const titleRow = worksheet.addRow([`Collaborazioni - ${previousMonthName}`]);
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const currentMonthName = `${monthNames[currentMonth]} ${currentYear}`;
+    const titleRow = worksheet.addRow([`Collaborazioni - ${currentMonthName}`]);
     worksheet.mergeCells(`A${titleRow.number}:G${titleRow.number}`);
     titleRow.font = { size: 16, bold: true };
     titleRow.alignment = { horizontal: "center" };

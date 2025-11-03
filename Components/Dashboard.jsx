@@ -125,7 +125,6 @@ const Dashboard = () => {
       console.log("📊 Response headers:", Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
-        // ✨ Ottieni dettagli dell'errore
         const errorText = await response.text();
         console.error("❌ Errore API export:", errorText);
         throw new Error(`Errore server: ${response.status} - ${errorText}`);

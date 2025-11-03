@@ -1,11 +1,10 @@
-'use client'
 import React from 'react';
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import '@styles/global.css';
-import { SessionProvider } from "next-auth/react";
+import { Providers } from './providers';
 import Header from '@Components/Header';
 
-export const metadada = {
+export const metadata = {
     title:"Webarea",
     description:"La città del business"
 }
@@ -18,7 +17,7 @@ const Rootlayout = ({children}) => {
           <div className='gradient'/>
         </div>
         
-        <SessionProvider>
+        <Providers>
           <div className="relative z-10 min-h-screen">
             <Header />
             
@@ -29,7 +28,7 @@ const Rootlayout = ({children}) => {
               </div>
             </main>
           </div>
-        </SessionProvider>
+        </Providers>
         
         <SpeedInsights />
       </body>
