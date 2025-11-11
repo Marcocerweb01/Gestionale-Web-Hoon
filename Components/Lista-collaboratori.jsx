@@ -208,9 +208,9 @@ const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo", noteAmministrat
 
           <div className="flex flex-col gap-2 ml-4">
             {ruolo === "commerciale" ? (
-              <Link href={`/Feed-comm/${id}?nome=${encodeURIComponent(nome)}`}>
-                <button className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
-                  📊 Vai al Feed
+              <Link href={`/Lead-comm/${id}?nome=${encodeURIComponent(nome)}`}>
+                <button className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                  🎯 Vai al Feed Lead
                 </button>
               </Link>
             ) : (

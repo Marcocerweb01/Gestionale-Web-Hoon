@@ -1,6 +1,5 @@
 import Collaborazione from "@/models/Collaborazioni";
 import { connectToDB } from "@/utils/database";
-import { updateSnapshot } from "@/utils/snapshotManager";
 import mongoose from "mongoose";
 
 export async function PATCH(req, { params }) {
@@ -27,14 +26,7 @@ export async function PATCH(req, { params }) {
       return new Response(JSON.stringify({ message: "Collaborazione non trovata" }), { status: 404 });
     }
 
-    // Aggiorna automaticamente lo snapshot quando vengono modificate le collaborazioni
-    try {
-      await updateSnapshot();
-      console.log("Snapshot aggiornato dopo modifica admin collaborazione");
-    } catch (snapshotError) {
-      console.error("Errore aggiornamento snapshot:", snapshotError);
-      // Non interrompiamo l'operazione se lo snapshot fallisce
-    }
+    console.log("✅ Collaborazione aggiornata dall'admin");
 
     return new Response(JSON.stringify(collaborazione), { status: 200 });
   } catch (error) {

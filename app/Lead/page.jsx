@@ -17,6 +17,8 @@ export default function GestioneLead() {
 
   // Filtri
   const [filtroStato, setFiltroStato] = useState("tutti");
+  const [filtroTimeline, setFiltroTimeline] = useState("tutti");
+  const [filtroData, setFiltroData] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -68,6 +70,19 @@ export default function GestioneLead() {
       risultato = risultato.filter(l => l.stato_attuale === filtroStato);
     }
 
+    // Filtro per timeline (preventivo completato)
+    if (filtroTimeline === "preventivo") {
+      risultato = risultato.filter(l => l.timeline?.preventivo?.completato === true);
+    }
+    
+    // Filtro per data specifica
+    if (filtroData) {
+      risultato = risultato.filter(l => {
+        const dataLead = new Date(l.createdAt).toISOString().split('T')[0];
+        return dataLead === filtroData;
+      });
+    }
+
     // Filtro per ricerca
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
@@ -105,44 +120,46 @@ export default function GestioneLead() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header Pagina */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8">
+        {/* Header Pagina - Mobile Responsive */}
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2">
             Gestione Lead Commerciali
           </h1>
-          <p className="text-gray-600">
-            Traccia l'avanzamento dei tuoi contatti commerciali attraverso la timeline
+          <p className="text-sm md:text-base text-gray-600">
+            Traccia l&apos;avanzamento dei tuoi contatti commerciali attraverso la timeline
           </p>
         </div>
 
-        {/* Toolbar */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        {/* Toolbar - Mobile Responsive */}
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             
             {/* Searchbar */}
-            <div className="flex-1 w-full lg:w-auto">
+            <div className="flex-1 w-full">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="🔍 Cerca per nome, referente, telefono, email..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 md:px-4 py-2 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* Pulsante Crea Lead */}
-            <CreaLead 
-              commercialeId={session.user.id} 
-              onLeadCreato={handleLeadCreato}
-            />
+            <div className="w-full lg:w-auto">
+              <CreaLead 
+                commercialeId={session.user.id} 
+                onLeadCreato={handleLeadCreato}
+              />
+            </div>
           </div>
 
-          {/* Filtri Stati */}
+          {/* Filtri Stati - Mobile Responsive */}
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
               <button
                 onClick={() => setFiltroStato("tutti")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
                   filtroStato === "tutti"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -153,7 +170,7 @@ export default function GestioneLead() {
               
               <button
                 onClick={() => setFiltroStato("in_lavorazione")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
                   filtroStato === "in_lavorazione"
                     ? "bg-blue-600 text-white"
                     : "bg-blue-100 text-blue-700 hover:bg-blue-200"
@@ -164,7 +181,7 @@ export default function GestioneLead() {
 
               <button
                 onClick={() => setFiltroStato("da_richiamare")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
                   filtroStato === "da_richiamare"
                     ? "bg-yellow-600 text-white"
                     : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
@@ -175,7 +192,7 @@ export default function GestioneLead() {
 
               <button
                 onClick={() => setFiltroStato("non_interessato")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
                   filtroStato === "non_interessato"
                     ? "bg-red-600 text-white"
                     : "bg-red-100 text-red-700 hover:bg-red-200"
@@ -186,7 +203,7 @@ export default function GestioneLead() {
 
               <button
                 onClick={() => setFiltroStato("completato")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
                   filtroStato === "completato"
                     ? "bg-green-600 text-white"
                     : "bg-green-100 text-green-700 hover:bg-green-200"
@@ -194,17 +211,53 @@ export default function GestioneLead() {
               >
                 Completato ({conteggioPerStato("completato")})
               </button>
+
+              {/* Filtro Timeline Preventivo */}
+              <button
+                onClick={() => setFiltroTimeline(filtroTimeline === "preventivo" ? "tutti" : "preventivo")}
+                className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
+                  filtroTimeline === "preventivo"
+                    ? "bg-purple-600 text-white"
+                    : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                }`}
+              >
+                📋 Con Preventivo
+              </button>
+
+              {/* Filtro Data */}
+              <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gray-100 rounded-full">
+                <label className="text-xs md:text-sm font-medium text-gray-700">📅</label>
+                <input
+                  type="date"
+                  value={filtroData}
+                  onChange={(e) => setFiltroData(e.target.value)}
+                  className="border-0 bg-transparent text-xs md:text-sm focus:outline-none focus:ring-0 w-32"
+                />
+              </div>
+
+              {/* Reset Filtri */}
+              {(filtroTimeline !== "tutti" || filtroData) && (
+                <button
+                  onClick={() => {
+                    setFiltroTimeline("tutti");
+                    setFiltroData("");
+                  }}
+                  className="px-3 md:px-4 py-2 rounded-full bg-gray-300 text-gray-800 hover:bg-gray-400 text-xs md:text-sm font-medium transition-all"
+                >
+                  ✖ Reset
+                </button>
+              )}
             </div>
         </div>
 
-        {/* Lista Lead */}
+        {/* Lista Lead - Mobile Responsive */}
         {leadsMostrati.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+          <div className="bg-white rounded-lg shadow-md p-8 md:p-12 text-center">
+            <div className="text-4xl md:text-6xl mb-4">📋</div>
+            <h3 className="text-lg md:text-xl font-semibold text-gray-700 mb-2">
               Nessun lead trovato
             </h3>
-            <p className="text-gray-500">
+            <p className="text-sm md:text-base text-gray-500">
               {searchTerm || filtroStato !== "tutti"
                 ? "Prova a modificare i filtri di ricerca"
                 : "Inizia creando il tuo primo lead commerciale"
@@ -212,7 +265,7 @@ export default function GestioneLead() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {leadsMostrati.map(lead => (
               <TimelineLead
                 key={lead._id}
@@ -224,25 +277,25 @@ export default function GestioneLead() {
           </div>
         )}
 
-        {/* Footer Stats */}
+        {/* Footer Stats - Grid 2x2 */}
         {leads.length > 0 && (
-          <div className="mt-8 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-lg p-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="mt-6 md:mt-8 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-lg p-4 md:p-6">
+            <div className="grid grid-cols-2 gap-3 md:gap-4 text-center">
               <div>
-                <p className="text-3xl font-bold">{leads.length}</p>
-                <p className="text-sm opacity-90">Totale Lead</p>
+                <p className="text-xl md:text-3xl font-bold">{leads.length}</p>
+                <p className="text-xs md:text-sm opacity-90">Totale Lead</p>
               </div>
               <div>
-                <p className="text-3xl font-bold">{conteggioPerStato("in_lavorazione")}</p>
-                <p className="text-sm opacity-90">In Lavorazione</p>
+                <p className="text-xl md:text-3xl font-bold">{conteggioPerStato("in_lavorazione")}</p>
+                <p className="text-xs md:text-sm opacity-90">In Lavorazione</p>
               </div>
               <div>
-                <p className="text-3xl font-bold">{conteggioPerStato("da_richiamare")}</p>
-                <p className="text-sm opacity-90">Da Richiamare</p>
+                <p className="text-xl md:text-3xl font-bold">{conteggioPerStato("da_richiamare")}</p>
+                <p className="text-xs md:text-sm opacity-90">Da Richiamare</p>
               </div>
               <div>
-                <p className="text-3xl font-bold">{conteggioPerStato("completato")}</p>
-                <p className="text-sm opacity-90">Completati</p>
+                <p className="text-xl md:text-3xl font-bold">{conteggioPerStato("completato")}</p>
+                <p className="text-xs md:text-sm opacity-90">Completati</p>
               </div>
             </div>
           </div>

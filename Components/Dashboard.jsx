@@ -5,9 +5,10 @@ import { useCollaboratoriWithGlobalRefresh } from '@/hooks/useCollaboratori'; //
 import ListaCollaboratori from './Lista-collaboratori';
 import ListaClienti from './Lista-clienti';
 import TimelineWebDesigner from './timeline-web-designer'; // ✨ Uso TimelineWebDesigner al posto di ListaClientiWebDesigner
+import TimelineLead from './TimelineLead';
+import CreaLead from './CreaLead';
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
-import FeedCommerciale from './feed-commerciale';
 import { 
   UserPlus, 
   Users, 
@@ -37,6 +38,86 @@ const Dashboard = () => {
 
   // ✨ Filtra solo collaboratori attivi per il Dashboard
   const collaboratoriAttivi = data.filter(collab => collab.status === 'attivo');
+
+  // Stati per gestione lead commerciali
+  const [leads, setLeads] = useState([]);
+  const [isLoadingLeads, setIsLoadingLeads] = useState(false);
+  const [filtroStato, setFiltroStato] = useState("tutti");
+  const [filtroTimeline, setFiltroTimeline] = useState("tutti"); // Nuovo filtro timeline
+  const [filtroData, setFiltroData] = useState(""); // Nuovo filtro data
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Carica lead se l'utente è un commerciale
+  useEffect(() => {
+    if (session?.user?.subrole === "commerciale" && session?.user?.id) {
+      fetchLeads();
+    }
+  }, [session]);
+
+  const fetchLeads = async () => {
+    setIsLoadingLeads(true);
+    try {
+      const response = await fetch(`/api/leads?commerciale=${session.user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setLeads(data);
+      }
+    } catch (error) {
+      console.error("Errore caricamento lead:", error);
+    } finally {
+      setIsLoadingLeads(false);
+    }
+  };
+
+  const handleLeadCreato = (nuovoLead) => {
+    setLeads([nuovoLead, ...leads]);
+  };
+
+  const handleLeadUpdate = (leadAggiornato) => {
+    setLeads(leads.map(l => l._id === leadAggiornato._id ? leadAggiornato : l));
+  };
+
+  const handleLeadDelete = (leadId) => {
+    setLeads(leads.filter(l => l._id !== leadId));
+  };
+
+  const leadsFiltrati = () => {
+    let risultato = leads;
+    
+    // Filtro per stato
+    if (filtroStato !== "tutti") {
+      risultato = risultato.filter(l => l.stato_attuale === filtroStato);
+    }
+    
+    // Filtro per timeline (preventivo completato)
+    if (filtroTimeline === "preventivo") {
+      risultato = risultato.filter(l => l.timeline?.preventivo?.completato === true);
+    }
+    
+    // Filtro per data specifica
+    if (filtroData) {
+      risultato = risultato.filter(l => {
+        const dataLead = new Date(l.createdAt).toISOString().split('T')[0];
+        return dataLead === filtroData;
+      });
+    }
+    
+    // Filtro per ricerca
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      risultato = risultato.filter(l => 
+        l.nome_attivita.toLowerCase().includes(term) ||
+        l.referente?.toLowerCase().includes(term) ||
+        l.numero_telefono.includes(term) ||
+        l.email?.toLowerCase().includes(term)
+      );
+    }
+    return risultato;
+  };
+
+  const conteggioPerStato = (stato) => {
+    return leads.filter(l => l.stato_attuale === stato).length;
+  };
 
   // Funzione per recuperare le fatture del collaboratore
   const fetchFatture = async () => {
@@ -294,82 +375,84 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+    <div className="space-y-4 md:space-y-8 p-4 md:p-0">
+      {/* Welcome Header - Mobile Responsive */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl md:text-3xl font-bold text-gray-900">
               Benvenuto, {session?.user?.nome}
             </h1>
-            <p className="text-gray-600 mt-2 flex items-center space-x-2">
-              <span>Ruolo: <span className="font-medium">{session?.user?.role}</span></span>
+            <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
+              <span className="text-sm md:text-base text-gray-600">
+                Ruolo: <span className="font-medium">{session?.user?.role}</span>
+              </span>
               {session?.user?.subrole && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 w-fit">
                   {session?.user?.subrole}
                 </span>
               )}
-            </p>
+            </div>
           </div>
           <div className="hidden sm:block">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-              <Users className="w-8 h-8 text-white" />
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+              <Users className="w-6 h-6 md:w-8 md:h-8 text-white" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Sezione Fatturazione - Solo per collaboratori */}
-      {session?.user?.subrole && (
+      {/* Sezione Fatturazione - Solo per collaboratori - Mobile Responsive */}
+      {/* TEMPORANEAMENTE NASCOSTA */}
+      {/* {session?.user?.subrole && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-gray-200 p-6">
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-gray-200 p-4 md:p-6">
             <div className="flex items-center space-x-3">
-              <DollarSign className="w-6 h-6 text-purple-600" />
+              <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Le Mie Fatture</h2>
-                <p className="text-gray-600 text-sm mt-1">Storico delle tue fatture mensili</p>
+                <h2 className="text-lg md:text-xl font-bold text-gray-900">Le Mie Fatture</h2>
+                <p className="text-gray-600 text-xs md:text-sm mt-1">Storico delle tue fatture mensili</p>
               </div>
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             {loadingFatture ? (
               <div className="text-center py-8">
-                <div className="w-8 h-8 border-2 border-gray-300 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-500">Caricamento fatture...</p>
+                <div className="w-6 h-6 md:w-8 md:h-8 border-2 border-gray-300 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-500 text-sm md:text-base">Caricamento fatture...</p>
               </div>
             ) : fatture.length === 0 ? (
               <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <DollarSign className="w-8 h-8 text-gray-400" />
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <DollarSign className="w-6 h-6 md:w-8 md:h-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Nessuna Fattura</h3>
-                <p className="text-gray-500">Non sono ancora state generate fatture per il tuo account.</p>
+                <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">Nessuna Fattura</h3>
+                <p className="text-gray-500 text-sm md:text-base">Non sono ancora state generate fatture per il tuo account.</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {/* Ultima Fattura Evidenziata */}
+              <div className="space-y-4 md:space-y-6">
                 {fatture.length > 0 && (
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 p-5 rounded-lg shadow-md">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 p-4 md:p-5 rounded-lg shadow-md">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-2xl">📄</span>
-                      <h4 className="font-bold text-gray-900">Ultima Fattura</h4>
+                      <span className="text-xl md:text-2xl">📄</span>
+                      <h4 className="font-bold text-gray-900 text-sm md:text-base">Ultima Fattura</h4>
                     </div>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-lg text-gray-900">{formatMese(fatture[0].mese)}</p>
-                        <p className="text-sm text-gray-700 mt-1">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                      <div className="flex-1">
+                        <p className="font-medium text-base md:text-lg text-gray-900">{formatMese(fatture[0].mese)}</p>
+                        <p className="text-xs md:text-sm text-gray-700 mt-1">
                           Totale: {fatture[0].totale ? `€${fatture[0].totale.toFixed(2)}` : 'Non impostato'}
                         </p>
-                        <div className="flex gap-3 mt-3">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        <div className="flex flex-wrap gap-2 md:gap-3 mt-3">
+                          <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-semibold ${
                             fatture[0].statoCollaboratore === 'emessa' 
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {fatture[0].statoCollaboratore === 'emessa' ? '✓ Emessa' : '⏳ Non Emessa'}
                           </span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-semibold ${
                             fatture[0].statoAmministratore === 'pagata' 
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-red-100 text-red-800'
@@ -380,7 +463,7 @@ const Dashboard = () => {
                       </div>
                       <button
                         onClick={() => handleToggleStatoEmissione(fatture[0]._id, fatture[0].statoCollaboratore)}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        className={`px-3 md:px-4 py-2 rounded-lg font-medium text-xs md:text-sm transition-colors w-full sm:w-auto ${
                           fatture[0].statoCollaboratore === 'emessa'
                             ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                             : 'bg-blue-600 text-white hover:bg-blue-700'
@@ -393,17 +476,15 @@ const Dashboard = () => {
                   </div>
                 )}
 
-                {/* Storico con Accordion per Anno */}
                 {fatture.length > 1 && (
-                  <div className="border-t pt-6">
-                    <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <div className="border-t pt-4 md:pt-6">
+                    <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 text-sm md:text-base">
                       <span>📚</span> Storico Fatture
                     </h4>
                     
                     {Object.entries(raggruppaFatturePerAnno())
                       .sort(([annoA], [annoB]) => parseInt(annoB) - parseInt(annoA))
                       .map(([anno, fattureAnno]) => {
-                        // Salta il primo elemento (ultima fattura già mostrata)
                         const fattureStorico = anno === fatture[0].mese.split('-')[0] 
                           ? fattureAnno.slice(1) 
                           : fattureAnno;
@@ -414,10 +495,10 @@ const Dashboard = () => {
                           <div key={anno} className="mb-3 border rounded-lg overflow-hidden">
                             <button
                               onClick={() => toggleAnno(anno)}
-                              className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                              className="w-full flex justify-between items-center p-3 md:p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
                             >
-                              <span className="font-medium text-gray-900">Anno {anno}</span>
-                              <span className="text-gray-600 text-sm">
+                              <span className="font-medium text-gray-900 text-sm md:text-base">Anno {anno}</span>
+                              <span className="text-gray-600 text-xs md:text-sm">
                                 {anniAperti[anno] ? '▼' : '▶'} {fattureStorico.length} fatture
                               </span>
                             </button>
@@ -425,14 +506,14 @@ const Dashboard = () => {
                             {anniAperti[anno] && (
                               <div className="border-t">
                                 {fattureStorico.map((fattura) => (
-                                  <div key={fattura._id} className="p-4 border-b last:border-b-0 bg-white hover:bg-gray-50">
-                                    <div className="flex justify-between items-start">
-                                      <div>
-                                        <p className="font-medium text-gray-900">{formatMese(fattura.mese)}</p>
-                                        <p className="text-sm text-gray-600 mt-1">
+                                  <div key={fattura._id} className="p-3 md:p-4 border-b last:border-b-0 bg-white hover:bg-gray-50">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900 text-sm md:text-base">{formatMese(fattura.mese)}</p>
+                                        <p className="text-xs md:text-sm text-gray-600 mt-1">
                                           Totale: {fattura.totale ? `€${fattura.totale.toFixed(2)}` : 'Non impostato'}
                                         </p>
-                                        <div className="flex gap-3 mt-2">
+                                        <div className="flex flex-wrap gap-2 md:gap-3 mt-2">
                                           <span className={`px-2 py-1 rounded text-xs font-medium ${
                                             fattura.statoCollaboratore === 'emessa' 
                                               ? 'bg-green-100 text-green-800' 
@@ -451,7 +532,7 @@ const Dashboard = () => {
                                       </div>
                                       <button
                                         onClick={() => handleToggleStatoEmissione(fattura._id, fattura.statoCollaboratore)}
-                                        className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                                        className="text-xs md:text-sm text-blue-600 hover:text-blue-800 transition-colors w-full sm:w-auto text-left sm:text-right"
                                         disabled={fattura.statoCollaboratore === 'emessa'}
                                       >
                                         {fattura.statoCollaboratore === 'non emessa' ? 'Segna come emessa' : '✓ Emessa'}
@@ -470,146 +551,168 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-      )}
+      )} */}
 
-      {/* Admin Panel */}
+      {/* Admin Panel - Mobile Responsive */}
       {session?.user?.role === "amministratore" && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-            <Settings className="w-6 h-6 mr-2 text-blue-600" />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6 flex items-center">
+            <Settings className="w-5 h-5 md:w-6 md:h-6 mr-2 text-blue-600" />
             Pannello Amministratore
           </h2>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+          {/* Pulsanti principali - Mobile: 1 colonna, Tablet: 2 colonne, Desktop: 3 colonne */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             <Link href="/AddCollab">
-              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group">
-                <PlusCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Crea Collaborazione</span>
+              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group">
+                <PlusCircle className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">Crea Collaborazione</span>
               </button>
             </Link>
             
             <Link href="/Register">
-              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 group">
-                <UserPlus className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Registra Utente</span>
+              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 group">
+                <UserPlus className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">Registra Utente</span>
               </button>
             </Link>
             
             <Link href="/Lista_clienti">
-              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group">
-                <Building2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Lista Clienti</span>
+              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group">
+                <Building2 className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">Lista Clienti</span>
               </button>
             </Link>
             
             <Link href="/Pagamenti">
-              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 group">
-                <CreditCard className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Pagamenti</span>
+              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 group">
+                <CreditCard className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">Pagamenti</span>
               </button>
             </Link>
             
             <Link href="/Lista_collaboratori">
-              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 group">
-                <Users className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Lista Collaboratori</span>
+              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 group">
+                <Users className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">Lista Collaboratori</span>
               </button>
             </Link>
             
             <button
               onClick={() => setIsVisible(!isVisible)}
-              className="black_btn w-full"
+              className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 group"
             >
-              {isVisible ? "Nascondi Opzioni avanzate" : "Mostra Opzioni avanzate"}
+              <Settings className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium text-sm md:text-base">
+                {isVisible ? "Nascondi Opzioni Avanzate" : "Mostra Opzioni Avanzate"}
+              </span>
             </button>
           </div>
 
+          {/* Opzioni Avanzate - Mobile Responsive */}
           {isVisible && ( 
-            <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <button 
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group" 
-              onClick={downloadxlsx}
-            >
-              <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Download Dati</span>
-            </button>
-            
-            <button 
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 group" 
-              onClick={handleResetPosts}
-              disabled={resetLoading}
-            >
-              <RotateCcw className={`w-5 h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
-              <span className="font-medium">{resetLoading ? "Reset..." : "Reset Post"}</span>
-            </button>
-            
-            <button 
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 group" 
-              onClick={handleGeneraPagamenti}
-              disabled={resetLoading}
-            >
-              <DollarSign className={`w-5 h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
-              <span className="font-medium">{resetLoading ? "Generando..." : "Genera Pagamenti"}</span>
-            </button>
-            
-            <Link href="/Fatturazione" passHref>
-              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors duration-200 group">
-                <span className="text-xl group-hover:scale-110 transition-transform">💰</span>
-                <span className="font-medium">Fatturazione</span>
+            <div className="mt-4 md:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 border-t pt-4 md:pt-6">
+              <button 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group" 
+                onClick={downloadxlsx}
+              >
+                <Download className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">Download Dati</span>
               </button>
-            </Link>
-            
-            <Link href="/Tabella-collaborazioni" passHref>
-              <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors duration-200 group">
-                <Table className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Tabella Collaborazioni</span>
+              
+              <button 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 group" 
+                onClick={handleResetPosts}
+                disabled={resetLoading}
+              >
+                <RotateCcw className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
+                <span className="font-medium text-sm md:text-base">{resetLoading ? "Reset..." : "Reset Post"}</span>
               </button>
-            </Link>
+              
+              <button 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 group" 
+                onClick={handleGeneraPagamenti}
+                disabled={resetLoading}
+              >
+                <DollarSign className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
+                <span className="font-medium text-sm md:text-base">{resetLoading ? "Generando..." : "Genera Pagamenti"}</span>
+              </button>
+              
+              <Link href="/Fatturazione" passHref>
+                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors duration-200 group">
+                  <span className="text-lg md:text-xl group-hover:scale-110 transition-transform">💰</span>
+                  <span className="font-medium text-sm md:text-base">Fatturazione</span>
+                </button>
+              </Link>
+              
+              <Link href="/Tabella-collaborazioni" passHref>
+                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors duration-200 group">
+                  <Table className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium text-sm md:text-base">Tabella Collaborazioni</span>
+                </button>
+              </Link>
 
-            <button 
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 group" 
-              onClick={handleFixAppuntamenti}
-              disabled={resetLoading}
-            >
-              <Settings className={`w-5 h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
-              <span className="font-medium">{resetLoading ? "Fixing..." : "Fix Appuntamenti"}</span>
-            </button>
+              <button 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 group" 
+                onClick={handleFixAppuntamenti}
+                disabled={resetLoading}
+              >
+                <Settings className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
+                <span className="font-medium text-sm md:text-base">{resetLoading ? "Fixing..." : "Fix Appuntamenti"}</span>
+              </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Main Content - Mobile Responsive */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-4 md:p-6 border-b border-gray-200">
           {session?.user?.role === "amministratore" ? (
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <Users className="w-6 h-6 mr-2 text-blue-600" />
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
+              <Users className="w-5 h-5 md:w-6 md:h-6 mr-2 text-blue-600" />
               Lista Collaboratori
             </h2>
           ) : session?.user?.subrole === "commerciale" ? (
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <MessageSquare className="w-6 h-6 mr-2 text-green-600" />
-              Feed Commerciale
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
+              <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 text-green-600" />
+              Dashboard Lead Commerciali
             </h2>
           ) : session?.user?.subrole === "smm" ? (
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <Building2 className="w-6 h-6 mr-2 text-purple-600" />
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
+              <Building2 className="w-5 h-5 md:w-6 md:h-6 mr-2 text-purple-600" />
               Lista Clienti
             </h2>
           ) : (
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <Clock className="w-6 h-6 mr-2 text-orange-600" />
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
+              <Clock className="w-5 h-5 md:w-6 md:h-6 mr-2 text-orange-600" />
               I tuoi progetti Web Design
             </h2>
           )}
         </div>
         
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {session?.user?.role === "amministratore" ? (
             <ListaCollaboratori collaboratori={collaboratoriAttivi} />
           ) : session?.user?.subrole === "commerciale" ? (
-            <FeedCommerciale id={session?.user.id} />
+            <LeadDashboard 
+              leads={leads}
+              isLoading={isLoadingLeads}
+              filtroStato={filtroStato}
+              setFiltroStato={setFiltroStato}
+              filtroTimeline={filtroTimeline}
+              setFiltroTimeline={setFiltroTimeline}
+              filtroData={filtroData}
+              setFiltroData={setFiltroData}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              leadsFiltrati={leadsFiltrati()}
+              conteggioPerStato={conteggioPerStato}
+              handleLeadCreato={handleLeadCreato}
+              handleLeadUpdate={handleLeadUpdate}
+              handleLeadDelete={handleLeadDelete}
+              commercialeId={session.user.id}
+            />
           ) : session?.user?.subrole === "smm" ? (
             <ListaClienti id={session?.user.id} amministratore={false} />
           ) : (
@@ -617,6 +720,208 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+// Componente per la Dashboard Lead del Commerciale
+const LeadDashboard = ({ 
+  leads, 
+  isLoading, 
+  filtroStato, 
+  setFiltroStato,
+  filtroTimeline,
+  setFiltroTimeline,
+  filtroData,
+  setFiltroData,
+  searchTerm, 
+  setSearchTerm, 
+  leadsFiltrati, 
+  conteggioPerStato,
+  handleLeadCreato,
+  handleLeadUpdate,
+  handleLeadDelete,
+  commercialeId
+}) => {
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin text-6xl mb-4">⏳</div>
+        <p className="text-gray-600">Caricamento lead...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar - Mobile Responsive */}
+      <div className="bg-gray-50 rounded-lg p-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          {/* Searchbar */}
+          <div className="flex-1 w-full">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="🔍 Cerca per nome, referente, telefono, email..."
+              className="w-full border border-gray-300 rounded-lg px-3 md:px-4 py-2 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Pulsante Crea Lead */}
+          <div className="w-full lg:w-auto">
+            <CreaLead 
+              commercialeId={commercialeId} 
+              onLeadCreato={handleLeadCreato}
+            />
+          </div>
+        </div>
+
+        {/* Filtri Stati - Mobile Responsive */}
+        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-300">
+          <button
+            onClick={() => setFiltroStato("tutti")}
+            className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
+              filtroStato === "tutti"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            Tutti ({leads.length})
+          </button>
+          
+          <button
+            onClick={() => setFiltroStato("in_lavorazione")}
+            className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
+              filtroStato === "in_lavorazione"
+                ? "bg-blue-600 text-white"
+                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+            }`}
+          >
+            In Lavorazione ({conteggioPerStato("in_lavorazione")})
+          </button>
+
+          <button
+            onClick={() => setFiltroStato("da_richiamare")}
+            className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
+              filtroStato === "da_richiamare"
+                ? "bg-yellow-600 text-white"
+                : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+            }`}
+          >
+            Da Richiamare ({conteggioPerStato("da_richiamare")})
+          </button>
+
+          <button
+            onClick={() => setFiltroStato("non_interessato")}
+            className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
+              filtroStato === "non_interessato"
+                ? "bg-red-600 text-white"
+                : "bg-red-100 text-red-700 hover:bg-red-200"
+            }`}
+          >
+            Non Interessato ({conteggioPerStato("non_interessato")})
+          </button>
+
+          <button
+            onClick={() => setFiltroStato("completato")}
+            className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
+              filtroStato === "completato"
+                ? "bg-green-600 text-white"
+                : "bg-green-100 text-green-700 hover:bg-green-200"
+            }`}
+          >
+            Completato ({conteggioPerStato("completato")})
+          </button>
+
+          {/* Filtro Timeline Preventivo */}
+          <button
+            onClick={() => setFiltroTimeline(filtroTimeline === "preventivo" ? "tutti" : "preventivo")}
+            className={`px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
+              filtroTimeline === "preventivo"
+                ? "bg-purple-600 text-white"
+                : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+            }`}
+          >
+            📋 Con Preventivo
+          </button>
+
+          {/* Filtro Data */}
+          <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gray-100 rounded-full">
+            <label className="text-xs md:text-sm font-medium text-gray-700">📅</label>
+            <input
+              type="date"
+              value={filtroData}
+              onChange={(e) => setFiltroData(e.target.value)}
+              className="border-0 bg-transparent text-xs md:text-sm focus:outline-none focus:ring-0 w-32"
+            />
+          </div>
+
+          {/* Reset Filtri */}
+          {(filtroTimeline !== "tutti" || filtroData) && (
+            <button
+              onClick={() => {
+                setFiltroTimeline("tutti");
+                setFiltroData("");
+              }}
+              className="px-3 md:px-4 py-2 rounded-full bg-gray-300 text-gray-800 hover:bg-gray-400 text-xs md:text-sm font-medium transition-all"
+            >
+              ✖ Reset
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Lista Lead */}
+      {leadsFiltrati.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-md p-8 md:p-12 text-center">
+          <div className="text-4xl md:text-6xl mb-4">📋</div>
+          <h3 className="text-lg md:text-xl font-semibold text-gray-700 mb-2">
+            Nessun lead trovato
+          </h3>
+          <p className="text-sm md:text-base text-gray-500">
+            {searchTerm || filtroStato !== "tutti"
+              ? "Prova a modificare i filtri di ricerca"
+              : "Inizia creando il tuo primo lead commerciale"
+            }
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3 md:space-y-4">
+          {leadsFiltrati.map(lead => (
+            <TimelineLead
+              key={lead._id}
+              lead={lead}
+              onUpdate={handleLeadUpdate}
+              onDelete={handleLeadDelete}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Footer Stats - Grid 2x2 */}
+      {leads.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-lg p-4 md:p-6">
+          <div className="grid grid-cols-2 gap-3 md:gap-4 text-center">
+            <div>
+              <p className="text-xl md:text-3xl font-bold">{leads.length}</p>
+              <p className="text-xs md:text-sm opacity-90">Totale Lead</p>
+            </div>
+            <div>
+              <p className="text-xl md:text-3xl font-bold">{conteggioPerStato("in_lavorazione")}</p>
+              <p className="text-xs md:text-sm opacity-90">In Lavorazione</p>
+            </div>
+            <div>
+              <p className="text-xl md:text-3xl font-bold">{conteggioPerStato("da_richiamare")}</p>
+              <p className="text-xs md:text-sm opacity-90">Da Richiamare</p>
+            </div>
+            <div>
+              <p className="text-xl md:text-3xl font-bold">{conteggioPerStato("completato")}</p>
+              <p className="text-xs md:text-sm opacity-90">Completati</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

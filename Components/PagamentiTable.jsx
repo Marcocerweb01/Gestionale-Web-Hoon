@@ -259,7 +259,7 @@ const PagamentiTable = () => {
         </div>
         {searchTerm && (
           <div className="mt-2 text-sm text-gray-600">
-            📊 {pagamentiOrdinati.length} risultat{pagamentiOrdinati.length === 1 ? 'o' : 'i'} per "{searchTerm}"
+            📊 {pagamentiOrdinati.length} risultat{pagamentiOrdinati.length === 1 ? 'o' : 'i'} per &quot;{searchTerm}&quot;
           </div>
         )}
       </div>
