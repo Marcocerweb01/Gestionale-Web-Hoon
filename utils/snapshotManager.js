@@ -1,7 +1,221 @@
-import { connectToDB } from "@/utils/database";
+import { connectToDB } from "./database";
 import SnapshotCollaborazioni from "@/models/SnapshotCollaborazioni";
 import Collaborazione from "@/models/Collaborazioni";
 import Nota from "@/models/Note";
+
+// ========================================
+// FUNZIONI BASE PER GESTIONE DATE
+// ========================================
+
+export const getCurrentMonth = () => {
+  const now = new Date();
+  return {
+    mese: now.getMonth(),
+    anno: now.getFullYear(),
+    meseNome: getMonthName(now.getMonth(), now.getFullYear())
+  };
+};
+
+export const getPreviousMonth = () => {
+  const now = new Date();
+  let mese = now.getMonth() - 1;
+  let anno = now.getFullYear();
+  
+  if (mese < 0) {
+    mese = 11;
+    anno = anno - 1;
+  }
+  
+  return {
+    mese,
+    anno,
+    meseNome: getMonthName(mese, anno)
+  };
+};
+
+const getMonthName = (mese, anno) => {
+  const monthNames = [
+    "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+    "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+  ];
+  return `${monthNames[mese]} ${anno}`;
+};
+
+export { getMonthName };
+
+// ========================================
+// FUNZIONE PRINCIPALE: AGGIORNA SNAPSHOT IN TEMPO REALE
+// ========================================
+
+export const updateSnapshot = async () => {
+  try {
+    await connectToDB();
+    console.log("📸 Inizio aggiornamento snapshot in tempo reale...");
+
+    const currentMonth = getCurrentMonth();
+    
+    // Trova o crea lo snapshot del mese corrente
+    let snapshot = await SnapshotCollaborazioni.findOne({
+      mese: currentMonth.mese,
+      anno: currentMonth.anno
+    });
+
+    if (!snapshot) {
+      console.log(`📁 Creazione nuovo snapshot per ${currentMonth.meseNome}...`);
+      snapshot = new SnapshotCollaborazioni({
+        mese: currentMonth.mese,
+        anno: currentMonth.anno,
+        meseNome: currentMonth.meseNome,
+        stato: 'attivo',
+        collaborazioni_snapshot: []
+      });
+    }
+
+    // Non aggiornare snapshot completati
+    if (snapshot.stato === 'completato' || snapshot.stato === 'archiviato') {
+      console.log(`⚠️ Snapshot ${currentMonth.meseNome} è ${snapshot.stato}, non verrà aggiornato`);
+      return snapshot;
+    }
+
+    // Recupera tutte le collaborazioni attive
+    const collaborazioni = await Collaborazione.find({})
+      .populate('collaboratore', 'nome cognome')
+      .populate('azienda', 'ragioneSociale')
+      .lean();
+
+    console.log(`📊 Trovate ${collaborazioni.length} collaborazioni da processare`);
+
+    // Calcola date del mese corrente per appuntamenti
+    const firstDay = new Date(currentMonth.anno, currentMonth.mese, 1);
+    const lastDay = new Date(currentMonth.anno, currentMonth.mese + 1, 0);
+
+    // Prepara array snapshot
+    const snapshotData = [];
+
+    for (const collab of collaborazioni) {
+      if (!collab.collaboratore) continue;
+
+      // Conta appuntamenti fatti questo mese
+      const appuntamentiFatti = await Nota.countDocuments({
+        collaborazione: collab._id,
+        tipo: "appuntamento",
+        data_appuntamento: {
+          $gte: firstDay,
+          $lte: lastDay
+        }
+      });
+
+      snapshotData.push({
+        collaborazione_id: collab._id,
+        collaboratore: `${collab.collaboratore.nome} ${collab.collaboratore.cognome}`,
+        cliente: collab.aziendaRagioneSociale || "N/A",
+        appuntamenti_totali: collab.numero_appuntamenti || 0,
+        appuntamenti_fatti: appuntamentiFatti,
+        post_ig_fb: `${collab.post_ig_fb_fatti || 0} / ${collab.post_ig_fb || 0}`,
+        post_tiktok: `${collab.post_tiktok_fatti || 0} / ${collab.post_tiktok || 0}`,
+        post_linkedin: `${collab.post_linkedin_fatti || 0} / ${collab.post_linkedin || 0}`,
+        ultimo_aggiornamento: new Date()
+      });
+    }
+
+    // Aggiorna snapshot
+    snapshot.collaborazioni_snapshot = snapshotData;
+    snapshot.data_ultimo_aggiornamento = new Date();
+    
+    await snapshot.save();
+    
+    console.log(`✅ Snapshot ${currentMonth.meseNome} aggiornato con ${snapshotData.length} collaborazioni`);
+    return snapshot;
+
+  } catch (error) {
+    console.error("❌ Errore aggiornamento snapshot:", error);
+    throw error;
+  }
+};
+
+// ========================================
+// CHIUDI SNAPSHOT A FINE MESE
+// ========================================
+
+export const closeMonthSnapshot = async (mese, anno) => {
+  try {
+    await connectToDB();
+    
+    const snapshot = await SnapshotCollaborazioni.findOne({ mese, anno });
+    
+    if (!snapshot) {
+      console.log(`⚠️ Snapshot ${getMonthName(mese, anno)} non trovato`);
+      return null;
+    }
+
+    if (snapshot.stato === 'completato') {
+      console.log(`✅ Snapshot ${getMonthName(mese, anno)} già chiuso`);
+      return snapshot;
+    }
+
+    // Chiudi snapshot
+    snapshot.stato = 'completato';
+    snapshot.data_completamento = new Date();
+    await snapshot.save();
+
+    console.log(`🔒 Snapshot ${getMonthName(mese, anno)} chiuso con successo`);
+    return snapshot;
+
+  } catch (error) {
+    console.error("❌ Errore chiusura snapshot:", error);
+    throw error;
+  }
+};
+
+// ========================================
+// RECUPERA SNAPSHOT
+// ========================================
+
+export const getSnapshot = async (mese = null, anno = null) => {
+  try {
+    await connectToDB();
+    
+    const targetMonth = (mese !== null && anno !== null) 
+      ? { mese, anno }
+      : getCurrentMonth();
+
+    const snapshot = await SnapshotCollaborazioni.findOne({
+      mese: targetMonth.mese,
+      anno: targetMonth.anno
+    });
+
+    return snapshot;
+  } catch (error) {
+    console.error("❌ Errore recupero snapshot:", error);
+    throw error;
+  }
+};
+
+// ========================================
+// MARCA SNAPSHOT COME ESPORTATO
+// ========================================
+
+export const markSnapshotAsExported = async (mese, anno) => {
+  try {
+    await connectToDB();
+    
+    const snapshot = await SnapshotCollaborazioni.findOne({ mese, anno });
+    
+    if (snapshot) {
+      snapshot.data_export = new Date();
+      if (snapshot.stato === 'attivo') {
+        snapshot.stato = 'esportato';
+      }
+      await snapshot.save();
+      console.log(`📤 Snapshot ${getMonthName(mese, anno)} marcato come esportato`);
+    }
+    
+    return snapshot;
+  } catch (error) {
+    console.error("❌ Errore marca snapshot esportato:", error);
+    throw error;
+  }
+};
 import { Collaboratore } from "@/models/User";
 
 // Funzione per ottenere il mese corrente

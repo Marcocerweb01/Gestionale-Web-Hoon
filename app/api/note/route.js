@@ -1,4 +1,5 @@
 import Nota from "@/models/Note";
+import Collaborazione from "@/models/Collaborazioni";
 import { connectToDB } from "@/utils/database";
 
 export async function POST(req) {
@@ -21,6 +22,15 @@ export async function POST(req) {
     });
 
     await newNote.save();
+
+    // Se è un appuntamento, incrementa appuntamenti_fatti nella collaborazione
+    if (tipo === 'appuntamento') {
+      await Collaborazione.findByIdAndUpdate(
+        collaborazione,
+        { $inc: { appuntamenti_fatti: 1 } }
+      );
+      console.log(`✅ Incrementato appuntamenti_fatti per collaborazione ${collaborazione}`);
+    }
 
     return new Response(JSON.stringify({ message: "Nota creata con successo", newNote }), { status: 201 });
   } catch (error) {

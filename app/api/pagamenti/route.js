@@ -1,38 +1,71 @@
 export const dynamic = "force-dynamic";
 
 import Pagamenti from "@/models/Pagamenti";
+import Collaborazione from "@/models/Collaborazioni";
 import { connectToDB } from "@/utils/database";
 
-export async function GET() {
+export async function GET(req) {
   try {
     await connectToDB();
 
-    // Calcola inizio e fine del mese corrente
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999
-    );
+    const { searchParams } = new URL(req.url);
+    const meseAnno = searchParams.get("mese"); // Formato: YYYY-MM
 
-    // Filtra i pagamenti per data_fattura nel mese corrente
+    let startOfMonth, endOfMonth;
+
+    if (meseAnno) {
+      // Se viene passato un mese specifico, usa quello
+      const [anno, mese] = meseAnno.split("-").map(Number);
+      startOfMonth = new Date(anno, mese - 1, 1);
+      endOfMonth = new Date(anno, mese, 0, 23, 59, 59, 999);
+    } else {
+      // Altrimenti usa il mese corrente
+      const now = new Date();
+      startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      endOfMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+    }
+
+    // Filtra i pagamenti per data_fattura nel periodo selezionato
     const pagamenti = await Pagamenti.find({
       data_fattura: { $gte: startOfMonth, $lte: endOfMonth },
     }).populate("cliente");
 
-    const result = pagamenti.map((p) => ({
-      id: p._id,
-      cliente: p.cliente?.etichetta || "N/A", // <-- solo etichetta
-      ragione_sociale:p.cliente?.ragioneSociale || "N/A", // <-- Ragione Sociale
-      data_fattura: p.data_fattura,
-      data_pagato: p.data_pagato,
-      stato: p.stato,
-    }));
+    // Per ogni pagamento, trova la collaborazione attiva per ottenere il collaboratore
+    const result = await Promise.all(
+      pagamenti.map(async (p) => {
+        let collaboratoreNome = "N/A";
+        
+        if (p.cliente?._id) {
+          // Cerca la collaborazione attiva per questa azienda
+          const collaborazione = await Collaborazione.findOne({
+            azienda: p.cliente._id,
+            stato: "attiva"
+          }).populate("collaboratore");
+          
+          if (collaborazione?.collaboratore) {
+            collaboratoreNome = `${collaborazione.collaboratore.nome} ${collaborazione.collaboratore.cognome}`;
+          }
+        }
+
+        return {
+          id: p._id,
+          cliente: p.cliente?.etichetta || "N/A",
+          ragione_sociale: p.cliente?.ragioneSociale || "N/A",
+          collaboratore: collaboratoreNome,
+          data_fattura: p.data_fattura,
+          data_pagato: p.data_pagato,
+          stato: p.stato,
+        };
+      })
+    );
 
     const headers = new Headers({
       "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",

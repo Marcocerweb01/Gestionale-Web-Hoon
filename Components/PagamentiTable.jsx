@@ -9,9 +9,39 @@ const PagamentiTable = () => {
   const [initialCheckedPagamenti, setInitialCheckedPagamenti] = useState({});
   const [filtro, setFiltro] = useState("alfabetico"); // nuovo stato filtro
   const [searchTerm, setSearchTerm] = useState(""); // nuovo stato per la ricerca
+  const [meseSelezionato, setMeseSelezionato] = useState(""); // Mese/anno selezionato
+
+  // Genera il mese corrente in formato YYYY-MM
+  const getMeseCorrente = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  // Genera lista ultimi 24 mesi
+  const getUltimiMesi = () => {
+    const mesi = [];
+    const now = new Date();
+    for (let i = 0; i < 24; i++) {
+      const data = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const valore = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+      const etichetta = data.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+      mesi.push({ valore, etichetta });
+    }
+    return mesi;
+  };
+
+  // Inizializza con il mese corrente
+  useEffect(() => {
+    if (!meseSelezionato) {
+      setMeseSelezionato(getMeseCorrente());
+    }
+  }, []);
 
   useEffect(() => {
-    fetch("/api/pagamenti")
+    if (!meseSelezionato) return;
+    
+    setLoading(true);
+    fetch(`/api/pagamenti?mese=${meseSelezionato}`)
       .then((res) => res.json())
       .then((data) => {
         // Rimuovi duplicati mantenendo solo il record più recente per cliente
@@ -40,7 +70,7 @@ const PagamentiTable = () => {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [meseSelezionato]);
 
   const handleStatusChange = (id, status) => {
     setCheckedPagamenti((prev) => ({ ...prev, [id]: status }));
@@ -52,9 +82,12 @@ const PagamentiTable = () => {
     
     const cliente = (pagamento.cliente || "").toLowerCase();
     const ragioneSociale = (pagamento.ragione_sociale || "").toLowerCase();
+    const collaboratore = (pagamento.collaboratore || "").toLowerCase();
     const termineRicerca = searchTerm.toLowerCase();
     
-    return cliente.includes(termineRicerca) || ragioneSociale.includes(termineRicerca);
+    return cliente.includes(termineRicerca) || 
+           ragioneSociale.includes(termineRicerca) || 
+           collaboratore.includes(termineRicerca);
   });
 
   // Ordinamento in base al filtro selezionato
@@ -63,6 +96,12 @@ const PagamentiTable = () => {
     pagamentiOrdinati.sort((a, b) => {
       if ((a.cliente || "") < (b.cliente || "")) return -1;
       if ((a.cliente || "") > (b.cliente || "")) return 1;
+      return 0;
+    });
+  } else if (filtro === "collaboratore") {
+    pagamentiOrdinati.sort((a, b) => {
+      if ((a.collaboratore || "") < (b.collaboratore || "")) return -1;
+      if ((a.collaboratore || "") > (b.collaboratore || "")) return 1;
       return 0;
     });
   } else if (filtro === "pagati") {
@@ -104,6 +143,33 @@ const PagamentiTable = () => {
   return (
     <div className="space-y-6">
       
+      {/* Selettore Mese/Anno */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+        <div className="flex items-center gap-4">
+          <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            📅 Visualizza mese:
+          </label>
+          <select
+            value={meseSelezionato}
+            onChange={(e) => setMeseSelezionato(e.target.value)}
+            className="flex-1 max-w-xs border-2 border-blue-300 rounded-lg px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          >
+            {getUltimiMesi().map(({ valore, etichetta }) => (
+              <option key={valore} value={valore}>
+                {etichetta}
+              </option>
+            ))}
+          </select>
+          {meseSelezionato !== getMeseCorrente() && (
+            <button
+              onClick={() => setMeseSelezionato(getMeseCorrente())}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-all"
+            >
+              📍 Torna a Oggi
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Filtri */}
       <div className="bg-gray-50 rounded-lg p-4">
@@ -118,6 +184,16 @@ const PagamentiTable = () => {
             onClick={() => setFiltro("alfabetico")}
           >
             📝 Alfabetico
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filtro === "collaboratore" 
+                ? "bg-blue-500 text-white shadow-md" 
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
+            onClick={() => setFiltro("collaboratore")}
+          >
+            👤 Collaboratore
           </button>
           <button
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
@@ -250,7 +326,7 @@ const PagamentiTable = () => {
                 setEditMode(false);
                 setCheckedPagamenti({});
                 setInitialCheckedPagamenti({});
-                fetch("/api/pagamenti")
+                fetch(`/api/pagamenti?mese=${meseSelezionato}`)
                   .then((res) => res.json())
                   .then((data) => {
                     setPagamenti(data);
@@ -277,6 +353,37 @@ const PagamentiTable = () => {
         )}
       </div>
 
+      {/* Statistiche Mese */}
+      {!loading && pagamenti.length > 0 && (
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6 border border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">📊 Statistiche del mese</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="text-2xl font-bold text-gray-900">{pagamenti.length}</div>
+              <div className="text-xs text-gray-600 mt-1">Totale Clienti</div>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4 shadow-sm border border-green-200">
+              <div className="text-2xl font-bold text-green-700">
+                {pagamenti.filter(p => p.stato === "si").length}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">✅ Pagati</div>
+            </div>
+            <div className="bg-red-50 rounded-lg p-4 shadow-sm border border-red-200">
+              <div className="text-2xl font-bold text-red-700">
+                {pagamenti.filter(p => p.stato === "no").length}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">❌ Non Pagati</div>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-4 shadow-sm border border-purple-200">
+              <div className="text-2xl font-bold text-purple-700">
+                {pagamenti.filter(p => p.stato === "ragazzi").length}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">👥 Ragazzi</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tabella */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
@@ -285,6 +392,7 @@ const PagamentiTable = () => {
               <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Cliente</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Ragione Sociale</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Collaboratore</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Data Fattura</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Data Pagamento</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Stato</th>
@@ -294,7 +402,7 @@ const PagamentiTable = () => {
             <tbody className="divide-y divide-gray-200">
               {pagamentiOrdinati.length === 0 ? (
                 <tr>
-                  <td colSpan={editMode ? 6 : 5} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={editMode ? 7 : 6} className="px-6 py-12 text-center text-gray-500">
                     {searchTerm ? (
                       <div>
                         <div className="text-4xl mb-2">🔍</div>
@@ -322,6 +430,9 @@ const PagamentiTable = () => {
                   </td>
                   <td className="px-6 py-4 text-gray-900 font-medium">
                     {p.ragione_sociale || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">
+                    {p.collaboratore || "N/A"}
                   </td>
                   <td className="px-6 py-4 text-gray-600">
                     {p.data_fattura ? new Date(p.data_fattura).toLocaleDateString('it-IT') : "-"}

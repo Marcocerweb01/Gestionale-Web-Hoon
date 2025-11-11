@@ -689,9 +689,9 @@ const UserDetails = ({ params }) => {
         </div>
 
         {/* Sezione Fatturazione - Solo per collaboratori */}
+        {/* COMMENTATO: Non più necessario, storico fatture ora nella pagina Fatturazione
         {(user?.subRole || user?.subrole) && (
           <div id="fatturazione" className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden scroll-mt-20">
-            {/* Header fatturazione */}
             <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-gray-200 p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                 <span className="text-xl sm:text-2xl">💰</span>
@@ -704,7 +704,6 @@ const UserDetails = ({ params }) => {
               </div>
             </div>
 
-            {/* Contenuto fatturazione */}
             <div className="p-4 sm:p-6">
               {loadingFatture ? (
                 <div className="text-center py-8">
@@ -726,7 +725,6 @@ const UserDetails = ({ params }) => {
                       className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                        {/* Info fattura */}
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             <span className="text-lg">📅</span>
@@ -736,7 +734,6 @@ const UserDetails = ({ params }) => {
                           </div>
                           
                           <div className="space-y-2">
-                            {/* Totale */}
                             <div className="flex items-center space-x-2">
                               <span className="text-sm text-gray-600 font-medium min-w-[100px]">Totale:</span>
                               {fattura.totale !== null ? (
@@ -750,10 +747,8 @@ const UserDetails = ({ params }) => {
                               )}
                             </div>
 
-                            {/* Stati */}
                             {fattura.totale !== null && (
                               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                                {/* Stato Emissione - Solo il collaboratore può modificare */}
                                 <div className="flex items-center space-x-2">
                                   <span className="text-sm text-gray-600 font-medium min-w-[100px]">Emissione:</span>
                                   <button
@@ -768,7 +763,6 @@ const UserDetails = ({ params }) => {
                                   </button>
                                 </div>
 
-                                {/* Stato Pagamento - Solo visualizzazione */}
                                 <div className="flex items-center space-x-2">
                                   <span className="text-sm text-gray-600 font-medium min-w-[100px]">Pagamento:</span>
                                   <span
@@ -787,7 +781,6 @@ const UserDetails = ({ params }) => {
                         </div>
                       </div>
 
-                      {/* Info aggiuntiva */}
                       {fattura.totale !== null && (
                         <div className="mt-3 pt-3 border-t border-gray-100">
                           <p className="text-xs text-gray-500">
@@ -802,6 +795,7 @@ const UserDetails = ({ params }) => {
             </div>
           </div>
         )}
+        */}
       </div>
     </div>
   );

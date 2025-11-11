@@ -1,8 +1,8 @@
 {
     "crons": [
       {
-        "path": "/api/reset_posts",
-        "schedule": "0 0 1 * *"
+        "path": "/api/cron/first-of-month",
+        "schedule": "0 2 1 * *"
       }
     ],
     "headers": [

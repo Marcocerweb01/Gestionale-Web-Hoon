@@ -43,10 +43,10 @@ export async function POST(req) {
         post_tiktok,
         post_linkedin,
         note,
-        post_ig_fb_fatti:0,
-        post_tiktok_fatti:0,
-        post_linkedin_fatti:0,
-
+        post_ig_fb_fatti: 0,
+        post_tiktok_fatti: 0,
+        post_linkedin_fatti: 0,
+        appuntamenti_fatti: 0,
       });
 
     console.log("Collaborazione creata:", nuovaCollaborazione);

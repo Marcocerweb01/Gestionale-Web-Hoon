@@ -11,6 +11,7 @@ export async function PATCH(req) {
         post_linkedin_fatti: 0,
         post_tiktok_fatti: 0,
         post_ig_fb_fatti: 0,
+        appuntamenti_fatti: 0,
       },
     });
 

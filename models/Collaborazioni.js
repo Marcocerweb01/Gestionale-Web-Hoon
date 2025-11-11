@@ -43,6 +43,10 @@ const CollaborazioneSchema = new Schema(
     numero_appuntamenti: {
       type: Number,
     },
+    appuntamenti_fatti: {
+      type: Number,
+      default: 0,
+    },
     post_ig_fb: {
       type: Number,
     },

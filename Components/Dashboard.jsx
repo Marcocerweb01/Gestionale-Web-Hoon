@@ -115,41 +115,69 @@ const Dashboard = () => {
     }
   }, [session?.user?.id, session?.user?.subrole]);
 
-  // Funzione per avviare il download
+  // Funzione per avviare il download di JSON ed Excel
   const downloadxlsx = async () => {
     try {
-      console.log("🔄 Avvio download dati...");
-      const response = await fetch(`/api/download-excel`);
+      console.log("🔄 Avvio download JSON ed Excel...");
       
-      console.log("📊 Response status:", response.status);
-      console.log("📊 Response headers:", Object.fromEntries(response.headers.entries()));
+      // Download JSON
+      console.log("📦 Download JSON...");
+      const jsonResponse = await fetch(`/api/export_complete?format=json`);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Errore API export:", errorText);
-        throw new Error(`Errore server: ${response.status} - ${errorText}`);
+      if (!jsonResponse.ok) {
+        throw new Error(`Errore download JSON: ${jsonResponse.status}`);
       }
       
-      const blob = await response.blob();
-      console.log("📁 Blob creato, dimensione:", blob.size);
+      const jsonBlob = await jsonResponse.blob();
+      const jsonUrl = window.URL.createObjectURL(jsonBlob);
+      const jsonLink = document.createElement("a");
+      jsonLink.href = jsonUrl;
       
-      if (blob.size === 0) {
-        throw new Error("File Excel vuoto ricevuto dal server");
+      const jsonContentDisposition = jsonResponse.headers.get('Content-Disposition');
+      const jsonFilename = jsonContentDisposition 
+        ? jsonContentDisposition.split('filename=')[1].replace(/"/g, '')
+        : `collaborazioni_${new Date().toISOString().split('T')[0]}.json`;
+      
+      jsonLink.download = jsonFilename;
+      document.body.appendChild(jsonLink);
+      jsonLink.click();
+      jsonLink.remove();
+      window.URL.revokeObjectURL(jsonUrl);
+      
+      console.log("✅ Download JSON completato");
+      
+      // Piccolo delay per non sovrapporre i download
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Download Excel
+      console.log("� Download Excel...");
+      const excelResponse = await fetch(`/api/export_complete?format=excel`);
+      
+      if (!excelResponse.ok) {
+        throw new Error(`Errore download Excel: ${excelResponse.status}`);
       }
       
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `collaborazioni_${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const excelBlob = await excelResponse.blob();
+      const excelUrl = window.URL.createObjectURL(excelBlob);
+      const excelLink = document.createElement("a");
+      excelLink.href = excelUrl;
       
-      console.log("✅ Download completato con successo");
-      alert("✅ Download completato con successo!");
+      const excelContentDisposition = excelResponse.headers.get('Content-Disposition');
+      const excelFilename = excelContentDisposition 
+        ? excelContentDisposition.split('filename=')[1].replace(/"/g, '')
+        : `collaborazioni_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      excelLink.download = excelFilename;
+      document.body.appendChild(excelLink);
+      excelLink.click();
+      excelLink.remove();
+      window.URL.revokeObjectURL(excelUrl);
+      
+      console.log("✅ Download Excel completato");
+      
+      alert("✅ Download completati!\n\n📄 File JSON scaricato\n📊 File Excel scaricato");
     } catch (err) {
-      console.error("❌ Errore dettagliato:", err);
+      console.error("❌ Errore durante il download:", err);
       alert(`❌ Errore durante il download: ${err.message}`);
     }
   };
@@ -174,6 +202,35 @@ const Dashboard = () => {
         alert(`✅ Reset completato!\n${result.modifiedCount} collaborazioni aggiornate.`);
       } else {
         alert("❌ Errore durante il reset. Riprova.");
+      }
+    } catch (error) {
+      console.error("Errore:", error);
+      alert("❌ Errore di connessione. Riprova.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  // Funzione per fix appuntamenti fatti dal 1 novembre
+  const handleFixAppuntamenti = async () => {
+    const conferma = window.confirm(
+      "🔧 AGGIUNGI CAMPO APPUNTAMENTI FATTI\n\nQuesto script aggiungerà il campo 'appuntamenti_fatti' con valore 0 a tutte le collaborazioni che non ce l'hanno.\n\nSei sicuro di voler continuare?"
+    );
+
+    if (!conferma) return;
+
+    setResetLoading(true);
+    try {
+      const response = await fetch("/api/fix_appuntamenti_fatti", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`✅ Campo aggiunto con successo!\n\nCollaborazioni processate: ${result.collaborazioni_processate}\nCollaborazioni modificate: ${result.collaborazioni_modificate}`);
+      } else {
+        const error = await response.json();
+        alert(`❌ Errore: ${error.error || "Errore sconosciuto"}`);
       }
     } catch (error) {
       console.error("Errore:", error);
@@ -468,7 +525,7 @@ const Dashboard = () => {
           </div>
 
           {isVisible && ( 
-            <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+            <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <button 
               className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group" 
               onClick={downloadxlsx}
@@ -508,6 +565,15 @@ const Dashboard = () => {
                 <span className="font-medium">Tabella Collaborazioni</span>
               </button>
             </Link>
+
+            <button 
+              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 group" 
+              onClick={handleFixAppuntamenti}
+              disabled={resetLoading}
+            >
+              <Settings className={`w-5 h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
+              <span className="font-medium">{resetLoading ? "Fixing..." : "Fix Appuntamenti"}</span>
+            </button>
             </div>
           )}
         </div>
