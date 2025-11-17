@@ -76,7 +76,7 @@ const FeedCollaborazione = ({params}) => {
   };
 
   const leadsFiltrati = () => {
-    let risultato = leads;
+    let risultato = [...leads]; // Crea una copia per evitare di modificare l'array originale
 
     // Filtro per stato
     if (filtroStato !== "tutti") {
@@ -96,7 +96,7 @@ const FeedCollaborazione = ({params}) => {
 
     // Ordinamento speciale per "da_richiamare"
     if (filtroStato === "da_richiamare") {
-      risultato = risultato.sort((a, b) => {
+      risultato.sort((a, b) => {
         const dataA = a.data_richiamo ? new Date(a.data_richiamo) : null;
         const dataB = b.data_richiamo ? new Date(b.data_richiamo) : null;
         const oggi = new Date();
