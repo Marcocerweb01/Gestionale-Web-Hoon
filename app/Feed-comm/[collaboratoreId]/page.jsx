@@ -94,6 +94,32 @@ const FeedCollaborazione = ({params}) => {
       );
     }
 
+    // Ordinamento speciale per "da_richiamare"
+    if (filtroStato === "da_richiamare") {
+      risultato = risultato.sort((a, b) => {
+        const dataA = a.data_richiamo ? new Date(a.data_richiamo) : null;
+        const dataB = b.data_richiamo ? new Date(b.data_richiamo) : null;
+        const oggi = new Date();
+        oggi.setHours(0, 0, 0, 0);
+
+        // Lead senza data vanno in fondo
+        if (!dataA && !dataB) return 0;
+        if (!dataA) return 1;
+        if (!dataB) return -1;
+
+        // Verifica se le date sono passate
+        const aPassata = dataA < oggi;
+        const bPassata = dataB < oggi;
+
+        // Date passate sempre in cima
+        if (aPassata && !bPassata) return -1;
+        if (!aPassata && bPassata) return 1;
+
+        // Se entrambe passate o entrambe future, ordina per data (crescente)
+        return dataA - dataB;
+      });
+    }
+
     return risultato;
   };
 
