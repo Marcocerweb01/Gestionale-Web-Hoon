@@ -96,6 +96,11 @@ const FeedCollaborazione = ({params}) => {
 
     // Ordinamento speciale per "da_richiamare"
     if (filtroStato === "da_richiamare") {
+      console.log("🔍 Lead da richiamare PRIMA ordinamento:", risultato.map(l => ({
+        nome: l.nome_attivita,
+        data_richiamo: l.data_richiamo
+      })));
+
       risultato.sort((a, b) => {
         const dataA = a.data_richiamo ? new Date(a.data_richiamo) : null;
         const dataB = b.data_richiamo ? new Date(b.data_richiamo) : null;
@@ -118,6 +123,11 @@ const FeedCollaborazione = ({params}) => {
         // Se entrambe passate o entrambe future, ordina per data (crescente)
         return dataA - dataB;
       });
+
+      console.log("✅ Lead da richiamare DOPO ordinamento:", risultato.map(l => ({
+        nome: l.nome_attivita,
+        data_richiamo: l.data_richiamo
+      })));
     }
 
     return risultato;
