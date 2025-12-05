@@ -3,6 +3,10 @@ import { Collaboratore, Azienda } from "@/models/User";
 import { connectToDB } from "@/utils/database";
 import { NextResponse } from "next/server";
 
+// Disabilita completamente la cache per questa route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     await connectToDB();
@@ -105,7 +109,13 @@ export async function GET() {
     console.log(`   🤝 ${totaleCollaborazioni} collaborazioni`);
     console.log(`   📱 ${smms} Social Media Manager`);
 
-    return NextResponse.json(collaboratoriConCollaborazioni);
+    return NextResponse.json(collaboratoriConCollaborazioni, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
     
   } catch (error) {
     console.error("❌ Errore API tabella-collaborazioni:", error);

@@ -34,12 +34,36 @@ const TabellaCollaborazioni = () => {
     }
   }, [session]);
 
+  // Ricarica automaticamente quando la finestra torna in focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (session?.user?.role === "amministratore") {
+        console.log("🔄 Finestra in focus - ricarico dati...");
+        fetchData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [session]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
       console.log("🔄 Caricamento tabella collaborazioni...");
       
-      const response = await fetch("/api/tabella-collaborazioni");
+      // Aggiungi timestamp per forzare no-cache
+      const timestamp = new Date().getTime();
+      const response = await fetch(`/api/tabella-collaborazioni?_=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Errore ${response.status}: ${response.statusText}`);
