@@ -7,7 +7,8 @@ const PagamentiTable = () => {
   const [editMode, setEditMode] = useState(false);
   const [checkedPagamenti, setCheckedPagamenti] = useState({});
   const [initialCheckedPagamenti, setInitialCheckedPagamenti] = useState({});
-  const [filtro, setFiltro] = useState("alfabetico"); // nuovo stato filtro
+  const [filtro, setFiltro] = useState("tutti"); // filtro di esclusione (tutti, pagati, nonpagati, ragazzi)
+  const [ordinamento, setOrdinamento] = useState("alfabetico"); // ordinamento (alfabetico, collaboratore)
   const [searchTerm, setSearchTerm] = useState(""); // nuovo stato per la ricerca
   const [meseSelezionato, setMeseSelezionato] = useState(""); // Mese/anno selezionato
 
@@ -76,8 +77,16 @@ const PagamentiTable = () => {
     setCheckedPagamenti((prev) => ({ ...prev, [id]: status }));
   };
 
-  // Filtraggio per ricerca in tempo reale
+  // Filtraggio per ricerca in tempo reale ed esclusione collaboratore Hoon Web
   let pagamentiFiltrati = pagamenti.filter((pagamento) => {
+    // Escludi il collaboratore Hoon Web (per nome completo o parziale)
+    const collaboratoreNome = (pagamento.collaboratore || "").toLowerCase();
+    if (collaboratoreNome.includes("hoon web") || 
+        collaboratoreNome.includes("hoon") ||
+        pagamento.collaboratore_id === "686be44dc04a68e29f1770f3") {
+      return false;
+    }
+    
     if (!searchTerm) return true;
     
     const cliente = (pagamento.cliente || "").toLowerCase();
@@ -99,25 +108,18 @@ const PagamentiTable = () => {
     pagamentiFiltrati = pagamentiFiltrati.filter((p) => p.stato === "ragazzi");
   }
 
-  // Ordinamento alfabetico o per collaboratore
+  // Ordinamento
   let pagamentiOrdinati = [...pagamentiFiltrati];
-  if (filtro === "alfabetico") {
+  if (ordinamento === "alfabetico") {
     pagamentiOrdinati.sort((a, b) => {
       if ((a.cliente || "") < (b.cliente || "")) return -1;
       if ((a.cliente || "") > (b.cliente || "")) return 1;
       return 0;
     });
-  } else if (filtro === "collaboratore") {
+  } else if (ordinamento === "collaboratore") {
     pagamentiOrdinati.sort((a, b) => {
       if ((a.collaboratore || "") < (b.collaboratore || "")) return -1;
       if ((a.collaboratore || "") > (b.collaboratore || "")) return 1;
-      return 0;
-    });
-  } else {
-    // Per i filtri di stato, ordina alfabeticamente per default
-    pagamentiOrdinati.sort((a, b) => {
-      if ((a.cliente || "") < (b.cliente || "")) return -1;
-      if ((a.cliente || "") > (b.cliente || "")) return 1;
       return 0;
     });
   }
@@ -161,59 +163,76 @@ const PagamentiTable = () => {
       </div>
 
       {/* Filtri */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Filtra per:</h3>
-        <div className="flex flex-wrap gap-3">
-          <button
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filtro === "alfabetico" 
-                ? "bg-cyan-500 text-white shadow-md" 
-                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-            }`}
-            onClick={() => setFiltro("alfabetico")}
-          >
-            📝 Alfabetico
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filtro === "collaboratore" 
-                ? "bg-blue-500 text-white shadow-md" 
-                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-            }`}
-            onClick={() => setFiltro("collaboratore")}
-          >
-            👤 Collaboratore
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filtro === "pagati" 
-                ? "bg-green-500 text-white shadow-md" 
-                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-            }`}
-            onClick={() => setFiltro("pagati")}
-          >
-            ✅ Solo Pagati
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filtro === "nonpagati" 
-                ? "bg-red-500 text-white shadow-md" 
-                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-            }`}
-            onClick={() => setFiltro("nonpagati")}
-          >
-            ❌ Solo Non Pagati
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filtro === "ragazzi" 
-                ? "bg-purple-500 text-white shadow-md" 
-                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-            }`}
-            onClick={() => setFiltro("ragazzi")}
-          >
-            👥 Solo Ragazzi
-          </button>
+      <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Ordina per:</h3>
+          <div className="flex flex-wrap gap-3">
+            <button
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                ordinamento === "alfabetico" 
+                  ? "bg-cyan-500 text-white shadow-md" 
+                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
+              onClick={() => setOrdinamento("alfabetico")}
+            >
+              📝 Alfabetico Aziende
+            </button>
+            <button
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                ordinamento === "collaboratore" 
+                  ? "bg-blue-500 text-white shadow-md" 
+                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
+              onClick={() => setOrdinamento("collaboratore")}
+            >
+              👤 Alfabetico Collaboratore
+            </button>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Filtra per stato:</h3>
+          <div className="flex flex-wrap gap-3">
+            <button
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filtro === "tutti" 
+                  ? "bg-gray-500 text-white shadow-md" 
+                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
+              onClick={() => setFiltro("tutti")}
+            >
+              🔄 Tutti
+            </button>
+            <button
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filtro === "pagati" 
+                  ? "bg-green-500 text-white shadow-md" 
+                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
+              onClick={() => setFiltro("pagati")}
+            >
+              ✅ Solo Pagati
+            </button>
+            <button
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filtro === "nonpagati" 
+                  ? "bg-red-500 text-white shadow-md" 
+                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
+              onClick={() => setFiltro("nonpagati")}
+            >
+              ❌ Solo Non Pagati
+            </button>
+            <button
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filtro === "ragazzi" 
+                  ? "bg-purple-500 text-white shadow-md" 
+                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
+              onClick={() => setFiltro("ragazzi")}
+            >
+              👥 Solo Ragazzi
+            </button>
+          </div>
         </div>
       </div>
 
