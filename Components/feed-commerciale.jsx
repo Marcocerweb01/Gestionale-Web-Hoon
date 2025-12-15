@@ -52,13 +52,45 @@ const FeedCommerciale = ({ id }) => {
   }, [id, startDate, endDate]);
 
   // Filtro: creiamo un array filtrato in base alla search query e al filtro per tipo
-  const filteredNotes = notes.filter((note) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      note.nota.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === "" || note.mainCategoria === typeFilter;
-    return matchesSearch && matchesType;
-  });
+  const filteredNotes = notes
+    .filter((note) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        note.nota.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = typeFilter === "" || note.mainCategoria === typeFilter;
+      return matchesSearch && matchesType;
+    })
+    .sort((a, b) => {
+      // Ordina solo gli appuntamenti per data_appuntamento (dal più vicino)
+      if (a.mainCategoria === "appuntamento" && b.mainCategoria === "appuntamento") {
+        const dataA = a.data_appuntamento ? new Date(a.data_appuntamento) : null;
+        const dataB = b.data_appuntamento ? new Date(b.data_appuntamento) : null;
+        const oggi = new Date();
+        oggi.setHours(0, 0, 0, 0);
+
+        // Senza data vanno in fondo
+        if (!dataA && !dataB) return 0;
+        if (!dataA) return 1;
+        if (!dataB) return -1;
+
+        // Date passate sempre in cima
+        const aPassata = dataA < oggi;
+        const bPassata = dataB < oggi;
+
+        if (aPassata && !bPassata) return -1;
+        if (!aPassata && bPassata) return 1;
+
+        // Ordina per data (crescente: dal più vicino al più lontano)
+        return dataA - dataB;
+      }
+      
+      // Se uno è appuntamento e l'altro no, appuntamenti prima
+      if (a.mainCategoria === "appuntamento") return -1;
+      if (b.mainCategoria === "appuntamento") return 1;
+      
+      // Altrimenti ordina per data di creazione (più recenti prima)
+      return new Date(b.data) - new Date(a.data);
+    });
 
   // Scroll (opzionale)
   useEffect(() => {

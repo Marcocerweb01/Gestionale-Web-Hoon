@@ -35,6 +35,25 @@ const CollaboratoreSchema = new Schema({
     default: "",
     required: false
   },
+  // Campi nuovo sistema pagamenti
+  percentuale_hoon: {
+    type: Number,
+    enum: [50, 55, 60, 70],
+    default: 50,
+    required: true
+  },
+  tot_fatturato: {
+    type: Number,
+    default: 0
+  },
+  guadagno_da_hoon: {
+    type: Number,
+    default: 0
+  },
+  totale_fatture_terzi: {
+    type: Number,
+    default: 0
+  },
   livelloAccesso: { type: Number, default: 2 },
 }, { timestamps: true });
 

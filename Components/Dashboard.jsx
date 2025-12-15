@@ -351,6 +351,45 @@ const Dashboard = () => {
     }
   };
 
+  // Funzione per migrare i campi dei collaboratori
+  const handleMigrateCollaboratori = async () => {
+    const conferma = window.confirm(
+      "🔧 MIGRATION COLLABORATORI\n\nQuesto aggiungerà i campi per il nuovo sistema pagamenti a tutti i collaboratori:\n\n- percentuale_hoon (50/55/60/70%)\n- tot_fatturato (0)\n- guadagno_da_hoon (0)\n- totale_fatture_terzi (0)\n\nPercentuali speciali:\n• 70% → Marco Cerasa, Lorenzo Pietrini, Francesco Bizzarri\n• 55% → Agnese Furesi\n• 50% → Tutti gli altri\n\nContinuare?"
+    );
+
+    if (!conferma) return;
+
+    setResetLoading(true);
+    try {
+      const response = await fetch("/api/collaboratori/migrate-fields", {
+        method: "POST"
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(
+          `✅ Migration completata!\n\n` +
+          `Collaboratori totali: ${result.risultati.totali}\n` +
+          `Aggiornati: ${result.risultati.aggiornati}\n` +
+          `Errori: ${result.risultati.errori.length}`
+        );
+        
+        // Ricarica i collaboratori per vedere i cambiamenti
+        if (refreshCollaboratori) {
+          refreshCollaboratori();
+        }
+      } else {
+        const error = await response.json();
+        alert(`❌ Errore: ${error.error || error.details || "Errore sconosciuto"}`);
+      }
+    } catch (error) {
+      console.error("Errore migration:", error);
+      alert("❌ Errore di connessione. Riprova.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   // Loading state
   if (loading || status === "loading") {
     return (
@@ -644,6 +683,22 @@ const Dashboard = () => {
                   <span className="font-medium text-sm md:text-base">Fatturazione</span>
                 </button>
               </Link>
+              
+              <Link href="/PagamentiNuovi" passHref>
+                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 group">
+                  <DollarSign className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium text-sm md:text-base">Nuovo Sistema Pagamenti</span>
+                </button>
+              </Link>
+              
+              <button 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group" 
+                onClick={handleMigrateCollaboratori}
+                disabled={resetLoading}
+              >
+                <Settings className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
+                <span className="font-medium text-sm md:text-base">{resetLoading ? "Migrando..." : "🔧 Setup Nuovo Sistema"}</span>
+              </button>
               
               <Link href="/Tabella-collaborazioni" passHref>
                 <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors duration-200 group">

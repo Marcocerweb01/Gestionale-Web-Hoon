@@ -90,7 +90,16 @@ const PagamentiTable = () => {
            collaboratore.includes(termineRicerca);
   });
 
-  // Ordinamento in base al filtro selezionato
+  // Filtraggio per stato (esclusione)
+  if (filtro === "pagati") {
+    pagamentiFiltrati = pagamentiFiltrati.filter((p) => p.stato === "si");
+  } else if (filtro === "nonpagati") {
+    pagamentiFiltrati = pagamentiFiltrati.filter((p) => p.stato === "no");
+  } else if (filtro === "ragazzi") {
+    pagamentiFiltrati = pagamentiFiltrati.filter((p) => p.stato === "ragazzi");
+  }
+
+  // Ordinamento alfabetico o per collaboratore
   let pagamentiOrdinati = [...pagamentiFiltrati];
   if (filtro === "alfabetico") {
     pagamentiOrdinati.sort((a, b) => {
@@ -104,29 +113,9 @@ const PagamentiTable = () => {
       if ((a.collaboratore || "") > (b.collaboratore || "")) return 1;
       return 0;
     });
-  } else if (filtro === "pagati") {
+  } else {
+    // Per i filtri di stato, ordina alfabeticamente per default
     pagamentiOrdinati.sort((a, b) => {
-      if (a.stato === "si" && b.stato !== "si") return -1;
-      if (a.stato !== "si" && b.stato === "si") return 1;
-      // Se uguale, ordina alfabeticamente
-      if ((a.cliente || "") < (b.cliente || "")) return -1;
-      if ((a.cliente || "") > (b.cliente || "")) return 1;
-      return 0;
-    });
-  } else if (filtro === "nonpagati") {
-    pagamentiOrdinati.sort((a, b) => {
-      if (a.stato !== "si" && b.stato === "si") return -1;
-      if (a.stato === "si" && b.stato !== "si") return 1;
-      // Se uguale, ordina alfabeticamente
-      if ((a.cliente || "") < (b.cliente || "")) return -1;
-      if ((a.cliente || "") > (b.cliente || "")) return 1;
-      return 0;
-    });
-  } else if (filtro === "ragazzi") {
-    pagamentiOrdinati.sort((a, b) => {
-      if (a.stato === "ragazzi" && b.stato !== "ragazzi") return -1;
-      if (a.stato !== "ragazzi" && b.stato === "ragazzi") return 1;
-      // Se uguale, ordina alfabeticamente
       if ((a.cliente || "") < (b.cliente || "")) return -1;
       if ((a.cliente || "") > (b.cliente || "")) return 1;
       return 0;
@@ -173,7 +162,7 @@ const PagamentiTable = () => {
 
       {/* Filtri */}
       <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Ordina per:</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Filtra per:</h3>
         <div className="flex flex-wrap gap-3">
           <button
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
@@ -203,7 +192,7 @@ const PagamentiTable = () => {
             }`}
             onClick={() => setFiltro("pagati")}
           >
-            ✅ Pagati Prima
+            ✅ Solo Pagati
           </button>
           <button
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
@@ -213,7 +202,7 @@ const PagamentiTable = () => {
             }`}
             onClick={() => setFiltro("nonpagati")}
           >
-            ❌ Non Pagati Prima
+            ❌ Solo Non Pagati
           </button>
           <button
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
@@ -223,7 +212,7 @@ const PagamentiTable = () => {
             }`}
             onClick={() => setFiltro("ragazzi")}
           >
-            👥 Ragazzi Prima
+            👥 Solo Ragazzi
           </button>
         </div>
       </div>
