@@ -26,7 +26,15 @@ export default function TimelineLead({ lead, onUpdate, onDelete, onArchive }) {
   // Sincronizza nuovoStato quando lead.stato_attuale cambia
   useEffect(() => {
     setNuovoStato(lead.stato_attuale || "in_lavorazione");
-  }, [lead.stato_attuale]);
+    
+    // Se lo stato è "da_richiamare", precompila e mostra il campo data
+    if (lead.stato_attuale === "da_richiamare") {
+      if (lead.data_richiamo) {
+        setDataRicontatto(new Date(lead.data_richiamo).toISOString().split('T')[0]);
+      }
+      setMostraDataRichiamo(true);
+    }
+  }, [lead.stato_attuale, lead.data_richiamo]);
 
   const getStatoAttuale = () => {
     return lead.stato_attuale || "nuovo";
@@ -451,7 +459,7 @@ export default function TimelineLead({ lead, onUpdate, onDelete, onArchive }) {
               )}
 
               {/* Pulsante Salva - Mobile Responsive */}
-              {nuovoStato !== lead.stato_attuale && (
+              {(nuovoStato !== lead.stato_attuale || (nuovoStato === "da_richiamare" && dataRicontatto && dataRicontatto !== (lead.data_richiamo ? new Date(lead.data_richiamo).toISOString().split('T')[0] : ""))) && (
                 <button
                   onClick={handleCambioStato}
                   disabled={isUpdating}
