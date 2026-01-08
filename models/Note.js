@@ -26,7 +26,7 @@ const NoteSchema = new Schema({
   },
   tipo: {
     type: String,
-    enum: ['generico', 'appuntamento', 'problema'],
+    enum: ['generico', 'appuntamento', 'problema', 'post_mancante'],
     required: [true, 'Il tipo è obbligatorio'],
   },
   data_appuntamento: {

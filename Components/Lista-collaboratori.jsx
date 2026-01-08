@@ -1,6 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "@node_modules/next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Lista_clienti from "./Lista-clienti";
 import ListaClientiWebDesigner from "./Lista-clienti-webdesigner";
 
@@ -12,11 +13,51 @@ const roleMap = {
 };
 
 const Lista_collaboratori = ({ collaboratori }) => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  // Leggi lo stato iniziale dai query params
+  const getInitialState = useCallback((param) => {
+    return searchParams.get(param) === "true";
+  }, [searchParams]);
+  
+  const getOpenLists = useCallback(() => {
+    const openParam = searchParams.get("openLists");
+    return openParam ? openParam.split(",") : [];
+  }, [searchParams]);
+
   // Stato per tracciare l'apertura delle tre aree
   console.log(collaboratori)
-  const [openWeb, setOpenWeb] = useState(false);
-  const [openSmm, setOpenSmm] = useState(false);
-  const [openComm, setOpenComm] = useState(false);
+  const [openWeb, setOpenWeb] = useState(() => getInitialState("web"));
+  const [openSmm, setOpenSmm] = useState(() => getInitialState("smm"));
+  const [openComm, setOpenComm] = useState(() => getInitialState("comm"));
+  const [openLists, setOpenLists] = useState(() => getOpenLists());
+
+  // Funzione per aggiornare l'URL senza ricaricare la pagina
+  const updateURL = useCallback((newOpenWeb, newOpenSmm, newOpenComm, newOpenLists) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    // Aggiorna i parametri delle sezioni
+    if (newOpenWeb) params.set("web", "true");
+    else params.delete("web");
+    
+    if (newOpenSmm) params.set("smm", "true");
+    else params.delete("smm");
+    
+    if (newOpenComm) params.set("comm", "true");
+    else params.delete("comm");
+    
+    // Aggiorna le liste aperte dei singoli collaboratori
+    if (newOpenLists.length > 0) {
+      params.set("openLists", newOpenLists.join(","));
+    } else {
+      params.delete("openLists");
+    }
+    
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    router.replace(newUrl, { scroll: false });
+  }, [searchParams, pathname, router]);
 
   // Filtra i collaboratori in base al ruolo E allo status attivo
   const webDesigners = collaboratori.filter((c) => c.subRole === "web designer" && c.status === "attivo");
@@ -24,9 +65,39 @@ const Lista_collaboratori = ({ collaboratori }) => {
   const commercials = collaboratori.filter((c) => c.subRole === "commerciale" && c.status === "attivo");
 
   // Funzioni per togglare l'apertura/chiusura di ciascuna sezione
-  const toggleWeb = () => setOpenWeb((prev) => !prev);
-  const toggleSmm = () => setOpenSmm((prev) => !prev);
-  const toggleComm = () => setOpenComm((prev) => !prev);
+  const toggleWeb = () => {
+    const newValue = !openWeb;
+    setOpenWeb(newValue);
+    updateURL(newValue, openSmm, openComm, openLists);
+  };
+  
+  const toggleSmm = () => {
+    const newValue = !openSmm;
+    setOpenSmm(newValue);
+    updateURL(openWeb, newValue, openComm, openLists);
+  };
+  
+  const toggleComm = () => {
+    const newValue = !openComm;
+    setOpenComm(newValue);
+    updateURL(openWeb, openSmm, newValue, openLists);
+  };
+
+  // Funzione per togglare la lista di un singolo collaboratore
+  const toggleCollaboratorList = useCallback((collabId) => {
+    setOpenLists(prev => {
+      const newLists = prev.includes(collabId) 
+        ? prev.filter(id => id !== collabId)
+        : [...prev, collabId];
+      updateURL(openWeb, openSmm, openComm, newLists);
+      return newLists;
+    });
+  }, [openWeb, openSmm, openComm, updateURL]);
+
+  // Verifica se una lista è aperta
+  const isListOpen = useCallback((collabId) => {
+    return openLists.includes(collabId);
+  }, [openLists]);
 
   return (
     <div className="space-y-6 p-4">
@@ -55,6 +126,8 @@ const Lista_collaboratori = ({ collaboratori }) => {
                 ruolo={collab.subRole}
                 status={collab.status}
                 noteAmministratore={collab.noteAmministratore}
+                isOpen={isListOpen(collab.id)}
+                onToggle={() => toggleCollaboratorList(collab.id)}
               />
             ))}
           </div>
@@ -91,6 +164,8 @@ const Lista_collaboratori = ({ collaboratori }) => {
                 ruolo={collab.subRole}
                 status={collab.status}
                 noteAmministratore={collab.noteAmministratore}
+                isOpen={isListOpen(collab.id)}
+                onToggle={() => toggleCollaboratorList(collab.id)}
               />
             ))}
           </div>
@@ -127,6 +202,8 @@ const Lista_collaboratori = ({ collaboratori }) => {
                 ruolo={collab.subRole}
                 status={collab.status}
                 noteAmministratore={collab.noteAmministratore}
+                isOpen={isListOpen(collab.id)}
+                onToggle={() => toggleCollaboratorList(collab.id)}
               />
             ))}
           </div>
@@ -145,7 +222,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
  * Singolo collaboratore. Riprende la logica di feed o toggle.
  * Al posto di "Lista_clienti", se serve, potresti passare "id".
  */
-const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo", noteAmministratore = "" }) => {
+const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo", noteAmministratore = "", isOpen = false, onToggle }) => {
   // Mappa ruoli
   const displayRole =
     roleMap[ruolo] || ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
@@ -169,10 +246,6 @@ const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo", noteAmministrat
   };
 
   const currentStatus = statusConfig[status] || statusConfig.attivo;
-
-  // Se vuoi replicare la logica di "Apri Lista" come facevi in precedenza
-  const [isOpen, setIsOpen] = useState(false);
-  const toggleAccordion = () => setIsOpen(!isOpen);
 
   return (
     <div className={`bg-white rounded-lg border shadow-sm overflow-hidden ${currentStatus.borderColor}`}>
@@ -216,7 +289,7 @@ const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo", noteAmministrat
             ) : (
               <button 
                 className="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
-                onClick={toggleAccordion}
+                onClick={onToggle}
               >
                 {isOpen ? "📁 Chiudi Lista" : "📂 Apri Lista"}
               </button>

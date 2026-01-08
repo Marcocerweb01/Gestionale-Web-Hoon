@@ -7,7 +7,20 @@ export async function POST(req) {
   try {
     await connectToDB();
 
-    const { aziendaId, collaboratoreId, numero_appuntamenti, post_ig_fb, post_tiktok, post_linkedin, note } = await req.json();
+    const { 
+      aziendaId, 
+      collaboratoreId, 
+      numero_appuntamenti, 
+      post_ig_fb, 
+      post_tiktok, 
+      post_linkedin, 
+      note,
+      post_totali,
+      appuntamenti_totali,
+      durata_contratto,
+      data_inizio_contratto,
+      data_fine_contratto
+    } = await req.json();
 
     // Verifica e conversione degli ID
     if (!mongoose.Types.ObjectId.isValid(aziendaId) || !mongoose.Types.ObjectId.isValid(collaboratoreId)) {
@@ -46,6 +59,12 @@ export async function POST(req) {
         post_tiktok_fatti: 0,
         post_linkedin_fatti: 0,
         appuntamenti_fatti: 0,
+        // Nuovi campi per gestione contratto
+        post_totali: post_totali || 0,
+        appuntamenti_totali: appuntamenti_totali || 0,
+        durata_contratto: durata_contratto || null,
+        data_inizio_contratto: data_inizio_contratto ? new Date(data_inizio_contratto) : null,
+        data_fine_contratto: data_fine_contratto ? new Date(data_fine_contratto) : null,
       });
 
     console.log("✅ Collaborazione creata:", nuovaCollaborazione);

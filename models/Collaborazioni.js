@@ -71,7 +71,52 @@ const CollaborazioneSchema = new Schema(
     pagato: {
       type: String,
       enum: ["si", "no"],
-      default: "no", // 👈 Nuovo campo aggiunto con valore di default "no"
+      default: "no",
+    },
+    // Nuovi campi per gestione contratto SMM
+    post_totali: {
+      type: Number,
+      default: 0,
+    },
+    appuntamenti_totali: {
+      type: Number,
+      default: 0,
+    },
+    durata_contratto: {
+      type: String,
+      enum: ["1 mese", "3 mesi", "6 mesi", "1 anno"],
+      default: null,
+    },
+    data_inizio_contratto: {
+      type: Date,
+      default: null,
+    },
+    data_fine_contratto: {
+      type: Date,
+      default: null,
+    },
+    // Campi per valutazione trimestrale SMM
+    valutazione_trimestrale_fatti: {
+      type: Number,
+      default: 0,
+    },
+    valutazione_trimestrale_totali: {
+      type: Number,
+      default: 0,
+    },
+    // Campi per appuntamenti trimestrali
+    appuntamenti_trimestrale_fatti: {
+      type: Number,
+      default: 0,
+    },
+    appuntamenti_trimestrale_totali: {
+      type: Number,
+      default: 0,
+    },
+    // Flag per escludere dal reset trimestrale
+    escludi_reset_trimestrale: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

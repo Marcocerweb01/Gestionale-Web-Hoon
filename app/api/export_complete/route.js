@@ -22,14 +22,20 @@ export async function GET(req) {
       .map(c => ({
         collaboratore: `${c.collaboratore?.nome || c.collaboratoreNome || ''} ${c.collaboratore?.cognome || c.collaboratoreCognome || ''}`.trim(),
         cliente: c.azienda?.etichetta || c.aziendaRagioneSociale || 'N/A',
-        appuntamenti_totali: c.numero_appuntamenti || 0,
+        appuntamenti_mensili: c.numero_appuntamenti || 0,
         appuntamenti_fatti: c.appuntamenti_fatti || 0,
-        post_ig_fb_totali: c.post_ig_fb || 0,
+        post_ig_fb_mensili: c.post_ig_fb || 0,
         post_ig_fb_fatti: c.post_ig_fb_fatti || 0,
-        post_tiktok_totali: c.post_tiktok || 0,
+        post_tiktok_mensili: c.post_tiktok || 0,
         post_tiktok_fatti: c.post_tiktok_fatti || 0,
-        post_linkedin_totali: c.post_linkedin || 0,
+        post_linkedin_mensili: c.post_linkedin || 0,
         post_linkedin_fatti: c.post_linkedin_fatti || 0,
+        // Nuovi campi TOTALI (che non si azzerano mai)
+        post_totali: c.post_totali || 0,
+        appuntamenti_totali: c.appuntamenti_totali || 0,
+        durata_contratto: c.durata_contratto || '',
+        data_inizio_contratto: c.data_inizio_contratto ? new Date(c.data_inizio_contratto).toLocaleDateString('it-IT') : '',
+        data_fine_contratto: c.data_fine_contratto ? new Date(c.data_fine_contratto).toLocaleDateString('it-IT') : '',
       }))
       .filter(row => row.collaboratore !== 'Hoon Web'); // Escludi Hoon Web
 
@@ -63,11 +69,16 @@ export async function GET(req) {
     const headerRow = worksheet.addRow([
       "Collaboratore",
       "Cliente", 
-      "Appuntamenti Totali",
-      "Appuntamenti Fatti",
+      "App. Mensili",
+      "App. Fatti",
       "Post IG/FB",
       "Post TikTok", 
-      "Post LinkedIn"
+      "Post LinkedIn",
+      "POST TOTALI",
+      "APP. TOTALI",
+      "Durata Contratto",
+      "Inizio Contratto",
+      "Fine Contratto"
     ]);
     headerRow.font = { bold: true };
     headerRow.alignment = { horizontal: "center" };
@@ -75,11 +86,16 @@ export async function GET(req) {
     // Larghezza colonne
     worksheet.getColumn(1).width = 30; // Collaboratore
     worksheet.getColumn(2).width = 30; // Cliente
-    worksheet.getColumn(3).width = 20; // Appuntamenti Totali
-    worksheet.getColumn(4).width = 20; // Appuntamenti Fatti
+    worksheet.getColumn(3).width = 15; // App. Mensili
+    worksheet.getColumn(4).width = 15; // App. Fatti
     worksheet.getColumn(5).width = 15; // Post IG/FB
     worksheet.getColumn(6).width = 15; // Post TikTok
     worksheet.getColumn(7).width = 15; // Post LinkedIn
+    worksheet.getColumn(8).width = 15; // POST TOTALI
+    worksheet.getColumn(9).width = 15; // APP. TOTALI
+    worksheet.getColumn(10).width = 18; // Durata Contratto
+    worksheet.getColumn(11).width = 16; // Inizio Contratto
+    worksheet.getColumn(12).width = 16; // Fine Contratto
 
     // Aggiungi righe dati con formattazione condizionale
     let previousCollaboratore = null;
@@ -88,16 +104,21 @@ export async function GET(req) {
       const excelRow = worksheet.addRow([
         row.collaboratore,
         row.cliente,
-        row.appuntamenti_totali,
+        row.appuntamenti_mensili,
         row.appuntamenti_fatti,
-        `${row.post_ig_fb_fatti}/${row.post_ig_fb_totali}`,
-        `${row.post_tiktok_fatti}/${row.post_tiktok_totali}`,
-        `${row.post_linkedin_fatti}/${row.post_linkedin_totali}`
+        `${row.post_ig_fb_fatti}/${row.post_ig_fb_mensili}`,
+        `${row.post_tiktok_fatti}/${row.post_tiktok_mensili}`,
+        `${row.post_linkedin_fatti}/${row.post_linkedin_mensili}`,
+        row.post_totali,
+        row.appuntamenti_totali,
+        row.durata_contratto,
+        row.data_inizio_contratto,
+        row.data_fine_contratto
       ]);
 
       // Formattazione Appuntamenti Fatti (colonna 4)
       const cellAppuntamenti = excelRow.getCell(4);
-      if (row.appuntamenti_fatti >= row.appuntamenti_totali && row.appuntamenti_totali > 0) {
+      if (row.appuntamenti_fatti >= row.appuntamenti_mensili && row.appuntamenti_mensili > 0) {
         // Verde se completati o superati
         cellAppuntamenti.fill = {
           type: 'pattern',
@@ -111,7 +132,7 @@ export async function GET(req) {
           pattern: 'solid',
           fgColor: { argb: 'FFFFA500' } // Arancione
         };
-      } else if (row.appuntamenti_totali > 0) {
+      } else if (row.appuntamenti_mensili > 0) {
         // Rosso se non ne ha fatti nessuno ma dovrebbe
         cellAppuntamenti.fill = {
           type: 'pattern',
@@ -122,7 +143,7 @@ export async function GET(req) {
 
       // Formattazione Post IG/FB (colonna 5)
       const cellIGFB = excelRow.getCell(5);
-      if (row.post_ig_fb_fatti >= row.post_ig_fb_totali && row.post_ig_fb_totali > 0) {
+      if (row.post_ig_fb_fatti >= row.post_ig_fb_mensili && row.post_ig_fb_mensili > 0) {
         cellIGFB.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -134,7 +155,7 @@ export async function GET(req) {
           pattern: 'solid',
           fgColor: { argb: 'FFFFA500' }
         };
-      } else if (row.post_ig_fb_totali > 0) {
+      } else if (row.post_ig_fb_mensili > 0) {
         cellIGFB.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -144,7 +165,7 @@ export async function GET(req) {
 
       // Formattazione Post TikTok (colonna 6)
       const cellTikTok = excelRow.getCell(6);
-      if (row.post_tiktok_fatti >= row.post_tiktok_totali && row.post_tiktok_totali > 0) {
+      if (row.post_tiktok_fatti >= row.post_tiktok_mensili && row.post_tiktok_mensili > 0) {
         cellTikTok.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -156,7 +177,7 @@ export async function GET(req) {
           pattern: 'solid',
           fgColor: { argb: 'FFFFA500' }
         };
-      } else if (row.post_tiktok_totali > 0) {
+      } else if (row.post_tiktok_mensili > 0) {
         cellTikTok.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -166,7 +187,7 @@ export async function GET(req) {
 
       // Formattazione Post LinkedIn (colonna 7)
       const cellLinkedIn = excelRow.getCell(7);
-      if (row.post_linkedin_fatti >= row.post_linkedin_totali && row.post_linkedin_totali > 0) {
+      if (row.post_linkedin_fatti >= row.post_linkedin_mensili && row.post_linkedin_mensili > 0) {
         cellLinkedIn.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -178,7 +199,7 @@ export async function GET(req) {
           pattern: 'solid',
           fgColor: { argb: 'FFFFA500' }
         };
-      } else if (row.post_linkedin_totali > 0) {
+      } else if (row.post_linkedin_mensili > 0) {
         cellLinkedIn.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -186,11 +207,27 @@ export async function GET(req) {
         };
       }
 
+      // Formattazione colonne TOTALI (sfondo viola chiaro)
+      const cellPostTotali = excelRow.getCell(8);
+      const cellAppTotali = excelRow.getCell(9);
+      cellPostTotali.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE6E0F8' } // Viola chiaro
+      };
+      cellAppTotali.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE6E0F8' } // Viola chiaro
+      };
+      cellPostTotali.font = { bold: true };
+      cellAppTotali.font = { bold: true };
+
       // Aggiungi bordo spesso quando cambia collaboratore
       const nextRow = exportData[index + 1];
       if (nextRow && nextRow.collaboratore !== row.collaboratore) {
         // Bordo inferiore spesso su tutte le celle della riga
-        for (let col = 1; col <= 7; col++) {
+        for (let col = 1; col <= 12; col++) {
           excelRow.getCell(col).border = {
             ...excelRow.getCell(col).border,
             bottom: { style: 'thick', color: { argb: 'FF000000' } }

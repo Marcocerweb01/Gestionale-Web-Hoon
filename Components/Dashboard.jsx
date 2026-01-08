@@ -319,6 +319,35 @@ const Dashboard = () => {
     }
   };
 
+  // Funzione per il reset dei trimestrali
+  const handleResetTrimestrali = async () => {
+    const conferma = window.confirm(
+      "⚠️ ATTENZIONE!\n\nQuesto reset azzererà TUTTI i contatori trimestrali (fatti e totali) per TUTTE le collaborazioni.\n\nEsegui solo a fine trimestre!\n\nSei sicuro di voler continuare?"
+    );
+
+    if (!conferma) return;
+
+    setResetLoading(true);
+    try {
+      const response = await fetch("/api/reset_trimestrali", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`✅ Reset trimestrali completato!\n${result.modifiedCount} collaborazioni azzerate.`);
+      } else {
+        alert("❌ Errore durante il reset trimestrali. Riprova.");
+      }
+    } catch (error) {
+      console.error("Errore:", error);
+      alert("❌ Errore di connessione. Riprova.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   // Funzione per fix appuntamenti fatti dal 1 novembre
   const handleFixAppuntamenti = async () => {
     const conferma = window.confirm(
@@ -741,6 +770,15 @@ const Dashboard = () => {
               >
                 <Settings className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
                 <span className="font-medium text-sm md:text-base">{resetLoading ? "Fixing..." : "Fix Appuntamenti"}</span>
+              </button>
+              
+              <button 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200 group" 
+                onClick={handleResetTrimestrali}
+                disabled={resetLoading}
+              >
+                <RotateCcw className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
+                <span className="font-medium text-sm md:text-base">{resetLoading ? "Reset..." : "📊 Reset Trimestrali"}</span>
               </button>
             </div>
           )}

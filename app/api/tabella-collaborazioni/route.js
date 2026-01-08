@@ -68,7 +68,13 @@ export async function GET() {
               post_linkedin_fatti: collab.post_linkedin_fatti || 0,
               note: collab.note || "",
               stato: collab.stato || "attiva",
-              createdAt: collab.createdAt
+              createdAt: collab.createdAt,
+              // Nuovi campi totali (non si azzerano mai)
+              post_totali: collab.post_totali || 0,
+              appuntamenti_totali: collab.appuntamenti_totali || 0,
+              durata_contratto: collab.durata_contratto || null,
+              data_inizio_contratto: collab.data_inizio_contratto || null,
+              data_fine_contratto: collab.data_fine_contratto || null,
             };
           });
 

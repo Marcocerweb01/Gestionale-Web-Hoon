@@ -106,6 +106,8 @@ const TabellaCollaborazioni = () => {
             `"${collaborazione.post_ig_fb_fatti || 0}/${collaborazione.post_ig_fb || 0}"`,
             `"${collaborazione.post_tiktok_fatti || 0}/${collaborazione.post_tiktok || 0}"`,
             `"${collaborazione.post_linkedin_fatti || 0}/${collaborazione.post_linkedin || 0}"`,
+            collaborazione.post_totali || 0,
+            collaborazione.appuntamenti_totali || 0,
             `"${collaborazione.note || ''}"`
           ]);
         });
@@ -120,12 +122,14 @@ const TabellaCollaborazioni = () => {
           `"0/0"`,
           `"0/0"`,
           `"0/0"`,
+          0,
+          0,
           `""`
         ]);
       }
     });
 
-    const headers = ["Collaboratore", "Email", "Ruolo", "Cliente", "Email Cliente", "Appuntamenti", "Post IG/FB", "Post TikTok", "Post LinkedIn", "Note"];
+    const headers = ["Collaboratore", "Email", "Ruolo", "Cliente", "Email Cliente", "Appuntamenti", "Post IG/FB", "Post TikTok", "Post LinkedIn", "Post Totali", "App. Totali", "Note"];
     const csvContent = [
       headers.join(","),
       ...righeCSV.map(row => row.join(","))
@@ -286,7 +290,7 @@ const TabellaCollaborazioni = () => {
                       </div>
                     </div>
 
-                    {/* Lista Clienti - Solo Nomi */}
+                    {/* Lista Clienti - Con Post Totali */}
                     <div className="min-h-[300px]">
                       {collaboratore.collaborazioni.length === 0 ? (
                         <div className="p-4 text-center text-gray-400">
@@ -302,9 +306,40 @@ const TabellaCollaborazioni = () => {
                                 collabIndex % 2 === 0 ? 'bg-gray-50' : 'bg-white'
                               }`}
                             >
-                              {/* Solo Nome Cliente */}
-                              <div className="font-medium text-gray-900 text-xs text-center leading-tight">
+                              {/* Nome Cliente */}
+                              <div className="font-medium text-gray-900 text-xs text-center leading-tight mb-2">
                                 {collaborazione.aziendaNome}
+                              </div>
+                              
+                              {/* Totali Generali (non si azzerano) */}
+                              <div className="bg-purple-50 rounded p-1.5 mb-1">
+                                <div className="text-[10px] text-purple-600 font-semibold text-center mb-1">📊 TOTALI</div>
+                                <div className="grid grid-cols-2 gap-1 text-center">
+                                  <div>
+                                    <div className="text-[9px] text-gray-500">Post</div>
+                                    <div className="text-xs font-bold text-purple-700">{collaborazione.post_totali || 0}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[9px] text-gray-500">App.</div>
+                                    <div className="text-xs font-bold text-purple-700">{collaborazione.appuntamenti_totali || 0}</div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Post Mensili */}
+                              <div className="grid grid-cols-3 gap-0.5 text-center text-[9px]">
+                                <div className="bg-pink-100 rounded px-1 py-0.5">
+                                  <div className="text-pink-600">IG/FB</div>
+                                  <div className="font-bold">{collaborazione.post_ig_fb_fatti}/{collaborazione.post_ig_fb}</div>
+                                </div>
+                                <div className="bg-gray-200 rounded px-1 py-0.5">
+                                  <div className="text-gray-600">TikTok</div>
+                                  <div className="font-bold">{collaborazione.post_tiktok_fatti}/{collaborazione.post_tiktok}</div>
+                                </div>
+                                <div className="bg-blue-100 rounded px-1 py-0.5">
+                                  <div className="text-blue-600">LinkedIn</div>
+                                  <div className="font-bold">{collaborazione.post_linkedin_fatti}/{collaborazione.post_linkedin}</div>
+                                </div>
                               </div>
                             </div>
                           ))}

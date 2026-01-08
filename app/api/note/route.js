@@ -23,13 +23,13 @@ export async function POST(req) {
 
     await newNote.save();
 
-    // Se è un appuntamento, incrementa appuntamenti_fatti nella collaborazione
+    // Se è un appuntamento, incrementa appuntamenti_fatti, appuntamenti_totali E appuntamenti_trimestrale_fatti
     if (tipo === 'appuntamento') {
       await Collaborazione.findByIdAndUpdate(
         collaborazione,
-        { $inc: { appuntamenti_fatti: 1 } }
+        { $inc: { appuntamenti_fatti: 1, appuntamenti_totali: 1, appuntamenti_trimestrale_fatti: 1 } }
       );
-      console.log(`✅ Incrementato appuntamenti_fatti per collaborazione ${collaborazione}`);
+      console.log(`✅ Incrementato appuntamenti_fatti, appuntamenti_totali e appuntamenti_trimestrale_fatti per collaborazione ${collaborazione}`);
     }
 
     return new Response(JSON.stringify({ message: "Nota creata con successo", newNote }), { status: 201 });

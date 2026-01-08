@@ -12,6 +12,7 @@ const ListaClienti = ({ id, amministratore }) => {
   const [saving, setSaving] = useState(false); // Stato per prevenire click multipli
   const [appuntamenti, setAppuntamenti] = useState({});
   const [problemi, setProblemi]=useState({});
+  const [postMancanti, setPostMancanti]=useState({});
 
   const fetchCollaborazioni = useCallback(async (retryCount = 0) => {
     console.log("🌐 FETCH Lista Clienti - ID:", id, "Retry:", retryCount);
@@ -88,6 +89,21 @@ const ListaClienti = ({ id, amministratore }) => {
     }
   };
 
+  const fetchPostMancanti = async (collaborazioneId) => {
+    try {
+      if (!collaborazioneId) return;
+
+      const response = await fetch(`/api/post-mancanti/${collaborazioneId}`);
+      if (!response.ok) {
+        throw new Error("Errore nel recupero dei post mancanti");
+      }
+      const result = await response.json();
+      return result;
+    } catch (err) {
+      console.error("Errore:", err);
+    }
+  };
+
 
   useEffect(() => {
     console.log("⚡ useEffect triggered - ID:", id);
@@ -110,25 +126,30 @@ const ListaClienti = ({ id, amministratore }) => {
         // Crea le promesse per tutte le chiamate API in parallelo
         const appuntamentiPromises = data.map(row => fetchAppuntamenti(row.feed));
         const problemiPromises = data.map(row => fetchProblemi(row.feed));
+        const postMancantiPromises = data.map(row => fetchPostMancanti(row.feed));
         
         // Esegui tutte le chiamate in parallelo
-        const [appuntamentiResults, problemiResults] = await Promise.all([
+        const [appuntamentiResults, problemiResults, postMancantiResults] = await Promise.all([
           Promise.all(appuntamentiPromises),
-          Promise.all(problemiPromises)
+          Promise.all(problemiPromises),
+          Promise.all(postMancantiPromises)
         ]);
         
         // Costruisci gli oggetti dei risultati
         const appuntamentiData = {};
         const problemiData = {};
+        const postMancantiData = {};
         
         data.forEach((row, index) => {
           appuntamentiData[row.feed] = appuntamentiResults[index] || 0;
           problemiData[row.feed] = problemiResults[index] || 0;
+          postMancantiData[row.feed] = postMancantiResults[index] || 0;
         });
         
-        console.log("✅ Dati aggiuntivi caricati:", { appuntamentiData, problemiData });
+        console.log("✅ Dati aggiuntivi caricati:", { appuntamentiData, problemiData, postMancantiData });
         setAppuntamenti(appuntamentiData);
         setProblemi(problemiData);
+        setPostMancanti(postMancantiData);
         
       } catch (err) {
         console.error("❌ Errore nel caricamento dati aggiuntivi:", err);
@@ -251,178 +272,209 @@ const ListaClienti = ({ id, amministratore }) => {
   const DesktopView = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full table-fixed">
           <thead>
             <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Cliente</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Feed</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Appuntamenti mensili</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Post IG & FB</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Post TikTok</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Post LinkedIn</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Problemi</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Azione</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-900 w-[11%]">Cliente</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[5%]">Feed</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[6%]">App.</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[8%]" title="Post Instagram & Facebook">
+                <span className="flex items-center justify-center gap-1">
+                  <svg className="w-3.5 h-3.5 text-pink-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/><path d="M12 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8z"/><circle cx="18.406" cy="5.594" r="1.44"/></svg>
+                  <svg className="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                </span>
+              </th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[8%]" title="Post TikTok">
+                <svg className="w-4 h-4 mx-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
+              </th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[8%]" title="Post LinkedIn">
+                <svg className="w-4 h-4 mx-auto text-blue-700" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              </th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-orange-700 bg-orange-50 w-[5%]" title="Problemi">⚠️</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-red-700 bg-red-50 w-[5%]" title="Post Mancanti">📱</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-teal-700 bg-teal-50 w-[7%]" title="Valutazione Trimestrale Post">📊 Trim.</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-teal-700 bg-teal-50 w-[7%]" title="Appuntamenti Trimestrale">📅 App.Tr</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-purple-700 bg-purple-50 w-[6%]" title="Post Totali Generali">Tot.P</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-purple-700 bg-purple-50 w-[6%]" title="Appuntamenti Totali Generali">Tot.A</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[8%]">Azione</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
         {data.map((row) => (
               <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4">
-                  <Link href={`User/${row.clienteId}`} className="text-primary hover:text-primary-600 font-medium"> 
+                <td className="px-3 py-2">
+                  <Link href={`User/${row.clienteId}`} className="text-primary hover:text-primary-600 font-medium text-sm truncate block"> 
                     {row.cliente} 
                   </Link>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-2 py-2 text-center">
                   <Link 
                     href={`/Feed-2/${id}?collaborazioneId=${row.id}`}
-                    className="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    className="inline-flex items-center px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors"
                   >
-                   Visualizza
+                   Vedi
                   </Link>
                 </td>
-                <td className="px-6 py-4 text-gray-900">
+                <td className="px-2 py-2 text-center text-sm text-gray-900">
                   <span className="font-medium">{appuntamenti[row.feed] || 0}</span>
                   <span className="text-gray-500">/{row.appuntamenti}</span>
                 </td>
               
-                <td className="px-6 py-4">
+                <td className="px-2 py-2 text-center">
                 {editingRow === row.id ? (
                   row.postIg_fb === 0 ? (
-                    <span className="text-gray-500 italic">Non disponibile</span>
+                    <span className="text-gray-400 text-xs">-</span>
                   ) : (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-center space-x-1">
                       <button
-                        className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-6 h-6 rounded bg-red-100 hover:bg-red-200 text-red-600 font-bold text-xs transition-colors disabled:opacity-50"
                         onClick={() => handleDecrement("post_ig_fb_fatti")}
                         disabled={saving}
-                      >
-                        -
-                      </button>
-                      <span className="px-3 py-1 bg-gray-100 rounded-lg font-medium min-w-[3rem] text-center">
+                      >-</button>
+                      <span className="px-1 bg-gray-100 rounded text-xs font-medium min-w-[2rem] text-center">
                         {tempData.post_ig_fb_fatti || 0}
                       </span>
                       <button
-                        className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-6 h-6 rounded bg-green-100 hover:bg-green-200 text-green-600 font-bold text-xs transition-colors disabled:opacity-50"
                         onClick={() => handleIncrement("post_ig_fb_fatti")}
                         disabled={saving}
-                      >
-                        +
-                      </button>
+                      >+</button>
                     </div>
                   )
                 ) : row.postIg_fb === 0 ? (
-                  <span className="text-gray-500 italic">Non disponibile</span>
+                  <span className="text-gray-400 text-xs">-</span>
                 ) : (
-                  <span>
+                  <span className="text-sm">
                     <span className="font-medium">{row.post_ig_fb_fatti}</span>
-                    <span className="text-gray-500"> / {row.postIg_fb}</span>
+                    <span className="text-gray-500">/{row.postIg_fb}</span>
                   </span>
                 )}
                 </td>
                 
-                <td className="px-6 py-4">
+                <td className="px-2 py-2 text-center">
                 {editingRow === row.id ? (
                     row.postTiktok === 0 ? (
-                      <span className="text-gray-500 italic">Non disponibile</span>
+                      <span className="text-gray-400 text-xs">-</span>
                     ) : (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-center space-x-1">
                         <button
-                          className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-6 h-6 rounded bg-red-100 hover:bg-red-200 text-red-600 font-bold text-xs transition-colors disabled:opacity-50"
                           onClick={() => handleDecrement("post_tiktok_fatti")}
                           disabled={saving}
-                        >
-                          -
-                        </button>
-                        <span className="px-3 py-1 bg-gray-100 rounded-lg font-medium min-w-[3rem] text-center">
+                        >-</button>
+                        <span className="px-1 bg-gray-100 rounded text-xs font-medium min-w-[2rem] text-center">
                           {tempData.post_tiktok_fatti || 0}
                         </span>
                         <button
-                          className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-6 h-6 rounded bg-green-100 hover:bg-green-200 text-green-600 font-bold text-xs transition-colors disabled:opacity-50"
                           onClick={() => handleIncrement("post_tiktok_fatti")}
                           disabled={saving}
-                        >
-                          +
-                        </button>
+                        >+</button>
                       </div>
                     )
                   ) : row.postTiktok === 0 ? (
-                    <span className="text-gray-500 italic">Non disponibile</span>
+                    <span className="text-gray-400 text-xs">-</span>
                   ) : (
-                    <span>
+                    <span className="text-sm">
                       <span className="font-medium">{row.post_tiktok_fatti}</span>
-                      <span className="text-gray-500"> / {row.postTiktok}</span>
+                      <span className="text-gray-500">/{row.postTiktok}</span>
                     </span>
                   )}
                 </td>
                 
-                <td className="px-6 py-4">
+                <td className="px-2 py-2 text-center">
                 {editingRow === row.id ? (
                   row.postLinkedin === 0 ? (
-                    <span className="text-gray-500 italic">Non disponibile</span>
+                    <span className="text-gray-400 text-xs">-</span>
                   ) : (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-center space-x-1">
                       <button
-                        className="w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-6 h-6 rounded bg-red-100 hover:bg-red-200 text-red-600 font-bold text-xs transition-colors disabled:opacity-50"
                         onClick={() => handleDecrement("post_linkedin_fatti")}
                         disabled={saving}
-                      >
-                        -
-                      </button>
-                      <span className="px-3 py-1 bg-gray-100 rounded-lg font-medium min-w-[3rem] text-center">
+                      >-</button>
+                      <span className="px-1 bg-gray-100 rounded text-xs font-medium min-w-[2rem] text-center">
                         {tempData.post_linkedin_fatti || 0}
                       </span>
                       <button
-                        className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-6 h-6 rounded bg-green-100 hover:bg-green-200 text-green-600 font-bold text-xs transition-colors disabled:opacity-50"
                         onClick={() => handleIncrement("post_linkedin_fatti")}
                         disabled={saving}
-                      >
-                        +
-                      </button>
+                      >+</button>
                     </div>
                   )
                 ) : row.postLinkedin === 0 ? (
-                  <span className="text-gray-500 italic">Non disponibile</span>
+                  <span className="text-gray-400 text-xs">-</span>
                 ) : (
-                  <span>
+                  <span className="text-sm">
                     <span className="font-medium">{row.post_linkedin_fatti}</span>
-                    <span className="text-gray-500"> / {row.postLinkedin}</span>
+                    <span className="text-gray-500">/{row.postLinkedin}</span>
                   </span>
                 )}
                 </td>
                 
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center px-2.5 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-lg">
+                {/* Colonna Problemi */}
+                <td className="px-2 py-2 text-center bg-orange-50">
+                  <span className="inline-flex items-center px-1.5 py-0.5 bg-orange-100 text-orange-800 text-xs font-medium rounded">
                     {problemi[row.feed] || 0}
                   </span>
                 </td>
+                
+                {/* Colonna Post Mancanti */}
+                <td className="px-2 py-2 text-center bg-red-50">
+                  <span className="inline-flex items-center px-1.5 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded">
+                    {postMancanti[row.feed] || 0}
+                  </span>
+                </td>
+                
+                {/* Colonna Valutazione Trimestrale Post */}
+                <td className="px-2 py-2 text-center bg-teal-50">
+                  <span className="inline-flex items-center px-1.5 py-0.5 bg-teal-100 text-teal-800 text-xs font-bold rounded" title="Post fatti / Post previsti nel trimestre">
+                    {row.valutazione_trimestrale_fatti || 0}/{row.valutazione_trimestrale_totali || 0}
+                  </span>
+                </td>
+                
+                {/* Colonna Appuntamenti Trimestrali */}
+                <td className="px-2 py-2 text-center bg-teal-50">
+                  <span className="inline-flex items-center px-1.5 py-0.5 bg-teal-100 text-teal-800 text-xs font-bold rounded" title="Appuntamenti fatti / Appuntamenti previsti nel trimestre">
+                    {row.appuntamenti_trimestrale_fatti || 0}/{row.appuntamenti_trimestrale_totali || 0}
+                  </span>
+                </td>
+                
+                {/* Colonna Post Totali Generali */}
+                <td className="px-2 py-2 text-center bg-purple-50">
+                  <span className="inline-flex items-center px-1.5 py-0.5 bg-purple-100 text-purple-800 text-xs font-bold rounded">
+                    {row.post_totali || 0}
+                  </span>
+                </td>
+                
+                {/* Colonna Appuntamenti Totali Generali */}
+                <td className="px-2 py-2 text-center bg-purple-50">
+                  <span className="inline-flex items-center px-1.5 py-0.5 bg-purple-100 text-purple-800 text-xs font-bold rounded">
+                    {row.appuntamenti_totali || 0}
+                  </span>
+                </td>
                
-                <td className="px-6 py-4">
+                <td className="px-2 py-2 text-center">
                   {editingRow === row.id ? (
                     <button 
                       onClick={handleSave}
                       disabled={saving}
-                      className={`inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors ${
+                      className={`inline-flex items-center px-2 py-1 text-white text-xs font-medium rounded transition-colors ${
                         saving 
                           ? 'bg-gray-400 cursor-not-allowed' 
                           : 'bg-green-600 hover:bg-green-700'
                       }`}
                     >
-                      {saving ? (
-                        <>
-                          <span className="animate-spin mr-2">⏳</span>
-                          Salvataggio...
-                        </>
-                      ) : (
-                        'Salva'
-                      )}
+                      {saving ? '⏳' : '✓ Salva'}
                     </button>
                   ) : (
                     <button
                       onClick={() => handleEditClick(row.id)}
                       disabled={saving}
-                      className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded transition-colors disabled:opacity-50"
                     >
-                      Modifica
+                      ✏️
                     </button>
                   )}
                 </td>
@@ -572,11 +624,58 @@ const ListaClienti = ({ id, amministratore }) => {
               )}
             </div>
             
-            <div className="bg-orange-50 rounded-lg p-3">
-              <p className="text-sm font-medium text-gray-600 mb-1">Problemi riscontrati:</p>
-              <span className="inline-flex items-center px-2.5 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-lg">
-                {problemi[row.feed] || 0}
-              </span>
+            {/* Sezione Problemi e Post Mancanti */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                <p className="text-sm font-medium text-orange-700 mb-1">⚠️ Problemi:</p>
+                <span className="inline-flex items-center px-2.5 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-lg">
+                  {problemi[row.feed] || 0}
+                </span>
+              </div>
+              <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                <p className="text-sm font-medium text-red-700 mb-1">📱 Post Mancanti:</p>
+                <span className="inline-flex items-center px-2.5 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-lg">
+                  {postMancanti[row.feed] || 0}
+                </span>
+              </div>
+            </div>
+            
+            {/* Sezione Valutazione Trimestrale */}
+            <div className="bg-teal-50 rounded-lg p-3 border border-teal-200">
+              <p className="text-sm font-semibold text-teal-700 mb-2">📈 Valutazione Trimestrale</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-teal-600 mb-1">Post</p>
+                  <span className="inline-flex items-center px-3 py-1.5 bg-teal-100 text-teal-800 text-lg font-bold rounded-lg">
+                    {row.valutazione_trimestrale_fatti || 0} / {row.valutazione_trimestrale_totali || 0}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-teal-600 mb-1">Appuntamenti</p>
+                  <span className="inline-flex items-center px-3 py-1.5 bg-teal-100 text-teal-800 text-lg font-bold rounded-lg">
+                    {row.appuntamenti_trimestrale_fatti || 0} / {row.appuntamenti_trimestrale_totali || 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Sezione Totali Generali */}
+            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+              <p className="text-sm font-semibold text-purple-700 mb-2">📊 Totali Generali</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-purple-600">Post Totali</p>
+                  <span className="inline-flex items-center px-2.5 py-1 bg-purple-100 text-purple-800 text-sm font-bold rounded-lg">
+                    {row.post_totali || 0}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-purple-600">App. Totali</p>
+                  <span className="inline-flex items-center px-2.5 py-1 bg-purple-100 text-purple-800 text-sm font-bold rounded-lg">
+                    {row.appuntamenti_totali || 0}
+                  </span>
+                </div>
+              </div>
             </div>
             
             {amministratore && (

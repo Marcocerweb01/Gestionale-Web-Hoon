@@ -247,6 +247,7 @@ const FeedPage = ({ params }) => {
                 <option value="appuntamento">📅 Appuntamento</option>
                 <option value="generico">📝 Generico</option>
                 <option value="problema">⚠️ Problema</option>
+                <option value="post_mancante">📱 Post Mancante!</option>
               </select>
 
               {(searchQuery || typeFilter) && (
@@ -576,6 +577,7 @@ const FeedPage = ({ params }) => {
                     <option value="appuntamento">📅 Appuntamento</option>
                     <option value="generico">📝 Generico</option>
                     <option value="problema">⚠️ Problema</option>
+                    <option value="post_mancante">📱 Post Mancante!</option>
                   </select>
 
                   {(searchQuery || typeFilter) && (
@@ -662,6 +664,7 @@ const FeedPage = ({ params }) => {
                 {filteredNotes.map((note) => {
                   const isOwn = note.autoreId === session?.user?.id;
                   const isProblem = note.tipo === "problema";
+                  const isPostMancante = note.tipo === "post_mancante";
                   
                   return (
                     <div
@@ -674,6 +677,8 @@ const FeedPage = ({ params }) => {
                         className={`relative rounded-2xl shadow-sm border p-3 sm:p-4 max-w-xs sm:max-w-lg w-full sm:w-auto ${
                           isProblem
                             ? "bg-gradient-to-br from-red-50 to-red-100 border-red-200"
+                            : isPostMancante
+                            ? "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200"
                             : isOwn
                             ? "bg-gradient-to-br from-blue-500 to-blue-600 border-blue-300 text-white"
                             : "bg-white border-gray-200"
@@ -685,16 +690,20 @@ const FeedPage = ({ params }) => {
                             <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs ${
                               isProblem
                                 ? "bg-red-500 text-white"
+                                : note.tipo === "post_mancante"
+                                ? "bg-orange-500 text-white"
                                 : isOwn
                                 ? "bg-white/20 text-white"
                                 : "bg-gray-100 text-gray-600"
                             }`}>
                               {note.tipo === "appuntamento" ? "📅" :
-                               note.tipo === "problema" ? "⚠️" : "📝"}
+                               note.tipo === "problema" ? "⚠️" :
+                               note.tipo === "post_mancante" ? "📱" : "📝"}
                             </div>
                             <div className={isOwn ? "text-right" : "text-left"}>
                               <p className={`text-xs font-medium ${
                                 isProblem ? "text-red-900" :
+                                isPostMancante ? "text-orange-900" :
                                 isOwn ? "text-white/90" : "text-gray-600"
                               }`}>
                                 {note.autore.length > 15 ? note.autore.substring(0, 15) + '...' : note.autore}
@@ -734,6 +743,7 @@ const FeedPage = ({ params }) => {
                         {note.tipo === "appuntamento" && note.data_appuntamento && (
                           <div className={`mb-2 sm:mb-3 p-2 rounded-lg text-xs ${
                             isProblem ? "bg-red-100 text-red-800" :
+                            isPostMancante ? "bg-orange-100 text-orange-800" :
                             isOwn ? "bg-white/20 text-white" : "bg-blue-50 text-blue-800"
                           }`}>
                             📅 {new Date(note.data_appuntamento).toLocaleDateString('it-IT', {
@@ -748,6 +758,7 @@ const FeedPage = ({ params }) => {
                         <div className="mb-2">
                           <p className={`leading-relaxed whitespace-pre-wrap text-sm sm:text-base ${
                             isProblem ? "text-red-900" :
+                            isPostMancante ? "text-orange-900" :
                             isOwn ? "text-white" : "text-gray-800"
                           }`}>
                             {note.nota}
@@ -877,6 +888,7 @@ const EditNoteModal = ({ note, onClose, onUpdateNote }) => {
               <option value="generico">📝 Generico</option>
               <option value="appuntamento">📅 Appuntamento</option>
               <option value="problema">⚠️ Problema</option>
+              <option value="post_mancante">📱 Post Mancante!</option>
             </select>
           </div>
 

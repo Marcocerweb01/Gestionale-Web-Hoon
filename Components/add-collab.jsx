@@ -11,7 +11,12 @@ const AddCollabForm = () => {
     post_ig_fb:0,
     post_tiktok:0,
     post_linkedin:0,
-
+    post_totali: 0,
+    appuntamenti_totali: 0,
+    durata_contratto: '',
+    data_inizio_contratto: '',
+    data_fine_contratto: '',
+    escludi_reset_trimestrale: false,
   });
   
   const [loading, setLoading] = useState(false);
@@ -113,7 +118,13 @@ const AddCollabForm = () => {
       setFormData({ aziendaId: '', collaboratoreId: '', note: '',  numero_appuntamenti:'',
         post_ig_fb:'',
         post_tiktok:'',
-        post_linkedin:''});
+        post_linkedin:'',
+        post_totali: 0,
+        appuntamenti_totali: 0,
+        durata_contratto: '',
+        data_inizio_contratto: '',
+        data_fine_contratto: '',
+        escludi_reset_trimestrale: false});
       setAziendaSearch('');
       setCollaboratoreSearch('');
     } catch (err) {
@@ -292,6 +303,108 @@ const selectCollaboratore = (collaboratore) => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 placeholder="0"
               />
+            </div>
+          </div>
+
+          {/* Sezione Totali e Contratto */}
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-6 border border-purple-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <span className="mr-2">📊</span> Gestione Contratto
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  📝 Post Totali
+                </label>
+                <input
+                  type='number'
+                  min="0"
+                  name="post_totali"
+                  value={formData.post_totali}
+                  onChange={(e) => setFormData(prev => ({ ...prev, post_totali: Math.max(0, Number(e.target.value)) }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  placeholder="0"
+                />
+                <p className="text-xs text-gray-500">Totale post accumulati (non viene mai azzerato automaticamente)</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  📅 Appuntamenti Totali
+                </label>
+                <input
+                  type='number'
+                  min="0"
+                  name="appuntamenti_totali"
+                  value={formData.appuntamenti_totali}
+                  onChange={(e) => setFormData(prev => ({ ...prev, appuntamenti_totali: Math.max(0, Number(e.target.value)) }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  placeholder="0"
+                />
+                <p className="text-xs text-gray-500">Totale appuntamenti accumulati (non viene mai azzerato automaticamente)</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  ⏱️ Durata Contratto
+                </label>
+                <select
+                  name="durata_contratto"
+                  value={formData.durata_contratto}
+                  onChange={(e) => setFormData(prev => ({ ...prev, durata_contratto: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                >
+                  <option value="">Seleziona durata...</option>
+                  <option value="1 mese">1 mese</option>
+                  <option value="3 mesi">3 mesi</option>
+                  <option value="6 mesi">6 mesi</option>
+                  <option value="1 anno">1 anno</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  📆 Data Inizio Contratto <span className="text-gray-500">(opzionale)</span>
+                </label>
+                <input
+                  type='date'
+                  name="data_inizio_contratto"
+                  value={formData.data_inizio_contratto}
+                  onChange={(e) => setFormData(prev => ({ ...prev, data_inizio_contratto: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2 lg:col-span-1">
+                <label className="block text-sm font-semibold text-gray-700">
+                  📆 Data Fine Contratto <span className="text-gray-500">(opzionale)</span>
+                </label>
+                <input
+                  type='date'
+                  name="data_fine_contratto"
+                  value={formData.data_fine_contratto}
+                  onChange={(e) => setFormData(prev => ({ ...prev, data_fine_contratto: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              {/* Checkbox per escludere dal reset trimestrale */}
+              <div className="space-y-2 md:col-span-2">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="escludi_reset_trimestrale"
+                    checked={formData.escludi_reset_trimestrale}
+                    onChange={(e) => setFormData(prev => ({ ...prev, escludi_reset_trimestrale: e.target.checked }))}
+                    className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                  />
+                  <span className="text-sm font-semibold text-gray-700">
+                    📊 Escludi dal reset trimestrale
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 ml-8">Se attivo, i contatori trimestrali di questa collaborazione non verranno azzerati con il reset trimestrale</p>
+              </div>
             </div>
           </div>
 

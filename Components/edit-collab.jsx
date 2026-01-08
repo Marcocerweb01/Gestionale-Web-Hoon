@@ -4,10 +4,11 @@ const AdminCollaborationsList = ({ id }) => {
   console.log("🔄 RENDER - AdminCollaborationsList", new Date().toLocaleTimeString());
   
   const [data, setData] = useState([]);
-  const [editingRow, setEditingRow] = useState();
+  const [editingRow, setEditingRow] = useState(null);
   const [tempData, setTempData] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false); // Stato per prevenire click multipli
+  const [azzerandoTotali, setAzzerandoTotali] = useState(null); // ID della collaborazione in azzeramento
   const [error, setError] = useState("");
 
   console.log("   📊 State:", { 
@@ -86,7 +87,12 @@ const AdminCollaborationsList = ({ id }) => {
       appuntamenti: rowData.appuntamenti || 0,
       postIg_fb: rowData.postIg_fb || 0,
       postTiktok: rowData.postTiktok || 0,
-      postLinkedin: rowData.postLinkedin || 0
+      postLinkedin: rowData.postLinkedin || 0,
+      post_totali: rowData.post_totali || 0,
+      appuntamenti_totali: rowData.appuntamenti_totali || 0,
+      durata_contratto: rowData.durata_contratto || '',
+      data_inizio_contratto: rowData.data_inizio_contratto ? new Date(rowData.data_inizio_contratto).toISOString().split('T')[0] : '',
+      data_fine_contratto: rowData.data_fine_contratto ? new Date(rowData.data_fine_contratto).toISOString().split('T')[0] : ''
     };
     
     console.log("📝 TempData impostato:", newTempData);
@@ -139,6 +145,11 @@ const AdminCollaborationsList = ({ id }) => {
         post_ig_fb: tempData.postIg_fb,
         post_tiktok: tempData.postTiktok,
         post_linkedin: tempData.postLinkedin,
+        post_totali: tempData.post_totali,
+        appuntamenti_totali: tempData.appuntamenti_totali,
+        durata_contratto: tempData.durata_contratto || null,
+        data_inizio_contratto: tempData.data_inizio_contratto || null,
+        data_fine_contratto: tempData.data_fine_contratto || null,
       };
       
       console.log("📤 Payload da inviare:", payload);
@@ -171,7 +182,12 @@ const AdminCollaborationsList = ({ id }) => {
                 appuntamenti: tempData.appuntamenti,
                 postIg_fb: tempData.postIg_fb,
                 postTiktok: tempData.postTiktok,
-                postLinkedin: tempData.postLinkedin
+                postLinkedin: tempData.postLinkedin,
+                post_totali: tempData.post_totali,
+                appuntamenti_totali: tempData.appuntamenti_totali,
+                durata_contratto: tempData.durata_contratto,
+                data_inizio_contratto: tempData.data_inizio_contratto,
+                data_fine_contratto: tempData.data_fine_contratto
               }
             : row
         );
@@ -192,6 +208,55 @@ const AdminCollaborationsList = ({ id }) => {
       setSaving(false);
     }
   }, [saving, editingRow, tempData]);
+
+  // Funzione per azzerare i totali generali
+  const handleAzzeraTotali = useCallback(async (collaborazioneId) => {
+    if (azzerandoTotali) return;
+    
+    // Conferma prima di azzerare
+    if (!window.confirm('Sei sicuro di voler azzerare i totali generali (Post Totali e Appuntamenti Totali)?')) {
+      return;
+    }
+
+    setAzzerandoTotali(collaborazioneId);
+    
+    try {
+      const response = await fetch(`/api/collaborazioni/azzera-totali/${collaborazioneId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Errore durante l'azzeramento");
+      }
+
+      // Aggiorna i dati localmente
+      setData(prevData => {
+        return prevData.map(row => 
+          row.id === collaborazioneId 
+            ? { ...row, post_totali: 0, appuntamenti_totali: 0 }
+            : row
+        );
+      });
+
+      console.log("✅ Totali azzerati con successo");
+      
+    } catch (err) {
+      console.error("❌ Errore azzeramento totali:", err);
+      setError("Non è stato possibile azzerare i totali.");
+    } finally {
+      setAzzerandoTotali(null);
+    }
+  }, [azzerandoTotali]);
+
+  // Helper per formattare le date
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
 
   if (loading) {
     return (
@@ -216,36 +281,176 @@ const AdminCollaborationsList = ({ id }) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header della sezione */}
       <div className="flex items-center space-x-2 mb-4">
         <span className="text-xl">📊</span>
         <h3 className="text-lg font-semibold text-gray-900">Gestione Collaborazioni</h3>
       </div>
 
-      {/* Tabella con design moderno */}
-      <div className="overflow-x-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Appuntamenti</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Post IG & FB</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Post TikTok</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Post LinkedIn</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-          {data.map((row) => (
-            <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{row.cliente}</div>
-              </td>
-              <td className="px-4 py-4 whitespace-nowrap">
+      {/* Cards per ogni collaborazione */}
+      {data.map((row) => (
+        <div key={row.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Header Card */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-blue-600">🏢</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">{row.cliente}</h4>
+                  {row.durata_contratto && (
+                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                      ⏱️ {row.durata_contratto}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {editingRow !== row.id && (
+                  <>
+                    <button 
+                      onClick={() => handleEditClick(row.id)}
+                      disabled={saving || editingRow !== null}
+                      className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      ✏️ Modifica
+                    </button>
+                    <button 
+                      onClick={() => handleAzzeraTotali(row.id)}
+                      disabled={azzerandoTotali === row.id}
+                      className="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {azzerandoTotali === row.id ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span>
+                          Azzeramento...
+                        </>
+                      ) : (
+                        <>🔄 Azzera Generali</>
+                      )}
+                    </button>
+                  </>
+                )}
+                {editingRow === row.id && (
+                  <>
+                    <button 
+                      onClick={handleSave}
+                      disabled={saving}
+                      className={`inline-flex items-center px-4 py-2 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation ${
+                        saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                      }`}
+                    >
+                      {saving ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span>
+                          Salvataggio...
+                        </>
+                      ) : (
+                        <>✅ Salva</>
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => { setEditingRow(null); setTempData({}); }}
+                      disabled={saving}
+                      className="inline-flex items-center px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation disabled:opacity-50"
+                    >
+                      ❌ Annulla
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Body Card */}
+          <div className="p-4">
+            {/* Sezione Totali Generali */}
+            <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
+              <h5 className="text-sm font-semibold text-purple-800 mb-3 flex items-center">
+                <span className="mr-2">📊</span> Totali Generali
+              </h5>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 uppercase">Post Totali</p>
+                  {editingRow === row.id ? (
+                    <input
+                      type="number"
+                      min="0"
+                      value={tempData.post_totali}
+                      onChange={(e) => setTempData(prev => ({ ...prev, post_totali: Math.max(0, Number(e.target.value)) }))}
+                      className="w-full mt-1 px-2 py-1 text-center border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  ) : (
+                    <p className="text-xl font-bold text-purple-600">{row.post_totali || 0}</p>
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 uppercase">App. Totali</p>
+                  {editingRow === row.id ? (
+                    <input
+                      type="number"
+                      min="0"
+                      value={tempData.appuntamenti_totali}
+                      onChange={(e) => setTempData(prev => ({ ...prev, appuntamenti_totali: Math.max(0, Number(e.target.value)) }))}
+                      className="w-full mt-1 px-2 py-1 text-center border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  ) : (
+                    <p className="text-xl font-bold text-purple-600">{row.appuntamenti_totali || 0}</p>
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 uppercase">Inizio</p>
+                  {editingRow === row.id ? (
+                    <input
+                      type="date"
+                      value={tempData.data_inizio_contratto}
+                      onChange={(e) => setTempData(prev => ({ ...prev, data_inizio_contratto: e.target.value }))}
+                      className="w-full mt-1 px-2 py-1 text-center border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium text-gray-700">{formatDate(row.data_inizio_contratto)}</p>
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 uppercase">Fine</p>
+                  {editingRow === row.id ? (
+                    <input
+                      type="date"
+                      value={tempData.data_fine_contratto}
+                      onChange={(e) => setTempData(prev => ({ ...prev, data_fine_contratto: e.target.value }))}
+                      className="w-full mt-1 px-2 py-1 text-center border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium text-gray-700">{formatDate(row.data_fine_contratto)}</p>
+                  )}
+                </div>
+              </div>
+              {editingRow === row.id && (
+                <div className="mt-3">
+                  <p className="text-xs text-gray-500 uppercase mb-1">Durata Contratto</p>
+                  <select
+                    value={tempData.durata_contratto}
+                    onChange={(e) => setTempData(prev => ({ ...prev, durata_contratto: e.target.value }))}
+                    className="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">Seleziona durata...</option>
+                    <option value="1 mese">1 mese</option>
+                    <option value="3 mesi">3 mesi</option>
+                    <option value="6 mesi">6 mesi</option>
+                    <option value="1 anno">1 anno</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Sezione Dati Mensili */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 uppercase mb-2">📅 Appuntamenti</p>
                 {editingRow === row.id ? (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center space-x-2">
                     <button 
                       onClick={() => handleDecrement("appuntamenti")}
                       disabled={saving}
@@ -253,7 +458,7 @@ const AdminCollaborationsList = ({ id }) => {
                     >
                       −
                     </button>
-                    <span className="min-w-[2rem] text-center font-semibold">{tempData.appuntamenti}</span>
+                    <span className="min-w-[2rem] text-center font-semibold text-lg">{tempData.appuntamenti}</span>
                     <button 
                       onClick={() => handleIncrement("appuntamenti")}
                       disabled={saving}
@@ -263,12 +468,14 @@ const AdminCollaborationsList = ({ id }) => {
                     </button>
                   </div>
                 ) : (
-                  row.appuntamenti
+                  <p className="text-2xl font-bold text-blue-600">{row.appuntamenti}</p>
                 )}
-              </td>
-              <td className="px-4 py-4 whitespace-nowrap">
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 uppercase mb-2">📸 IG & FB</p>
                 {editingRow === row.id ? (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center space-x-2">
                     <button 
                       onClick={() => handleDecrement("postIg_fb")}
                       disabled={saving}
@@ -276,7 +483,7 @@ const AdminCollaborationsList = ({ id }) => {
                     >
                       −
                     </button>
-                    <span className="min-w-[2rem] text-center font-semibold">{tempData.postIg_fb}</span>
+                    <span className="min-w-[2rem] text-center font-semibold text-lg">{tempData.postIg_fb}</span>
                     <button 
                       onClick={() => handleIncrement("postIg_fb")}
                       disabled={saving}
@@ -286,12 +493,14 @@ const AdminCollaborationsList = ({ id }) => {
                     </button>
                   </div>
                 ) : (
-                  row.postIg_fb
+                  <p className="text-2xl font-bold text-pink-600">{row.postIg_fb}</p>
                 )}
-              </td>
-              <td className="px-4 py-4 whitespace-nowrap">
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 uppercase mb-2">🎵 TikTok</p>
                 {editingRow === row.id ? (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center space-x-2">
                     <button 
                       onClick={() => handleDecrement("postTiktok")}
                       disabled={saving}
@@ -299,7 +508,7 @@ const AdminCollaborationsList = ({ id }) => {
                     >
                       −
                     </button>
-                    <span className="min-w-[2rem] text-center font-semibold">{tempData.postTiktok}</span>
+                    <span className="min-w-[2rem] text-center font-semibold text-lg">{tempData.postTiktok}</span>
                     <button 
                       onClick={() => handleIncrement("postTiktok")}
                       disabled={saving}
@@ -309,12 +518,14 @@ const AdminCollaborationsList = ({ id }) => {
                     </button>
                   </div>
                 ) : (
-                  row.postTiktok
+                  <p className="text-2xl font-bold text-gray-900">{row.postTiktok}</p>
                 )}
-              </td>
-              <td className="px-4 py-4 whitespace-nowrap">
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 uppercase mb-2">💼 LinkedIn</p>
                 {editingRow === row.id ? (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center space-x-2">
                     <button 
                       onClick={() => handleDecrement("postLinkedin")}
                       disabled={saving}
@@ -322,7 +533,7 @@ const AdminCollaborationsList = ({ id }) => {
                     >
                       −
                     </button>
-                    <span className="min-w-[2rem] text-center font-semibold">{tempData.postLinkedin}</span>
+                    <span className="min-w-[2rem] text-center font-semibold text-lg">{tempData.postLinkedin}</span>
                     <button 
                       onClick={() => handleIncrement("postLinkedin")}
                       disabled={saving}
@@ -332,45 +543,13 @@ const AdminCollaborationsList = ({ id }) => {
                     </button>
                   </div>
                 ) : (
-                  row.postLinkedin
+                  <p className="text-2xl font-bold text-blue-700">{row.postLinkedin}</p>
                 )}
-              </td>
-              <td className="px-4 py-4 whitespace-nowrap">
-                {editingRow === row.id ? (
-                  <button 
-                    onClick={handleSave}
-                    disabled={saving}
-                    className={`inline-flex items-center px-4 py-2 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation ${
-                      saving 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-green-600 hover:bg-green-700'
-                    }`}
-                  >
-                    {saving ? (
-                      <>
-                        <span className="animate-spin mr-2">⏳</span>
-                        Salvataggio...
-                      </>
-                    ) : (
-                      <>✅ Salva</>
-                    )}
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => handleEditClick(row.id)}
-                    disabled={saving}
-                    className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Modifica
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
 
     {/* Messaggio se non ci sono dati */}
     {data.length === 0 && (
