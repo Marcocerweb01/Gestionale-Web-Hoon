@@ -571,7 +571,7 @@ const FeedPage = ({ params }) => {
                   <div className="flex items-center space-x-1 text-blue-800 flex-1 min-w-0">
                     <span className="text-xs">🔍</span>
                     <span className="text-xs font-medium truncate">
-                      {searchQuery && <span className="italic">"{searchQuery.substring(0, 8)}..."</span>}
+                      {searchQuery && <span className="italic">&ldquo;{searchQuery.substring(0, 8)}...&rdquo;</span>}
                       {typeFilter && <span className="ml-1">• {typeFilter}</span>}
                     </span>
                   </div>
