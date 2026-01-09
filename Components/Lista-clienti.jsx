@@ -275,51 +275,43 @@ const ListaClienti = ({ id, amministratore }) => {
         <table className="w-full table-fixed">
           <thead>
             <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-900 w-[11%]">Cliente</th>
-              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[5%]">Feed</th>
-              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[6%]">App.</th>
-              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[8%]" title="Post Instagram & Facebook">
+              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-900 w-[10%]">Cliente</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[6%]" title="Post Instagram & Facebook">
                 <span className="flex items-center justify-center gap-1">
                   <svg className="w-3.5 h-3.5 text-pink-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/><path d="M12 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8z"/><circle cx="18.406" cy="5.594" r="1.44"/></svg>
-                  <svg className="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                 </span>
               </th>
-              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[8%]" title="Post TikTok">
+              <th className="px-2 py-3 text-center text-xs font-semibold text-green-700 bg-green-50 w-[5%]" title="Trimestrale Instagram">📊</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[6%]" title="Post TikTok">
                 <svg className="w-4 h-4 mx-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
               </th>
-              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[8%]" title="Post LinkedIn">
+              <th className="px-2 py-3 text-center text-xs font-semibold text-green-700 bg-green-50 w-[5%]" title="Trimestrale TikTok">📊</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[6%]" title="Post LinkedIn">
                 <svg className="w-4 h-4 mx-auto text-blue-700" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
               </th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-green-700 bg-green-50 w-[5%]" title="Trimestrale LinkedIn">📊</th>
               <th className="px-2 py-3 text-center text-xs font-semibold text-orange-700 bg-orange-50 w-[5%]" title="Problemi">⚠️</th>
               <th className="px-2 py-3 text-center text-xs font-semibold text-red-700 bg-red-50 w-[5%]" title="Post Mancanti">📱</th>
-              <th className="px-2 py-3 text-center text-xs font-semibold text-teal-700 bg-teal-50 w-[7%]" title="Valutazione Trimestrale Post">📊 Trim.</th>
-              <th className="px-2 py-3 text-center text-xs font-semibold text-teal-700 bg-teal-50 w-[7%]" title="Appuntamenti Trimestrale">📅 App.Tr</th>
-              <th className="px-2 py-3 text-center text-xs font-semibold text-purple-700 bg-purple-50 w-[6%]" title="Post Totali Generali">Tot.P</th>
-              <th className="px-2 py-3 text-center text-xs font-semibold text-purple-700 bg-purple-50 w-[6%]" title="Appuntamenti Totali Generali">Tot.A</th>
-              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[8%]">Azione</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[6%]">App.</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-green-700 bg-green-50 w-[6%]" title="Appuntamenti Trimestrale">📅 Tr</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-purple-700 bg-purple-50 w-[5%]" title="Post Totali Generali">Tot.P</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-purple-700 bg-purple-50 w-[5%]" title="Appuntamenti Totali Generali">Tot.A</th>
+              <th className="px-2 py-3 text-center text-xs font-semibold text-gray-900 w-[7%]">Azione</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
         {data.map((row) => (
               <tr key={row.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-3 py-2">
-                  <Link href={`User/${row.clienteId}`} className="text-primary hover:text-primary-600 font-medium text-sm truncate block"> 
+                  <Link 
+                    href={`/Feed-2/${id}?collaborazioneId=${row.id}`}
+                    className="text-primary hover:text-primary-600 font-medium text-sm truncate block"
+                  > 
                     {row.cliente} 
                   </Link>
                 </td>
-                <td className="px-2 py-2 text-center">
-                  <Link 
-                    href={`/Feed-2/${id}?collaborazioneId=${row.id}`}
-                    className="inline-flex items-center px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors"
-                  >
-                   Vedi
-                  </Link>
-                </td>
-                <td className="px-2 py-2 text-center text-sm text-gray-900">
-                  <span className="font-medium">{appuntamenti[row.feed] || 0}</span>
-                  <span className="text-gray-500">/{row.appuntamenti}</span>
-                </td>
               
+                {/* Instagram */}
                 <td className="px-2 py-2 text-center">
                 {editingRow === row.id ? (
                   row.postIg_fb === 0 ? (
@@ -351,6 +343,18 @@ const ListaClienti = ({ id, amministratore }) => {
                 )}
                 </td>
                 
+                {/* Trimestrale Instagram */}
+                <td className="px-2 py-2 text-center bg-green-50">
+                  {row.postIg_fb === 0 ? (
+                    <span className="text-gray-400 text-xs">-</span>
+                  ) : (
+                    <span className="inline-flex items-center px-1.5 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded">
+                      {row.instagram_trim_fatti || 0}/{row.instagram_trim_totali || 0}
+                    </span>
+                  )}
+                </td>
+                
+                {/* TikTok */}
                 <td className="px-2 py-2 text-center">
                 {editingRow === row.id ? (
                     row.postTiktok === 0 ? (
@@ -382,6 +386,18 @@ const ListaClienti = ({ id, amministratore }) => {
                   )}
                 </td>
                 
+                {/* Trimestrale TikTok */}
+                <td className="px-2 py-2 text-center bg-green-50">
+                  {row.postTiktok === 0 ? (
+                    <span className="text-gray-400 text-xs">-</span>
+                  ) : (
+                    <span className="inline-flex items-center px-1.5 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded">
+                      {row.tiktok_trim_fatti || 0}/{row.tiktok_trim_totali || 0}
+                    </span>
+                  )}
+                </td>
+                
+                {/* LinkedIn */}
                 <td className="px-2 py-2 text-center">
                 {editingRow === row.id ? (
                   row.postLinkedin === 0 ? (
@@ -413,6 +429,17 @@ const ListaClienti = ({ id, amministratore }) => {
                 )}
                 </td>
                 
+                {/* Trimestrale LinkedIn */}
+                <td className="px-2 py-2 text-center bg-green-50">
+                  {row.postLinkedin === 0 ? (
+                    <span className="text-gray-400 text-xs">-</span>
+                  ) : (
+                    <span className="inline-flex items-center px-1.5 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded">
+                      {row.linkedin_trim_fatti || 0}/{row.linkedin_trim_totali || 0}
+                    </span>
+                  )}
+                </td>
+                
                 {/* Colonna Problemi */}
                 <td className="px-2 py-2 text-center bg-orange-50">
                   <span className="inline-flex items-center px-1.5 py-0.5 bg-orange-100 text-orange-800 text-xs font-medium rounded">
@@ -427,32 +454,39 @@ const ListaClienti = ({ id, amministratore }) => {
                   </span>
                 </td>
                 
-                {/* Colonna Valutazione Trimestrale Post */}
-                <td className="px-2 py-2 text-center bg-teal-50">
-                  <span className="inline-flex items-center px-1.5 py-0.5 bg-teal-100 text-teal-800 text-xs font-bold rounded" title="Post fatti / Post previsti nel trimestre">
-                    {row.valutazione_trimestrale_fatti || 0}/{row.valutazione_trimestrale_totali || 0}
-                  </span>
+                {/* Appuntamenti mensili */}
+                <td className="px-2 py-2 text-center text-sm text-gray-900">
+                  <span className="font-medium">{appuntamenti[row.feed] || 0}</span>
+                  <span className="text-gray-500">/{row.appuntamenti}</span>
                 </td>
                 
                 {/* Colonna Appuntamenti Trimestrali */}
-                <td className="px-2 py-2 text-center bg-teal-50">
-                  <span className="inline-flex items-center px-1.5 py-0.5 bg-teal-100 text-teal-800 text-xs font-bold rounded" title="Appuntamenti fatti / Appuntamenti previsti nel trimestre">
+                <td className="px-2 py-2 text-center bg-green-50">
+                  <span className="inline-flex items-center px-1.5 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded" title="Appuntamenti fatti / Appuntamenti previsti nel trimestre">
                     {row.appuntamenti_trimestrale_fatti || 0}/{row.appuntamenti_trimestrale_totali || 0}
                   </span>
                 </td>
                 
                 {/* Colonna Post Totali Generali */}
                 <td className="px-2 py-2 text-center bg-purple-50">
-                  <span className="inline-flex items-center px-1.5 py-0.5 bg-purple-100 text-purple-800 text-xs font-bold rounded">
-                    {row.post_totali || 0}
-                  </span>
+                  {row.post_totali_previsti > 0 ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 bg-purple-100 text-purple-800 text-xs font-bold rounded" title="Post fatti totali / Post previsti totali">
+                      {row.post_totali || 0}/{row.post_totali_previsti}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-xs">-</span>
+                  )}
                 </td>
                 
                 {/* Colonna Appuntamenti Totali Generali */}
                 <td className="px-2 py-2 text-center bg-purple-50">
-                  <span className="inline-flex items-center px-1.5 py-0.5 bg-purple-100 text-purple-800 text-xs font-bold rounded">
-                    {row.appuntamenti_totali || 0}
-                  </span>
+                  {row.appuntamenti_totali_previsti > 0 ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 bg-purple-100 text-purple-800 text-xs font-bold rounded" title="Appuntamenti fatti totali / Appuntamenti previsti totali">
+                      {row.appuntamenti_totali || 0}/{row.appuntamenti_totali_previsti}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-xs">-</span>
+                  )}
                 </td>
                
                 <td className="px-2 py-2 text-center">
@@ -641,42 +675,60 @@ const ListaClienti = ({ id, amministratore }) => {
             </div>
             
             {/* Sezione Valutazione Trimestrale */}
-            <div className="bg-teal-50 rounded-lg p-3 border border-teal-200">
-              <p className="text-sm font-semibold text-teal-700 mb-2">📈 Valutazione Trimestrale</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-teal-600 mb-1">Post</p>
-                  <span className="inline-flex items-center px-3 py-1.5 bg-teal-100 text-teal-800 text-lg font-bold rounded-lg">
-                    {row.valutazione_trimestrale_fatti || 0} / {row.valutazione_trimestrale_totali || 0}
+            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+              <p className="text-sm font-semibold text-green-700 mb-2">📈 Valutazione Trimestrale per Tipo</p>
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                <div className="bg-green-100 rounded p-2 border border-green-300">
+                  <p className="text-xs text-green-700 mb-1">Instagram</p>
+                  <span className="inline-flex items-center px-2 py-1 bg-green-200 text-green-800 text-sm font-bold rounded">
+                    {row.instagram_trim_fatti || 0}/{row.instagram_trim_totali || 0}
                   </span>
                 </div>
-                <div>
-                  <p className="text-xs text-teal-600 mb-1">Appuntamenti</p>
-                  <span className="inline-flex items-center px-3 py-1.5 bg-teal-100 text-teal-800 text-lg font-bold rounded-lg">
-                    {row.appuntamenti_trimestrale_fatti || 0} / {row.appuntamenti_trimestrale_totali || 0}
+                <div className="bg-green-100 rounded p-2 border border-green-300">
+                  <p className="text-xs text-green-700 mb-1">TikTok</p>
+                  <span className="inline-flex items-center px-2 py-1 bg-green-200 text-green-800 text-sm font-bold rounded">
+                    {row.tiktok_trim_fatti || 0}/{row.tiktok_trim_totali || 0}
                   </span>
                 </div>
+                <div className="bg-green-100 rounded p-2 border border-green-300">
+                  <p className="text-xs text-green-700 mb-1">LinkedIn</p>
+                  <span className="inline-flex items-center px-2 py-1 bg-green-200 text-green-800 text-sm font-bold rounded">
+                    {row.linkedin_trim_fatti || 0}/{row.linkedin_trim_totali || 0}
+                  </span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-green-200">
+                <p className="text-xs text-green-700 mb-1">Appuntamenti Trimestrali</p>
+                <span className="inline-flex items-center px-3 py-1.5 bg-green-200 text-green-800 text-lg font-bold rounded-lg">
+                  {row.appuntamenti_trimestrale_fatti || 0} / {row.appuntamenti_trimestrale_totali || 0}
+                </span>
               </div>
             </div>
             
             {/* Sezione Totali Generali */}
-            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-              <p className="text-sm font-semibold text-purple-700 mb-2">📊 Totali Generali</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-purple-600">Post Totali</p>
-                  <span className="inline-flex items-center px-2.5 py-1 bg-purple-100 text-purple-800 text-sm font-bold rounded-lg">
-                    {row.post_totali || 0}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-xs text-purple-600">App. Totali</p>
-                  <span className="inline-flex items-center px-2.5 py-1 bg-purple-100 text-purple-800 text-sm font-bold rounded-lg">
-                    {row.appuntamenti_totali || 0}
-                  </span>
+            {(row.post_totali_previsti > 0 || row.appuntamenti_totali_previsti > 0) && (
+              <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                <p className="text-sm font-semibold text-purple-700 mb-2">📊 Totali Generali</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {row.post_totali_previsti > 0 && (
+                    <div>
+                      <p className="text-xs text-purple-600">Post Totali</p>
+                      <span className="inline-flex items-center px-2.5 py-1 bg-purple-100 text-purple-800 text-sm font-bold rounded-lg">
+                        {row.post_totali || 0}/{row.post_totali_previsti}
+                      </span>
+                    </div>
+                  )}
+                  {row.appuntamenti_totali_previsti > 0 && (
+                    <div>
+                      <p className="text-xs text-purple-600">App. Totali</p>
+                      <span className="inline-flex items-center px-2.5 py-1 bg-purple-100 text-purple-800 text-sm font-bold rounded-lg">
+                        {row.appuntamenti_totali || 0}/{row.appuntamenti_totali_previsti}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
             
             {amministratore && (
               <div className="bg-gray-50 rounded-lg p-3">

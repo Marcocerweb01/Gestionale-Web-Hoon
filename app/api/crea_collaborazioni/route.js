@@ -15,8 +15,8 @@ export async function POST(req) {
       post_tiktok, 
       post_linkedin, 
       note,
-      post_totali,
-      appuntamenti_totali,
+      post_totali_previsti,
+      appuntamenti_totali_previsti,
       durata_contratto,
       data_inizio_contratto,
       data_fine_contratto
@@ -59,9 +59,12 @@ export async function POST(req) {
         post_tiktok_fatti: 0,
         post_linkedin_fatti: 0,
         appuntamenti_fatti: 0,
-        // Nuovi campi per gestione contratto
-        post_totali: post_totali || 0,
-        appuntamenti_totali: appuntamenti_totali || 0,
+        // Campi per gestione contratto - FATTI (partono da 0)
+        post_totali: 0,
+        appuntamenti_totali: 0,
+        // Campi per gestione contratto - PREVISTI (impostati manualmente)
+        post_totali_previsti: post_totali_previsti || 0,
+        appuntamenti_totali_previsti: appuntamenti_totali_previsti || 0,
         durata_contratto: durata_contratto || null,
         data_inizio_contratto: data_inizio_contratto ? new Date(data_inizio_contratto) : null,
         data_fine_contratto: data_fine_contratto ? new Date(data_fine_contratto) : null,

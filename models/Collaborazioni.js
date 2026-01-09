@@ -73,12 +73,21 @@ const CollaborazioneSchema = new Schema(
       enum: ["si", "no"],
       default: "no",
     },
-    // Nuovi campi per gestione contratto SMM
+    // Campi per gestione contratto SMM - FATTI (si incrementano, non si azzerano mai)
     post_totali: {
       type: Number,
       default: 0,
     },
     appuntamenti_totali: {
+      type: Number,
+      default: 0,
+    },
+    // Campi per gestione contratto SMM - PREVISTI (impostati manualmente, non si azzerano mai)
+    post_totali_previsti: {
+      type: Number,
+      default: 0,
+    },
+    appuntamenti_totali_previsti: {
       type: Number,
       default: 0,
     },
@@ -95,12 +104,39 @@ const CollaborazioneSchema = new Schema(
       type: Date,
       default: null,
     },
-    // Campi per valutazione trimestrale SMM
+    // Campi per valutazione trimestrale SMM (legacy - mantenuto per compatibilità)
     valutazione_trimestrale_fatti: {
       type: Number,
       default: 0,
     },
     valutazione_trimestrale_totali: {
+      type: Number,
+      default: 0,
+    },
+    // Campi per valutazione trimestrale Instagram
+    instagram_trim_fatti: {
+      type: Number,
+      default: 0,
+    },
+    instagram_trim_totali: {
+      type: Number,
+      default: 0,
+    },
+    // Campi per valutazione trimestrale TikTok
+    tiktok_trim_fatti: {
+      type: Number,
+      default: 0,
+    },
+    tiktok_trim_totali: {
+      type: Number,
+      default: 0,
+    },
+    // Campi per valutazione trimestrale LinkedIn
+    linkedin_trim_fatti: {
+      type: Number,
+      default: 0,
+    },
+    linkedin_trim_totali: {
       type: Number,
       default: 0,
     },

@@ -42,14 +42,21 @@ export async function PATCH(req, { params }) {
         ...(post_linkedin_fatti !== undefined && { post_linkedin_fatti: Number(post_linkedin_fatti) }),
       };
 
-      // Se c'è una differenza nei post, aggiorna anche il trimestrale E post_totali
+      // Se c'è una differenza nei post, aggiorna anche i trimestrali per tipo E post_totali
       let collaborazione;
-      if (diffTotalePosts !== 0) {
+      if (diffPostIgFb !== 0 || diffPostTiktok !== 0 || diffPostLinkedin !== 0) {
         collaborazione = await Collaborazione.findByIdAndUpdate(
           collaborazioneId, 
           {
             ...updateData,
-            $inc: { valutazione_trimestrale_fatti: diffTotalePosts, post_totali: diffTotalePosts }
+            $inc: { 
+              valutazione_trimestrale_fatti: diffTotalePosts, 
+              post_totali: diffTotalePosts,
+              // Incrementi separati per tipo
+              instagram_trim_fatti: diffPostIgFb,
+              tiktok_trim_fatti: diffPostTiktok,
+              linkedin_trim_fatti: diffPostLinkedin
+            }
           }, 
           { new: true }
         );
@@ -57,7 +64,7 @@ export async function PATCH(req, { params }) {
         collaborazione = await Collaborazione.findByIdAndUpdate(collaborazioneId, updateData, { new: true });
       }
 
-      console.log("✅ Collaborazione aggiornata con successo", diffTotalePosts !== 0 ? `(+${diffTotalePosts} trimestrale e totali)` : '');
+      console.log("✅ Collaborazione aggiornata con successo", diffTotalePosts !== 0 ? `(+${diffTotalePosts} trimestrale e totali, IG:${diffPostIgFb} TK:${diffPostTiktok} LI:${diffPostLinkedin})` : '');
   
       return new Response(JSON.stringify({ message: "Collaborazione aggiornata con successo", collaborazione }), { status: 200 });
     } catch (error) {

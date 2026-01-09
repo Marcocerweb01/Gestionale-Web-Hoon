@@ -21,11 +21,18 @@ export async function GET(req, { params }) {
     // Recupera tutte le note relative a questa collaborazione
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const notes = await Nota.countDocuments({ collaborazione: collaborazioneId, tipo :"appuntamento", data_appuntamento: {
+    // Ultimo giorno del mese corrente (primo giorno del mese successivo - 1)
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+    
+    const notes = await Nota.countDocuments({ 
+      collaborazione: collaborazioneId, 
+      tipo: "appuntamento", 
+      data_appuntamento: {
         $gte: firstDayOfMonth,
-        $lte: today
-        }  })
-    console.log(notes)
+        $lte: lastDayOfMonth
+      }  
+    });
+    console.log(`Appuntamenti per ${collaborazioneId}: ${notes} (dal ${firstDayOfMonth.toISOString()} al ${lastDayOfMonth.toISOString()})`);
     return new Response(JSON.stringify(notes), { status: 200 });
   } catch (error) {
     console.error("Errore nel recupero delle note:", error);

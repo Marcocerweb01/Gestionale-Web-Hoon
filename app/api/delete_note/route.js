@@ -18,13 +18,19 @@ export async function DELETE(req) {
       );
     }
 
+    console.log(`🔍 Eliminazione nota - ID: ${id}, Tipo: "${nota.tipo}", Collaborazione: ${nota.collaborazione}`);
+
     // Se è un appuntamento, decrementa i contatori
     if (nota.tipo === 'appuntamento') {
-      await Collaborazione.findByIdAndUpdate(
+      const updateResult = await Collaborazione.findByIdAndUpdate(
         nota.collaborazione,
-        { $inc: { appuntamenti_fatti: -1, appuntamenti_totali: -1, appuntamenti_trimestrale_fatti: -1 } }
+        { $inc: { appuntamenti_fatti: -1, appuntamenti_totali: -1, appuntamenti_trimestrale_fatti: -1 } },
+        { new: true }
       );
-      console.log(`✅ Decrementato appuntamenti_fatti, appuntamenti_totali e appuntamenti_trimestrale_fatti per collaborazione ${nota.collaborazione}`);
+      console.log(`✅ Decrementato appuntamenti per collaborazione ${nota.collaborazione}`);
+      console.log(`   Nuovi valori: fatti=${updateResult?.appuntamenti_fatti}, totali=${updateResult?.appuntamenti_totali}, trim_fatti=${updateResult?.appuntamenti_trimestrale_fatti}`);
+    } else {
+      console.log(`ℹ️ Nota non è un appuntamento (tipo: "${nota.tipo}"), nessun decremento`);
     }
 
     // Elimina la nota

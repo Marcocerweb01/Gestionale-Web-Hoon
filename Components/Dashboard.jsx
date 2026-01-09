@@ -28,6 +28,7 @@ import {
 const Dashboard = () => {
   const { data: session, status } = useSession();
   const [isVisible, setIsVisible] = useState(false);
+  const [sezioneAperta, setSezioneAperta] = useState(null); // 'pagamenti', 'collaborazioni', 'funzioni' o null
   const [resetLoading, setResetLoading] = useState(false);
   const [fatture, setFatture] = useState([]);
   const [loadingFatture, setLoadingFatture] = useState(false);
@@ -656,8 +657,8 @@ const Dashboard = () => {
             Pannello Amministratore
           </h2>
           
-          {/* Pulsanti principali - Mobile: 1 colonna, Tablet: 2 colonne, Desktop: 3 colonne */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          {/* Pulsanti principali - 2 in alto orizzontali */}
+          <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
             <Link href="/AddCollab">
               <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group">
                 <PlusCircle className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
@@ -666,49 +667,110 @@ const Dashboard = () => {
             </Link>
             
             <Link href="/Register">
-              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 group">
+              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 group">
                 <UserPlus className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
                 <span className="font-medium text-sm md:text-base">Registra Utente</span>
               </button>
             </Link>
-            
-            <Link href="/Lista_clienti">
-              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group">
-                <Building2 className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-sm md:text-base">Lista Clienti</span>
-              </button>
-            </Link>
-            
-            <Link href="/Pagamenti">
-              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 group">
-                <CreditCard className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-sm md:text-base">Pagamenti</span>
-              </button>
-            </Link>
-            
-            <Link href="/Lista_collaboratori">
-              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 group">
-                <Users className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-sm md:text-base">Lista Collaboratori</span>
-              </button>
-            </Link>
-            
+          </div>
+
+          {/* Sezioni espandibili - 3 in basso orizzontali */}
+          <div className="grid grid-cols-3 gap-3 md:gap-4">
+            {/* Bottone Sezione Pagamenti - Verde */}
             <button
-              onClick={() => setIsVisible(!isVisible)}
-              className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 group"
+              onClick={() => setSezioneAperta(sezioneAperta === 'pagamenti' ? null : 'pagamenti')}
+              className={`flex items-center justify-center space-x-2 px-3 md:px-4 py-3 rounded-lg transition-colors duration-200 group ${
+                sezioneAperta === 'pagamenti' 
+                  ? 'bg-green-700 text-white' 
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+            >
+              <CreditCard className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium text-sm md:text-base">Pagamenti</span>
+              <span className="ml-1">{sezioneAperta === 'pagamenti' ? '▲' : '▼'}</span>
+            </button>
+
+            {/* Bottone Clienti e Collaborazioni - Viola */}
+            <button
+              onClick={() => setSezioneAperta(sezioneAperta === 'collaborazioni' ? null : 'collaborazioni')}
+              className={`flex items-center justify-center space-x-2 px-3 md:px-4 py-3 rounded-lg transition-colors duration-200 group ${
+                sezioneAperta === 'collaborazioni' 
+                  ? 'bg-purple-700 text-white' 
+                  : 'bg-purple-600 text-white hover:bg-purple-700'
+              }`}
+            >
+              <Building2 className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium text-sm md:text-base">Clienti e Collaborazioni</span>
+              <span className="ml-1">{sezioneAperta === 'collaborazioni' ? '▲' : '▼'}</span>
+            </button>
+
+            {/* Bottone Funzioni - Arancione */}
+            <button
+              onClick={() => setSezioneAperta(sezioneAperta === 'funzioni' ? null : 'funzioni')}
+              className={`flex items-center justify-center space-x-2 px-3 md:px-4 py-3 rounded-lg transition-colors duration-200 group ${
+                sezioneAperta === 'funzioni' 
+                  ? 'bg-orange-600 text-white' 
+                  : 'bg-orange-500 text-white hover:bg-orange-600'
+              }`}
             >
               <Settings className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-              <span className="font-medium text-sm md:text-base">
-                {isVisible ? "Nascondi Opzioni Avanzate" : "Mostra Opzioni Avanzate"}
-              </span>
+              <span className="font-medium text-sm md:text-base">Funzioni</span>
+              <span className="ml-1">{sezioneAperta === 'funzioni' ? '▲' : '▼'}</span>
             </button>
           </div>
 
-          {/* Opzioni Avanzate - Mobile Responsive */}
-          {isVisible && ( 
-            <div className="mt-4 md:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 border-t pt-4 md:pt-6">
+          {/* Contenuto Sezione Pagamenti - Verde */}
+          {sezioneAperta === 'pagamenti' && (
+            <div className="mt-4 md:mt-6 grid grid-cols-2 gap-3 md:gap-4 border-t border-green-200 pt-4 md:pt-6">
+              <Link href="/Pagamenti">
+                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 group">
+                  <CreditCard className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium text-sm md:text-base">Vai a Pagamenti</span>
+                </button>
+              </Link>
+              
               <button 
-                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group" 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 group" 
+                onClick={handleGeneraPagamenti}
+                disabled={resetLoading}
+              >
+                <DollarSign className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
+                <span className="font-medium text-sm md:text-base">{resetLoading ? "Generando..." : "Genera Pagamenti"}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Contenuto Sezione Clienti e Collaborazioni - Viola */}
+          {sezioneAperta === 'collaborazioni' && (
+            <div className="mt-4 md:mt-6 grid grid-cols-3 gap-3 md:gap-4 border-t border-purple-200 pt-4 md:pt-6">
+              <Link href="/Lista_clienti">
+                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 group">
+                  <Building2 className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium text-sm md:text-base">Lista Clienti</span>
+                </button>
+              </Link>
+              
+              <Link href="/Lista_collaboratori">
+                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 group">
+                  <Users className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium text-sm md:text-base">Lista Collaboratori</span>
+                </button>
+              </Link>
+              
+              <Link href="/Tabella-collaborazioni">
+                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 group">
+                  <Table className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium text-sm md:text-base">Tabella Collaborazioni</span>
+                </button>
+              </Link>
+            </div>
+          )}
+
+          {/* Contenuto Sezione Funzioni - Arancione */}
+          {sezioneAperta === 'funzioni' && (
+            <div className="mt-4 md:mt-6 grid grid-cols-3 gap-3 md:gap-4 border-t border-orange-200 pt-4 md:pt-6">
+              <button 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 group" 
                 onClick={downloadxlsx}
               >
                 <Download className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
@@ -716,7 +778,7 @@ const Dashboard = () => {
               </button>
               
               <button 
-                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 group" 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 group" 
                 onClick={handleResetPosts}
                 disabled={resetLoading}
               >
@@ -725,60 +787,12 @@ const Dashboard = () => {
               </button>
               
               <button 
-                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 group" 
-                onClick={handleGeneraPagamenti}
-                disabled={resetLoading}
-              >
-                <DollarSign className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
-                <span className="font-medium text-sm md:text-base">{resetLoading ? "Generando..." : "Genera Pagamenti"}</span>
-              </button>
-              
-              <Link href="/Fatturazione" passHref>
-                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors duration-200 group">
-                  <span className="text-lg md:text-xl group-hover:scale-110 transition-transform">💰</span>
-                  <span className="font-medium text-sm md:text-base">Fatturazione</span>
-                </button>
-              </Link>
-              
-              <Link href="/PagamentiNuovi" passHref>
-                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 group">
-                  <DollarSign className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                  <span className="font-medium text-sm md:text-base">Nuovo Sistema Pagamenti</span>
-                </button>
-              </Link>
-              
-              <button 
-                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group" 
-                onClick={handleMigrateCollaboratori}
-                disabled={resetLoading}
-              >
-                <Settings className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
-                <span className="font-medium text-sm md:text-base">{resetLoading ? "Migrando..." : "🔧 Setup Nuovo Sistema"}</span>
-              </button>
-              
-              <Link href="/Tabella-collaborazioni" passHref>
-                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors duration-200 group">
-                  <Table className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                  <span className="font-medium text-sm md:text-base">Tabella Collaborazioni</span>
-                </button>
-              </Link>
-
-              <button 
-                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 group" 
-                onClick={handleFixAppuntamenti}
-                disabled={resetLoading}
-              >
-                <Settings className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
-                <span className="font-medium text-sm md:text-base">{resetLoading ? "Fixing..." : "Fix Appuntamenti"}</span>
-              </button>
-              
-              <button 
-                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200 group" 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 group" 
                 onClick={handleResetTrimestrali}
                 disabled={resetLoading}
               >
                 <RotateCcw className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
-                <span className="font-medium text-sm md:text-base">{resetLoading ? "Reset..." : "📊 Reset Trimestrali"}</span>
+                <span className="font-medium text-sm md:text-base">{resetLoading ? "Reset..." : "Reset Trimestrali"}</span>
               </button>
             </div>
           )}

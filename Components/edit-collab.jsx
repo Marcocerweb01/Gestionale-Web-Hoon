@@ -9,6 +9,7 @@ const AdminCollaborationsList = ({ id }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false); // Stato per prevenire click multipli
   const [azzerandoTotali, setAzzerandoTotali] = useState(null); // ID della collaborazione in azzeramento
+  const [eliminandoCollab, setEliminandoCollab] = useState(null); // ID della collaborazione in eliminazione
   const [error, setError] = useState("");
 
   console.log("   📊 State:", { 
@@ -88,8 +89,8 @@ const AdminCollaborationsList = ({ id }) => {
       postIg_fb: rowData.postIg_fb || 0,
       postTiktok: rowData.postTiktok || 0,
       postLinkedin: rowData.postLinkedin || 0,
-      post_totali: rowData.post_totali || 0,
-      appuntamenti_totali: rowData.appuntamenti_totali || 0,
+      post_totali_previsti: rowData.post_totali_previsti || 0,
+      appuntamenti_totali_previsti: rowData.appuntamenti_totali_previsti || 0,
       durata_contratto: rowData.durata_contratto || '',
       data_inizio_contratto: rowData.data_inizio_contratto ? new Date(rowData.data_inizio_contratto).toISOString().split('T')[0] : '',
       data_fine_contratto: rowData.data_fine_contratto ? new Date(rowData.data_fine_contratto).toISOString().split('T')[0] : ''
@@ -145,8 +146,8 @@ const AdminCollaborationsList = ({ id }) => {
         post_ig_fb: tempData.postIg_fb,
         post_tiktok: tempData.postTiktok,
         post_linkedin: tempData.postLinkedin,
-        post_totali: tempData.post_totali,
-        appuntamenti_totali: tempData.appuntamenti_totali,
+        post_totali_previsti: tempData.post_totali_previsti,
+        appuntamenti_totali_previsti: tempData.appuntamenti_totali_previsti,
         durata_contratto: tempData.durata_contratto || null,
         data_inizio_contratto: tempData.data_inizio_contratto || null,
         data_fine_contratto: tempData.data_fine_contratto || null,
@@ -183,8 +184,8 @@ const AdminCollaborationsList = ({ id }) => {
                 postIg_fb: tempData.postIg_fb,
                 postTiktok: tempData.postTiktok,
                 postLinkedin: tempData.postLinkedin,
-                post_totali: tempData.post_totali,
-                appuntamenti_totali: tempData.appuntamenti_totali,
+                post_totali_previsti: tempData.post_totali_previsti,
+                appuntamenti_totali_previsti: tempData.appuntamenti_totali_previsti,
                 durata_contratto: tempData.durata_contratto,
                 data_inizio_contratto: tempData.data_inizio_contratto,
                 data_fine_contratto: tempData.data_fine_contratto
@@ -250,6 +251,42 @@ const AdminCollaborationsList = ({ id }) => {
       setAzzerandoTotali(null);
     }
   }, [azzerandoTotali]);
+
+  // Funzione per eliminare una collaborazione
+  const handleDeleteCollab = useCallback(async (collaborazioneId, clienteNome) => {
+    if (eliminandoCollab) return;
+    
+    // Doppia conferma prima di eliminare
+    if (!window.confirm(`Sei sicuro di voler eliminare la collaborazione con "${clienteNome}"?\n\nQuesta azione è IRREVERSIBILE e cancellerà tutti i dati associati.`)) {
+      return;
+    }
+
+    setEliminandoCollab(collaborazioneId);
+    
+    try {
+      const response = await fetch(`/api/collaborazioni/delete/${collaborazioneId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Errore durante l'eliminazione");
+      }
+
+      // Rimuovi la collaborazione dalla lista locale
+      setData(prevData => prevData.filter(row => row.id !== collaborazioneId));
+
+      console.log("✅ Collaborazione eliminata con successo");
+      
+    } catch (err) {
+      console.error("❌ Errore eliminazione collaborazione:", err);
+      setError("Non è stato possibile eliminare la collaborazione.");
+    } finally {
+      setEliminandoCollab(null);
+    }
+  }, [eliminandoCollab]);
 
   // Helper per formattare le date
   const formatDate = (dateString) => {
@@ -320,7 +357,7 @@ const AdminCollaborationsList = ({ id }) => {
                     <button 
                       onClick={() => handleAzzeraTotali(row.id)}
                       disabled={azzerandoTotali === row.id}
-                      className="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {azzerandoTotali === row.id ? (
                         <>
@@ -329,6 +366,20 @@ const AdminCollaborationsList = ({ id }) => {
                         </>
                       ) : (
                         <>🔄 Azzera Generali</>
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteCollab(row.id, row.cliente)}
+                      disabled={eliminandoCollab === row.id}
+                      className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors shadow-sm text-sm touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {eliminandoCollab === row.id ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span>
+                          Eliminazione...
+                        </>
+                      ) : (
+                        <>🗑️ Elimina</>
                       )}
                     </button>
                   </>
@@ -369,35 +420,35 @@ const AdminCollaborationsList = ({ id }) => {
             {/* Sezione Totali Generali */}
             <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
               <h5 className="text-sm font-semibold text-purple-800 mb-3 flex items-center">
-                <span className="mr-2">📊</span> Totali Generali
+                <span className="mr-2">📊</span> Totali Generali (Previsti nel Contratto)
               </h5>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <p className="text-xs text-gray-500 uppercase">Post Totali</p>
+                  <p className="text-xs text-gray-500 uppercase">Post Previsti</p>
                   {editingRow === row.id ? (
                     <input
                       type="number"
                       min="0"
-                      value={tempData.post_totali}
-                      onChange={(e) => setTempData(prev => ({ ...prev, post_totali: Math.max(0, Number(e.target.value)) }))}
+                      value={tempData.post_totali_previsti}
+                      onChange={(e) => setTempData(prev => ({ ...prev, post_totali_previsti: Math.max(0, Number(e.target.value)) }))}
                       className="w-full mt-1 px-2 py-1 text-center border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   ) : (
-                    <p className="text-xl font-bold text-purple-600">{row.post_totali || 0}</p>
+                    <p className="text-xl font-bold text-purple-600">{row.post_totali_previsti || 0}</p>
                   )}
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-gray-500 uppercase">App. Totali</p>
+                  <p className="text-xs text-gray-500 uppercase">App. Previsti</p>
                   {editingRow === row.id ? (
                     <input
                       type="number"
                       min="0"
-                      value={tempData.appuntamenti_totali}
-                      onChange={(e) => setTempData(prev => ({ ...prev, appuntamenti_totali: Math.max(0, Number(e.target.value)) }))}
+                      value={tempData.appuntamenti_totali_previsti}
+                      onChange={(e) => setTempData(prev => ({ ...prev, appuntamenti_totali_previsti: Math.max(0, Number(e.target.value)) }))}
                       className="w-full mt-1 px-2 py-1 text-center border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   ) : (
-                    <p className="text-xl font-bold text-purple-600">{row.appuntamenti_totali || 0}</p>
+                    <p className="text-xl font-bold text-purple-600">{row.appuntamenti_totali_previsti || 0}</p>
                   )}
                 </div>
                 <div className="text-center">

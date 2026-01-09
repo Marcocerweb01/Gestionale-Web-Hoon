@@ -14,6 +14,13 @@ export async function PATCH(req) {
           valutazione_trimestrale_totali: 0,
           appuntamenti_trimestrale_fatti: 0,
           appuntamenti_trimestrale_totali: 0,
+          // Nuovi campi trimestrali per tipo
+          instagram_trim_fatti: 0,
+          instagram_trim_totali: 0,
+          tiktok_trim_fatti: 0,
+          tiktok_trim_totali: 0,
+          linkedin_trim_fatti: 0,
+          linkedin_trim_totali: 0,
         },
       }
     );

@@ -15,6 +15,11 @@ export async function PATCH(req) {
       // Prendi gli appuntamenti previsti questo mese
       const appuntamentiMese = collab.numero_appuntamenti || 0;
       
+      // Post per tipo
+      const postIgMese = collab.post_ig_fb || 0;
+      const postTiktokMese = collab.post_tiktok || 0;
+      const postLinkedinMese = collab.post_linkedin || 0;
+      
       return {
         updateOne: {
           filter: { _id: collab._id },
@@ -23,6 +28,10 @@ export async function PATCH(req) {
             $inc: {
               valutazione_trimestrale_totali: postTotaliMese,
               appuntamenti_trimestrale_totali: appuntamentiMese,
+              // Totali trimestrali per tipo
+              instagram_trim_totali: postIgMese,
+              tiktok_trim_totali: postTiktokMese,
+              linkedin_trim_totali: postLinkedinMese,
             },
             // Azzera i contatori mensili
             $set: {

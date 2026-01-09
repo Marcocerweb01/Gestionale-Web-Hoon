@@ -19,6 +19,14 @@ export async function POST(req) {
       const appuntamentiFatti = collab.appuntamenti_fatti || 0;
       const appuntamentiTotali = collab.numero_appuntamenti || 0;
 
+      // Valori per tipo
+      const igFatti = collab.post_ig_fb_fatti || 0;
+      const igTotali = collab.post_ig_fb || 0;
+      const tiktokFatti = collab.post_tiktok_fatti || 0;
+      const tiktokTotali = collab.post_tiktok || 0;
+      const linkedinFatti = collab.post_linkedin_fatti || 0;
+      const linkedinTotali = collab.post_linkedin || 0;
+
       return {
         updateOne: {
           filter: { _id: collab._id },
@@ -28,6 +36,13 @@ export async function POST(req) {
               valutazione_trimestrale_totali: postTotali,
               appuntamenti_trimestrale_fatti: appuntamentiFatti,
               appuntamenti_trimestrale_totali: appuntamentiTotali,
+              // Nuovi campi per tipo
+              instagram_trim_fatti: igFatti,
+              instagram_trim_totali: igTotali,
+              tiktok_trim_fatti: tiktokFatti,
+              tiktok_trim_totali: tiktokTotali,
+              linkedin_trim_fatti: linkedinFatti,
+              linkedin_trim_totali: linkedinTotali,
             }
           }
         }

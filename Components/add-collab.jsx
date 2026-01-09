@@ -11,8 +11,8 @@ const AddCollabForm = () => {
     post_ig_fb:0,
     post_tiktok:0,
     post_linkedin:0,
-    post_totali: 0,
-    appuntamenti_totali: 0,
+    post_totali_previsti: 0,
+    appuntamenti_totali_previsti: 0,
     durata_contratto: '',
     data_inizio_contratto: '',
     data_fine_contratto: '',
@@ -119,8 +119,8 @@ const AddCollabForm = () => {
         post_ig_fb:'',
         post_tiktok:'',
         post_linkedin:'',
-        post_totali: 0,
-        appuntamenti_totali: 0,
+        post_totali_previsti: 0,
+        appuntamenti_totali_previsti: 0,
         durata_contratto: '',
         data_inizio_contratto: '',
         data_fine_contratto: '',
@@ -315,34 +315,34 @@ const selectCollaboratore = (collaboratore) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  📝 Post Totali
+                  📝 Post Totali Previsti
                 </label>
                 <input
                   type='number'
                   min="0"
-                  name="post_totali"
-                  value={formData.post_totali}
-                  onChange={(e) => setFormData(prev => ({ ...prev, post_totali: Math.max(0, Number(e.target.value)) }))}
+                  name="post_totali_previsti"
+                  value={formData.post_totali_previsti}
+                  onChange={(e) => setFormData(prev => ({ ...prev, post_totali_previsti: Math.max(0, Number(e.target.value)) }))}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                   placeholder="0"
                 />
-                <p className="text-xs text-gray-500">Totale post accumulati (non viene mai azzerato automaticamente)</p>
+                <p className="text-xs text-gray-500">Totale post previsti dal contratto</p>
               </div>
 
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  📅 Appuntamenti Totali
+                  📅 Appuntamenti Totali Previsti
                 </label>
                 <input
                   type='number'
                   min="0"
-                  name="appuntamenti_totali"
-                  value={formData.appuntamenti_totali}
-                  onChange={(e) => setFormData(prev => ({ ...prev, appuntamenti_totali: Math.max(0, Number(e.target.value)) }))}
+                  name="appuntamenti_totali_previsti"
+                  value={formData.appuntamenti_totali_previsti}
+                  onChange={(e) => setFormData(prev => ({ ...prev, appuntamenti_totali_previsti: Math.max(0, Number(e.target.value)) }))}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                   placeholder="0"
                 />
-                <p className="text-xs text-gray-500">Totale appuntamenti accumulati (non viene mai azzerato automaticamente)</p>
+                <p className="text-xs text-gray-500">Totale appuntamenti previsti dal contratto</p>
               </div>
 
               <div className="space-y-2">
