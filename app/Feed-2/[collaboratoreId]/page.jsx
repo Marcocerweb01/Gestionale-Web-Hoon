@@ -179,43 +179,15 @@ const FeedPage = ({ params }) => {
     return matchesSearch && matchesType;
   });
 
-  if (loadingCollaborations) return <div>Caricamento collaborazioni...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (loadingCollaborations) return <div className="flex items-center justify-center h-[100dvh]">Caricamento collaborazioni...</div>;
+  if (error) return <div className="flex items-center justify-center h-[100dvh] text-red-500">{error}</div>;
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Header Principale - Compatto e Mobile-First */}
-      <div className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-        <div className="h-14 px-3 sm:px-4 lg:px-8 flex items-center justify-between">
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Menu size={18} className="text-gray-600" />
-            </button>
-            
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xs sm:text-sm font-bold">📝</span>
-              </div>
-              <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                <span className="hidden sm:inline">Feed delle Note</span>
-                <span className="sm:hidden">Feed</span>
-              </h1>
-            </div>
-          </div>
+    <div className="fixed inset-x-0 top-16 bottom-0 flex flex-col bg-gray-50 overflow-hidden overscroll-none">
 
-          {/* Spazio per mantenere il layout bilanciato */}
-          <div className="w-10"></div>
-        </div>
-      </div>
-
-      {/* Barra di Ricerca - Sempre Visibile */}
-      <div className="fixed top-14 left-0 right-0 z-20 bg-white border-b border-gray-200 shadow-sm">
-        {/* Desktop search bar - Sempre visibile */}
-        <div className="hidden md:block">
-          <div className="px-4 sm:px-6 lg:px-8 py-3">
+      {/* Barra di Ricerca - Solo Desktop */}
+      <div className="flex-shrink-0 hidden md:block bg-white border-b border-gray-200 shadow-sm">
+          <div className="px-4 sm:px-6 lg:px-8 py-2">
             <div className="flex items-center space-x-4">
               <div className="flex-1 relative">
                 <input
@@ -223,7 +195,7 @@ const FeedPage = ({ params }) => {
                   placeholder="Cerca nelle note..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2.5 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
+                  className="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-sm"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <span className="text-gray-400">🔍</span>
@@ -256,24 +228,23 @@ const FeedPage = ({ params }) => {
                     setSearchQuery("");
                     setTypeFilter("");
                   }}
-                  className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
                   title="Pulisci filtri"
                 >
-                  <span className="text-sm">�️</span>
+                  <span className="text-sm">🗑️</span>
                 </button>
               )}
             </div>
           </div>
-        </div>
       </div>
 
       {/* Layout Container - Mobile First WhatsApp Style */}
-      <div className="flex flex-1 pt-24 sm:pt-28">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         
         {/* Sidebar Sinistra - Mobile Popup Centrato */}
         <div className={`transform transition-all duration-300 ease-in-out ${
           isSidebarOpen 
-            ? "fixed inset-0 z-30 lg:relative lg:translate-x-0 lg:inset-auto" 
+            ? "fixed inset-0 z-40 lg:relative lg:translate-x-0 lg:inset-auto" 
             : "hidden lg:flex lg:relative"
         } lg:w-80 lg:border-r lg:border-gray-200 lg:bg-white lg:shadow-none`}>
           
@@ -453,41 +424,36 @@ const FeedPage = ({ params }) => {
         </div>
 
         {/* Main Chat Area - Destra */}
-        <div className="flex-1 flex flex-col bg-gray-50 min-w-0">
+        <div className="flex-1 flex flex-col bg-gray-50 min-w-0 min-h-0 overflow-hidden">
           {/* Chat Header - Mobile Optimized */}
           <div className="flex-shrink-0 bg-white border-b border-gray-200 shadow-sm">
-            <div className="px-3 sm:px-4 py-2 sm:py-3">
+            <div className="px-2 sm:px-4 py-1.5 sm:py-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                <div className="flex items-center space-x-2 flex-1 min-w-0">
                   {selectedCollaborationcliente ? (
                     <>
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-xs sm:text-sm font-bold">🏢</span>
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-xs font-bold">🏢</span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-medium text-gray-900 text-sm sm:text-base truncate">
+                        <h3 className="font-medium text-gray-900 text-sm truncate">
                           {selectedCollaborationcliente}
                         </h3>
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                           <span className="hidden sm:inline">ID: {selectedCollaborationId}</span>
-                          <span className="sm:hidden lg:hidden">👆 Tocca &ldquo;Clienti&rdquo; per cambiare</span>
-                          <span className="hidden lg:inline">ID: {selectedCollaborationId}</span>
+                          <span className="sm:hidden">Tocca 👥 per cambiare</span>
                         </p>
                       </div>
                     </>
                   ) : (
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-gray-400 text-sm sm:text-base">💬</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-gray-400 text-sm">💬</span>
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 text-sm sm:text-base">
-                          <span className="hidden sm:inline">Feed delle Note</span>
-                          <span className="sm:hidden">Feed</span>
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          <span className="hidden sm:inline lg:inline">Seleziona un cliente per iniziare</span>
-                          <span className="sm:hidden lg:hidden">Tocca &ldquo;Clienti&rdquo; per iniziare</span>
+                        <h3 className="font-medium text-gray-900 text-sm">Feed</h3>
+                        <p className="text-[10px] sm:text-xs text-gray-500">
+                          Tocca 👥 per selezionare
                         </p>
                       </div>
                     </div>
@@ -498,7 +464,7 @@ const FeedPage = ({ params }) => {
                   {/* Bottone Sidebar - Solo mobile per cambiare collaborazione */}
                   <button
                     onClick={() => setIsSidebarOpen(true)}
-                    className={`lg:hidden inline-flex items-center px-2 py-1.5 font-medium rounded-lg transition-colors text-xs bg-gray-100 hover:bg-gray-200 text-gray-700`}
+                    className="lg:hidden inline-flex items-center px-1.5 py-1 font-medium rounded-lg transition-colors text-xs bg-gray-100 hover:bg-gray-200 text-gray-700"
                     title="Cambia collaborazione"
                   >
                     <span className="text-sm">👥</span>
@@ -507,7 +473,7 @@ const FeedPage = ({ params }) => {
                   {/* Bottone Ricerca - Mobile Optimized */}
                   <button
                     onClick={() => setShowFilters((prev) => !prev)}
-                    className={`md:hidden inline-flex items-center px-2 py-1.5 font-medium rounded-lg transition-colors text-xs ${
+                    className={`md:hidden inline-flex items-center px-1.5 py-1 font-medium rounded-lg transition-colors text-xs ${
                       showFilters 
                         ? "bg-blue-600 text-white shadow-md" 
                         : (searchQuery || typeFilter)
@@ -527,10 +493,10 @@ const FeedPage = ({ params }) => {
                   {/* Bottone Nuova Nota - Mobile Optimized */}
                   {selectedCollaborationId && (
                     <Link
-                      className="inline-flex items-center px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors text-xs"
-                      href={`/AddNota/${selectedCollaborationId}?cliente=${selectedCollaborationcliente}`}
+                      className="inline-flex items-center px-1.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors text-xs"
+                      href={`/AddNota/${selectedCollaborationId}?cliente=${selectedCollaborationcliente}&collaboratoreId=${collaboratoreId}`}
                     >
-                      <span className="text-sm"><Plus /></span>
+                      <Plus size={16} />
                     </Link>
                   )}
                 </div>
@@ -538,74 +504,74 @@ const FeedPage = ({ params }) => {
             </div>
           </div>
 
-          {/* Chat Messages Area - Mobile Optimized */}
+          {/* Chat Messages Area - Mobile Optimized Full Height */}
           <div 
             ref={feedContainerRef}
-            className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+            className="flex-1 overflow-y-auto p-1.5 sm:p-4 space-y-2 sm:space-y-4 overscroll-contain"
+            style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            {/* Pannello di ricerca mobile - Completamente Mobile Optimized */}
+            {/* Pannello di ricerca mobile - Compatto */}
             {showFilters && (
-              <div className="md:hidden sticky top-0 z-20 bg-white border border-gray-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 shadow-sm mx-1 sm:mx-0">
-                <div className="space-y-3">
+              <div className="md:hidden sticky top-0 z-20 bg-white border border-gray-200 rounded-lg p-2 shadow-sm">
+                <div className="space-y-2">
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="Cerca nelle note..."
+                      placeholder="Cerca..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pl-9 sm:pl-10 pr-9 sm:pr-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      className="w-full px-3 py-2 pl-8 pr-8 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     />
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-400 text-sm">🔍</span>
+                    <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                      <span className="text-gray-400 text-xs">🔍</span>
                     </div>
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery("")}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                        className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600"
                       >
-                        <span className="text-sm sm:text-lg">✕</span>
+                        <span className="text-sm">✕</span>
                       </button>
                     )}
                   </div>
                   
-                  <select
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                  >
-                    <option value="">Tutti i tipi</option>
-                    <option value="appuntamento">📅 Appuntamento</option>
-                    <option value="generico">📝 Generico</option>
-                    <option value="problema">⚠️ Problema</option>
-                    <option value="post_mancante">📱 Post Mancante!</option>
-                  </select>
-
-                  {(searchQuery || typeFilter) && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery("");
-                        setTypeFilter("");
-                      }}
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm"
+                  <div className="flex space-x-2">
+                    <select
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      className="flex-1 px-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
-                      <span>🗑️</span>
-                      <span>Pulisci filtri</span>
-                    </button>
-                  )}
+                      <option value="">Tutti</option>
+                      <option value="appuntamento">📅 App.</option>
+                      <option value="generico">📝 Gen.</option>
+                      <option value="problema">⚠️ Prob.</option>
+                      <option value="post_mancante">📱 Post</option>
+                    </select>
+
+                    {(searchQuery || typeFilter) && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery("");
+                          setTypeFilter("");
+                        }}
+                        className="px-2 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors text-sm"
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Indicatore filtri attivi - Mobile Optimized */}
-            {(searchQuery || typeFilter) && (
-              <div className="sticky top-0 z-10 bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 mx-1 sm:mx-0">
+            {/* Indicatore filtri attivi - Compatto */}
+            {(searchQuery || typeFilter) && !showFilters && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg px-2 py-1.5 mb-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-blue-800 flex-1 min-w-0">
-                    <span className="text-xs sm:text-sm flex-shrink-0">🔍</span>
-                    <span className="text-xs sm:text-sm font-medium truncate">
-                      <span className="hidden xs:inline">Filtri attivi:</span>
-                      <span className="xs:hidden">Filtri:</span>
-                      {searchQuery && <span className="ml-1 italic">&ldquo;{searchQuery.length > 10 ? searchQuery.substring(0, 10) + '...' : searchQuery}&rdquo;</span>}
+                  <div className="flex items-center space-x-1 text-blue-800 flex-1 min-w-0">
+                    <span className="text-xs">🔍</span>
+                    <span className="text-xs font-medium truncate">
+                      {searchQuery && <span className="italic">"{searchQuery.substring(0, 8)}..."</span>}
                       {typeFilter && <span className="ml-1">• {typeFilter}</span>}
                     </span>
                   </div>
@@ -614,53 +580,52 @@ const FeedPage = ({ params }) => {
                       setSearchQuery("");
                       setTypeFilter("");
                     }}
-                    className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium flex-shrink-0 ml-2"
+                    className="text-blue-600 hover:text-blue-800 text-xs font-medium flex-shrink-0 ml-2"
                   >
-                    <span className="hidden xs:inline">Pulisci</span>
-                    <span className="xs:hidden">✕</span>
+                    ✕
                   </button>
                 </div>
               </div>
             )}
 
             {loadingNotes ? (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="bg-gray-200 rounded-2xl p-6">
-                      <div className="h-4 bg-gray-300 rounded mb-4 w-3/4"></div>
-                      <div className="h-4 bg-gray-300 rounded mb-2 w-1/2"></div>
-                      <div className="h-20 bg-gray-300 rounded"></div>
+                    <div className="bg-gray-200 rounded-xl p-4">
+                      <div className="h-3 bg-gray-300 rounded mb-2 w-3/4"></div>
+                      <div className="h-3 bg-gray-300 rounded mb-2 w-1/2"></div>
+                      <div className="h-12 bg-gray-300 rounded"></div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : filteredNotes.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <div className="text-center py-8 sm:py-12 px-4">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-2xl sm:text-3xl">
+                <div className="text-center py-6 px-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-xl sm:text-2xl">
                       {(searchQuery || typeFilter) ? "🔍" : "💬"}
                     </span>
                   </div>
-                  <p className="text-gray-500 text-base sm:text-lg mb-2">
+                  <p className="text-gray-500 text-sm sm:text-base mb-1">
                     {(searchQuery || typeFilter)
                       ? "Nessun risultato"
                       : selectedCollaborationId 
                       ? "Nessuna nota trovata" 
                       : "Benvenuto nel Feed"}
                   </p>
-                  <p className="text-gray-400 text-sm sm:text-base">
+                  <p className="text-gray-400 text-xs sm:text-sm">
                     {(searchQuery || typeFilter)
-                      ? "Modifica i filtri di ricerca"
+                      ? "Modifica i filtri"
                       : selectedCollaborationId 
-                      ? "Nessuna nota per questa collaborazione" 
-                      : "Seleziona un cliente dalla sidebar"}
+                      ? "Nessuna nota" 
+                      : "Tocca 👥 per iniziare"}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-2 sm:space-y-3">
                 {filteredNotes.map((note) => {
                   const isOwn = note.autoreId === session?.user?.id;
                   const isProblem = note.tipo === "problema";
@@ -669,12 +634,12 @@ const FeedPage = ({ params }) => {
                   return (
                     <div
                       key={note._id}
-                      className={`group transition-all duration-200 flex px-1 sm:px-0 ${
+                      className={`group transition-all duration-150 flex ${
                         isOwn ? "justify-end" : "justify-start"
                       }`}
                     >
                       <div
-                        className={`relative rounded-2xl shadow-sm border p-3 sm:p-4 max-w-xs sm:max-w-lg w-full sm:w-auto ${
+                        className={`relative rounded-xl shadow-sm border p-2.5 sm:p-3 max-w-[85%] sm:max-w-md ${
                           isProblem
                             ? "bg-gradient-to-br from-red-50 to-red-100 border-red-200"
                             : isPostMancante
@@ -682,12 +647,12 @@ const FeedPage = ({ params }) => {
                             : isOwn
                             ? "bg-gradient-to-br from-blue-500 to-blue-600 border-blue-300 text-white"
                             : "bg-white border-gray-200"
-                        } hover:shadow-md transition-all duration-200`}
+                        }`}
                       >
-                        {/* Header della nota - Mobile Optimized */}
-                        <div className={`flex items-start justify-between mb-2 sm:mb-3 ${isOwn ? "flex-row-reverse" : ""}`}>
-                          <div className={`flex items-center space-x-1.5 sm:space-x-2 ${isOwn ? "flex-row-reverse space-x-reverse" : ""}`}>
-                            <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs ${
+                        {/* Header della nota - Compatto */}
+                        <div className={`flex items-center justify-between mb-1.5 ${isOwn ? "flex-row-reverse" : ""}`}>
+                          <div className={`flex items-center space-x-1.5 ${isOwn ? "flex-row-reverse space-x-reverse" : ""}`}>
+                            <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] ${
                               isProblem
                                 ? "bg-red-500 text-white"
                                 : note.tipo === "post_mancante"
@@ -700,63 +665,60 @@ const FeedPage = ({ params }) => {
                                note.tipo === "problema" ? "⚠️" :
                                note.tipo === "post_mancante" ? "📱" : "📝"}
                             </div>
-                            <div className={isOwn ? "text-right" : "text-left"}>
-                              <p className={`text-xs font-medium ${
-                                isProblem ? "text-red-900" :
-                                isPostMancante ? "text-orange-900" :
-                                isOwn ? "text-white/90" : "text-gray-600"
-                              }`}>
-                                {note.autore.length > 15 ? note.autore.substring(0, 15) + '...' : note.autore}
-                              </p>
-                            </div>
+                            <p className={`text-[10px] sm:text-xs font-medium ${
+                              isProblem ? "text-red-900" :
+                              isPostMancante ? "text-orange-900" :
+                              isOwn ? "text-white/90" : "text-gray-600"
+                            }`}>
+                              {note.autore.split(' ')[0]}
+                            </p>
                           </div>
                           
-                          <div className={`flex space-x-1 ${isOwn ? "flex-row-reverse space-x-reverse" : ""}`}>
+                          <div className={`flex space-x-0.5 ${isOwn ? "flex-row-reverse space-x-reverse" : ""}`}>
                             <button
                               onClick={() => handleEdit(note)}
-                              className={`p-1 rounded transition-colors opacity-0 group-hover:opacity-100 ${
+                              className={`p-0.5 rounded transition-colors ${
                                 isOwn 
-                                  ? "text-white/70 hover:bg-white/20" 
-                                  : "text-amber-600 hover:bg-amber-50"
+                                  ? "text-white/70 active:bg-white/20" 
+                                  : "text-amber-600 active:bg-amber-50"
                               }`}
-                              title="Modifica nota"
+                              title="Modifica"
                             >
-                              <span className="text-xs sm:text-sm">✏️</span>
+                              <span className="text-xs">✏️</span>
                             </button>
                             {session?.user?.role === "amministratore" && (
                               <button
                                 onClick={() => handleDelete(note._id)}
-                                className={`p-1 rounded transition-colors opacity-0 group-hover:opacity-100 ${
+                                className={`p-0.5 rounded transition-colors ${
                                   isOwn 
-                                    ? "text-white/70 hover:bg-white/20" 
-                                    : "text-red-600 hover:bg-red-50"
+                                    ? "text-white/70 active:bg-white/20" 
+                                    : "text-red-600 active:bg-red-50"
                                 }`}
-                                title="Elimina nota"
+                                title="Elimina"
                               >
-                                <span className="text-xs sm:text-sm">🗑️</span>
+                                <span className="text-xs">🗑️</span>
                               </button>
                             )}
                           </div>
                         </div>
 
-                        {/* Data appuntamento se presente - Mobile Optimized */}
+                        {/* Data appuntamento se presente - Compatto */}
                         {note.tipo === "appuntamento" && note.data_appuntamento && (
-                          <div className={`mb-2 sm:mb-3 p-2 rounded-lg text-xs ${
+                          <div className={`mb-1.5 px-2 py-1 rounded text-[10px] sm:text-xs ${
                             isProblem ? "bg-red-100 text-red-800" :
                             isPostMancante ? "bg-orange-100 text-orange-800" :
                             isOwn ? "bg-white/20 text-white" : "bg-blue-50 text-blue-800"
                           }`}>
                             📅 {new Date(note.data_appuntamento).toLocaleDateString('it-IT', {
                               day: 'numeric',
-                              month: 'short',
-                              year: '2-digit'
+                              month: 'short'
                             })}
                           </div>
                         )}
 
-                        {/* Contenuto della nota - Mobile Optimized */}
-                        <div className="mb-2">
-                          <p className={`leading-relaxed whitespace-pre-wrap text-sm sm:text-base ${
+                        {/* Contenuto della nota - Compatto */}
+                        <div className="mb-1">
+                          <p className={`leading-snug whitespace-pre-wrap text-[13px] sm:text-sm ${
                             isProblem ? "text-red-900" :
                             isPostMancante ? "text-orange-900" :
                             isOwn ? "text-white" : "text-gray-800"
@@ -765,9 +727,9 @@ const FeedPage = ({ params }) => {
                           </p>
                         </div>
 
-                        {/* Footer con timestamp - Mobile Optimized */}
-                        <div className={`flex items-center text-xs ${
-                          isOwn ? "justify-start text-white/70" : "justify-end text-gray-500"
+                        {/* Footer con timestamp - Compatto */}
+                        <div className={`flex items-center text-[10px] sm:text-xs ${
+                          isOwn ? "justify-start text-white/60" : "justify-end text-gray-400"
                         }`}>
                           <span>
                             {new Date(note.data).toLocaleDateString('it-IT', {
@@ -778,13 +740,6 @@ const FeedPage = ({ params }) => {
                             })}
                           </span>
                         </div>
-
-                        {/* Indicatore chat bubble - Mobile Optimized */}
-                        <div className={`absolute top-3 sm:top-4 w-0 h-0 ${
-                          isOwn 
-                            ? "right-0 transform translate-x-1 border-l-6 sm:border-l-8 border-l-blue-500 border-t-3 sm:border-t-4 border-t-transparent border-b-3 sm:border-b-4 border-b-transparent"
-                            : "left-0 transform -translate-x-1 border-r-6 sm:border-r-8 border-r-white border-t-3 sm:border-t-4 border-t-transparent border-b-3 sm:border-b-4 border-b-transparent"
-                        }`} />
                       </div>
                     </div>
                   );

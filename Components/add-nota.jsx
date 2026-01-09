@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const CreaNota = ({ collaborazioneId, autoreId, autorenome }) => {
+const CreaNota = ({ collaborazioneId, autoreId, autorenome, collaboratoreId }) => {
   const [nota, setNota] = useState("");
   const [tipo, setTipo] = useState("generico");
   const [dataAppuntamento, setDataAppuntamento] = useState("");
@@ -41,7 +41,7 @@ const CreaNota = ({ collaborazioneId, autoreId, autorenome }) => {
       setSuccess(true);
 
       // Reindirizza al link precedente dopo il successo
-    router.push(`/Feed-2/${autoreId}?collaborazioneId=${collaborazioneId}`);
+      router.push(`/Feed-2/${collaboratoreId}?collaborazioneId=${collaborazioneId}`);
     } catch (err) {
       console.error(err);
       setError(err.message);

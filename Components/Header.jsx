@@ -1,20 +1,65 @@
 'use client'
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { User, LogOut, Menu } from "lucide-react";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
+import { User, LogOut, Menu, ArrowLeft, Home } from "lucide-react";
 
 const Header = () => {
   const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  
+  // Salva i parametri della home in localStorage quando siamo sulla home
+  useEffect(() => {
+    if (pathname === "/" && searchParams.toString()) {
+      localStorage.setItem("homeParams", searchParams.toString());
+    }
+  }, [pathname, searchParams]);
+  
+  // Funzione per tornare alla home preservando i parametri
+  const handleHomeClick = () => {
+    if (status !== "authenticated") {
+      router.push("/Login");
+      return;
+    }
+    
+    // Se siamo sulla home, usa i parametri correnti
+    if (pathname === "/") {
+      const params = searchParams.toString();
+      const homeUrl = params ? `/?${params}` : "/";
+      router.push(homeUrl);
+      return;
+    }
+    
+    // Se siamo su altre pagine, recupera i parametri salvati da localStorage
+    const savedParams = localStorage.getItem("homeParams");
+    const homeUrl = savedParams ? `/?${savedParams}` : "/";
+    router.push(homeUrl);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link href={status === "authenticated" ? "/" : "/Login"} className="flex items-center space-x-2">
+          {/* Logo e Bottone Indietro */}
+          <div className="flex items-center space-x-2">
+            {/* Bottone Indietro */}
+            <button
+              onClick={() => window.history.back()}
+              className="inline-flex items-center justify-center p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Torna indietro"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            
+            {/* Logo */}
+            <button 
+              onClick={handleHomeClick}
+              className="flex items-center space-x-2 cursor-pointer"
+            >
               <Image
                 src="/hoon_logo.png"
                 alt="Hoon Logo"
@@ -23,7 +68,7 @@ const Header = () => {
                 className="object-contain"
                 priority
               />
-            </Link>
+            </button>
           </div>
 
           {/* Navigation */}

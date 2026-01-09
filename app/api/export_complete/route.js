@@ -30,12 +30,28 @@ export async function GET(req) {
         post_tiktok_fatti: c.post_tiktok_fatti || 0,
         post_linkedin_mensili: c.post_linkedin || 0,
         post_linkedin_fatti: c.post_linkedin_fatti || 0,
-        // Nuovi campi TOTALI (che non si azzerano mai)
+        // Campi TOTALI (che non si azzerano mai)
         post_totali: c.post_totali || 0,
+        post_totali_previsti: c.post_totali_previsti || 0,
         appuntamenti_totali: c.appuntamenti_totali || 0,
+        appuntamenti_totali_previsti: c.appuntamenti_totali_previsti || 0,
         durata_contratto: c.durata_contratto || '',
         data_inizio_contratto: c.data_inizio_contratto ? new Date(c.data_inizio_contratto).toLocaleDateString('it-IT') : '',
         data_fine_contratto: c.data_fine_contratto ? new Date(c.data_fine_contratto).toLocaleDateString('it-IT') : '',
+        // Campi trimestrali Instagram
+        instagram_trim_fatti: c.instagram_trim_fatti || 0,
+        instagram_trim_totali: c.instagram_trim_totali || 0,
+        // Campi trimestrali TikTok
+        tiktok_trim_fatti: c.tiktok_trim_fatti || 0,
+        tiktok_trim_totali: c.tiktok_trim_totali || 0,
+        // Campi trimestrali LinkedIn
+        linkedin_trim_fatti: c.linkedin_trim_fatti || 0,
+        linkedin_trim_totali: c.linkedin_trim_totali || 0,
+        // Campi appuntamenti trimestrali
+        appuntamenti_trim_fatti: c.appuntamenti_trimestrale_fatti || 0,
+        appuntamenti_trim_totali: c.appuntamenti_trimestrale_totali || 0,
+        // Flag esclusione reset trimestrale
+        escludi_reset_trimestrale: c.escludi_reset_trimestrale ? 'Sì' : 'No',
       }))
       .filter(row => row.collaboratore !== 'Hoon Web'); // Escludi Hoon Web
 
@@ -58,7 +74,7 @@ export async function GET(req) {
     const today = new Date();
     const currentMonthName = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
     const titleRow = worksheet.addRow([`Collaborazioni - ${currentMonthName}`]);
-    worksheet.mergeCells(`A${titleRow.number}:G${titleRow.number}`);
+    worksheet.mergeCells(`A${titleRow.number}:W${titleRow.number}`);
     titleRow.font = { size: 16, bold: true };
     titleRow.alignment = { horizontal: "center" };
 
@@ -75,10 +91,21 @@ export async function GET(req) {
       "Post TikTok", 
       "Post LinkedIn",
       "POST TOTALI",
+      "POST PREVISTI",
       "APP. TOTALI",
+      "APP. PREVISTI",
       "Durata Contratto",
       "Inizio Contratto",
-      "Fine Contratto"
+      "Fine Contratto",
+      "IG Trim Fatti",
+      "IG Trim Totali",
+      "TT Trim Fatti",
+      "TT Trim Totali",
+      "LI Trim Fatti",
+      "LI Trim Totali",
+      "App Trim Fatti",
+      "App Trim Totali",
+      "Escl. Reset"
     ]);
     headerRow.font = { bold: true };
     headerRow.alignment = { horizontal: "center" };
@@ -86,16 +113,27 @@ export async function GET(req) {
     // Larghezza colonne
     worksheet.getColumn(1).width = 30; // Collaboratore
     worksheet.getColumn(2).width = 30; // Cliente
-    worksheet.getColumn(3).width = 15; // App. Mensili
-    worksheet.getColumn(4).width = 15; // App. Fatti
-    worksheet.getColumn(5).width = 15; // Post IG/FB
-    worksheet.getColumn(6).width = 15; // Post TikTok
-    worksheet.getColumn(7).width = 15; // Post LinkedIn
-    worksheet.getColumn(8).width = 15; // POST TOTALI
-    worksheet.getColumn(9).width = 15; // APP. TOTALI
-    worksheet.getColumn(10).width = 18; // Durata Contratto
-    worksheet.getColumn(11).width = 16; // Inizio Contratto
-    worksheet.getColumn(12).width = 16; // Fine Contratto
+    worksheet.getColumn(3).width = 12; // App. Mensili
+    worksheet.getColumn(4).width = 12; // App. Fatti
+    worksheet.getColumn(5).width = 12; // Post IG/FB
+    worksheet.getColumn(6).width = 12; // Post TikTok
+    worksheet.getColumn(7).width = 12; // Post LinkedIn
+    worksheet.getColumn(8).width = 13; // POST TOTALI
+    worksheet.getColumn(9).width = 13; // POST PREVISTI
+    worksheet.getColumn(10).width = 13; // APP. TOTALI
+    worksheet.getColumn(11).width = 13; // APP. PREVISTI
+    worksheet.getColumn(12).width = 16; // Durata Contratto
+    worksheet.getColumn(13).width = 14; // Inizio Contratto
+    worksheet.getColumn(14).width = 14; // Fine Contratto
+    worksheet.getColumn(15).width = 12; // IG Trim Fatti
+    worksheet.getColumn(16).width = 12; // IG Trim Totali
+    worksheet.getColumn(17).width = 12; // TT Trim Fatti
+    worksheet.getColumn(18).width = 12; // TT Trim Totali
+    worksheet.getColumn(19).width = 12; // LI Trim Fatti
+    worksheet.getColumn(20).width = 12; // LI Trim Totali
+    worksheet.getColumn(21).width = 12; // App Trim Fatti
+    worksheet.getColumn(22).width = 12; // App Trim Totali
+    worksheet.getColumn(23).width = 12; // Escl. Reset
 
     // Aggiungi righe dati con formattazione condizionale
     let previousCollaboratore = null;
@@ -110,10 +148,21 @@ export async function GET(req) {
         `${row.post_tiktok_fatti}/${row.post_tiktok_mensili}`,
         `${row.post_linkedin_fatti}/${row.post_linkedin_mensili}`,
         row.post_totali,
+        row.post_totali_previsti,
         row.appuntamenti_totali,
+        row.appuntamenti_totali_previsti,
         row.durata_contratto,
         row.data_inizio_contratto,
-        row.data_fine_contratto
+        row.data_fine_contratto,
+        row.instagram_trim_fatti,
+        row.instagram_trim_totali,
+        row.tiktok_trim_fatti,
+        row.tiktok_trim_totali,
+        row.linkedin_trim_fatti,
+        row.linkedin_trim_totali,
+        row.appuntamenti_trim_fatti,
+        row.appuntamenti_trim_totali,
+        row.escludi_reset_trimestrale
       ]);
 
       // Formattazione Appuntamenti Fatti (colonna 4)
@@ -207,27 +256,26 @@ export async function GET(req) {
         };
       }
 
-      // Formattazione colonne TOTALI (sfondo viola chiaro)
+      // Formattazione colonne TOTALI e PREVISTI (sfondo viola chiaro)
       const cellPostTotali = excelRow.getCell(8);
-      const cellAppTotali = excelRow.getCell(9);
-      cellPostTotali.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFE6E0F8' } // Viola chiaro
-      };
-      cellAppTotali.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFE6E0F8' } // Viola chiaro
-      };
-      cellPostTotali.font = { bold: true };
-      cellAppTotali.font = { bold: true };
+      const cellPostPrevisti = excelRow.getCell(9);
+      const cellAppTotali = excelRow.getCell(10);
+      const cellAppPrevisti = excelRow.getCell(11);
+      
+      [cellPostTotali, cellPostPrevisti, cellAppTotali, cellAppPrevisti].forEach(cell => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE6E0F8' } // Viola chiaro
+        };
+        cell.font = { bold: true };
+      });
 
       // Aggiungi bordo spesso quando cambia collaboratore
       const nextRow = exportData[index + 1];
       if (nextRow && nextRow.collaboratore !== row.collaboratore) {
         // Bordo inferiore spesso su tutte le celle della riga
-        for (let col = 1; col <= 12; col++) {
+        for (let col = 1; col <= 23; col++) {
           excelRow.getCell(col).border = {
             ...excelRow.getCell(col).border,
             bottom: { style: 'thick', color: { argb: 'FF000000' } }

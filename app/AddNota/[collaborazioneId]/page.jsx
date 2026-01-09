@@ -7,7 +7,8 @@ const EditCollaboration = ({ params }) => {
   const { collaborazioneId } = params; // Ottieni il parametro dalla route dinamica
   const { data: session } = useSession();
   const searchParams = useSearchParams();
-  const clienteQuery= searchParams.get("cliente");
+  const clienteQuery = searchParams.get("cliente");
+  const collaboratoreId = searchParams.get("collaboratoreId");
   if (!session) {
     return <div className="flex items-center justify-center min-h-screen">
       <div className="text-center p-4">
@@ -35,7 +36,12 @@ const EditCollaboration = ({ params }) => {
       
       {/* Content container con padding responsivo */}
       <div className="px-4 py-6 sm:px-6 lg:px-8 max-w-2xl mx-auto">
-        <CreaNota collaborazioneId={collaborazioneId} autoreId={session.user.id} autorenome={session.user.nome + " " + session.user.cognome} />
+        <CreaNota 
+          collaborazioneId={collaborazioneId} 
+          autoreId={session.user.id} 
+          autorenome={session.user.nome + " " + session.user.cognome}
+          collaboratoreId={collaboratoreId}
+        />
       </div>
     </div>
   );
