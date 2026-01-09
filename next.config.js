@@ -2,6 +2,8 @@
 const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ["mongoose"],
+    // Disabilita il pre-rendering statico per pagine con useSearchParams
+    missingSuspenseWithCSRBailout: false,
   },
   images: {
     unoptimized: process.env.NODE_ENV === 'development',
