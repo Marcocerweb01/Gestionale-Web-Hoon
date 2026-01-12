@@ -5,31 +5,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevent page scroll on mobile - only inner containers should scroll */
+/* Base styles for mobile */
 html, body {
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
   overscroll-behavior: none;
-  position: fixed;
-  width: 100%;
 }
 
-/* Root app container */
-#__next {
-  height: 100%;
-  overflow: hidden;
+/* Smooth scrolling on iOS */
+body {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Fix for iOS safe areas */
-@supports (height: 100dvh) {
+@supports (min-height: 100dvh) {
   html, body {
-    height: 100dvh;
+    min-height: 100dvh;
   }
-}
-
-/* Prevent pull-to-refresh on mobile */
-body {
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Chat container specific styles */
