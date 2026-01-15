@@ -858,6 +858,8 @@ const Dashboard = () => {
               handleLeadUpdate={handleLeadUpdate}
               handleLeadDelete={handleLeadDelete}
               commercialeId={session.user.id}
+              mostraPassati={mostraPassati}
+              setMostraPassati={setMostraPassati}
             />
           ) : session?.user?.subrole === "smm" ? (
             <ListaClienti id={session?.user.id} amministratore={false} />
@@ -887,7 +889,9 @@ const LeadDashboard = ({
   handleLeadCreato,
   handleLeadUpdate,
   handleLeadDelete,
-  commercialeId
+  commercialeId,
+  mostraPassati,
+  setMostraPassati
 }) => {
   if (isLoading) {
     return (
