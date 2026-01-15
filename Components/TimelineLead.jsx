@@ -119,7 +119,10 @@ export default function TimelineLead({ lead, onUpdate, onDelete, onArchive }) {
   };
 
   const handleCambioStato = async () => {
-    if (nuovoStato === lead.stato_attuale) {
+    // Permetti aggiornamento data richiamo anche se già in stato "da_richiamare"
+    const isStessoStatoDaRichiamare = nuovoStato === "da_richiamare" && lead.stato_attuale === "da_richiamare";
+    
+    if (nuovoStato === lead.stato_attuale && !isStessoStatoDaRichiamare) {
       alert("⚠️ Questo stato è già impostato");
       return;
     }
