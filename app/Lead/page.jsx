@@ -20,6 +20,7 @@ export default function GestioneLead() {
   const [filtroTimeline, setFiltroTimeline] = useState("tutti");
   const [filtroData, setFiltroData] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [mostraPassati, setMostraPassati] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -92,6 +93,43 @@ export default function GestioneLead() {
         l.numero_telefono.includes(term) ||
         l.email?.toLowerCase().includes(term)
       );
+    }
+
+    // Ordinamento speciale per "da_richiamare"
+    if (filtroStato === "da_richiamare") {
+      const oggi = new Date();
+      oggi.setHours(0, 0, 0, 0);
+
+      // Filtra le date passate di default, mostra tutto se checkbox attivo
+      if (!mostraPassati) {
+        risultato = risultato.filter(l => {
+          if (!l.data_richiamo) return true; // Mostra lead senza data
+          const dataRichiamo = new Date(l.data_richiamo);
+          dataRichiamo.setHours(0, 0, 0, 0);
+          return dataRichiamo >= oggi;
+        });
+      }
+
+      risultato.sort((a, b) => {
+        const dataA = a.data_richiamo ? new Date(a.data_richiamo) : null;
+        const dataB = b.data_richiamo ? new Date(b.data_richiamo) : null;
+
+        // Lead senza data vanno in fondo
+        if (!dataA && !dataB) return 0;
+        if (!dataA) return 1;
+        if (!dataB) return -1;
+
+        // Verifica se le date sono passate
+        const aPassata = dataA < oggi;
+        const bPassata = dataB < oggi;
+
+        // Date passate sempre in cima
+        if (aPassata && !bPassata) return -1;
+        if (!aPassata && bPassata) return 1;
+
+        // Se entrambe passate o entrambe future, ordina per data (crescente)
+        return dataA - dataB;
+      });
     }
 
     return risultato;
@@ -189,6 +227,21 @@ export default function GestioneLead() {
               >
                 Da Richiamare ({conteggioPerStato("da_richiamare")})
               </button>
+
+              {/* Checkbox mostra passati - visibile solo quando filtro è da_richiamare */}
+              {filtroStato === "da_richiamare" && (
+                <label className="flex items-center gap-2 px-3 md:px-4 py-2 bg-yellow-50 rounded-full cursor-pointer hover:bg-yellow-100 transition-all">
+                  <input
+                    type="checkbox"
+                    checked={mostraPassati}
+                    onChange={(e) => setMostraPassati(e.target.checked)}
+                    className="w-4 h-4 text-yellow-600 rounded focus:ring-yellow-500"
+                  />
+                  <span className="text-xs md:text-sm font-medium text-yellow-700">
+                    Mostra passati
+                  </span>
+                </label>
+              )}
 
               <button
                 onClick={() => setFiltroStato("non_interessato")}
