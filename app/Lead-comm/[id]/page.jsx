@@ -23,6 +23,7 @@ export default function LeadCommerciale() {
   const [filtroTimeline, setFiltroTimeline] = useState("tutti");
   const [filtroData, setFiltroData] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [nascondiPassati, setNascondiPassati] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -110,11 +111,22 @@ export default function LeadCommerciale() {
 
     // Ordinamento speciale per "da_richiamare"
     if (filtroStato === "da_richiamare") {
+      const oggi = new Date();
+      oggi.setHours(0, 0, 0, 0);
+
+      // Filtra le date passate se il checkbox è attivo
+      if (nascondiPassati) {
+        risultato = risultato.filter(l => {
+          if (!l.data_richiamo) return true; // Mostra lead senza data
+          const dataRichiamo = new Date(l.data_richiamo);
+          dataRichiamo.setHours(0, 0, 0, 0);
+          return dataRichiamo >= oggi;
+        });
+      }
+
       risultato.sort((a, b) => {
         const dataA = a.data_richiamo ? new Date(a.data_richiamo) : null;
         const dataB = b.data_richiamo ? new Date(b.data_richiamo) : null;
-        const oggi = new Date();
-        oggi.setHours(0, 0, 0, 0);
 
         // Lead senza data vanno in fondo
         if (!dataA && !dataB) return 0;
@@ -238,6 +250,21 @@ export default function LeadCommerciale() {
               >
                 Da Richiamare ({conteggioPerStato("da_richiamare")})
               </button>
+
+              {/* Checkbox nascondi passati - visibile solo quando filtro è da_richiamare */}
+              {filtroStato === "da_richiamare" && (
+                <label className="flex items-center gap-2 px-3 md:px-4 py-2 bg-yellow-50 rounded-full cursor-pointer hover:bg-yellow-100 transition-all">
+                  <input
+                    type="checkbox"
+                    checked={nascondiPassati}
+                    onChange={(e) => setNascondiPassati(e.target.checked)}
+                    className="w-4 h-4 text-yellow-600 rounded focus:ring-yellow-500"
+                  />
+                  <span className="text-xs md:text-sm font-medium text-yellow-700">
+                    Nascondi passati
+                  </span>
+                </label>
+              )}
 
               <button
                 onClick={() => setFiltroStato("non_interessato")}
