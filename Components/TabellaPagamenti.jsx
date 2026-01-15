@@ -349,7 +349,7 @@ export default function TabellaPagamenti({ pagamenti, onPagamentoAggiornato, onP
                   {pagamentoSelezionato.generata_da_entrata && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                       <p className="text-sm text-yellow-800">
-                        ⚠️ Uscita generata automaticamente da un'entrata
+                        ⚠️ Uscita generata automaticamente da un&apos;entrata
                       </p>
                     </div>
                   )}
