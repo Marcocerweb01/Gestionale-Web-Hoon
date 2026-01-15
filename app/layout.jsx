@@ -1,5 +1,4 @@
 import React from 'react';
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import '@styles/global.css';
 import { Providers } from './providers';
 import Header from '@Components/Header';
@@ -29,8 +28,6 @@ const Rootlayout = ({children}) => {
             </main>
           </div>
         </Providers>
-        
-        <SpeedInsights />
       </body>
     </html>
   )
