@@ -1,19 +1,29 @@
 import Pagamenti from "@/models/Pagamenti";
 import Collaborazione from "@/models/Collaborazioni";
+import ConfigurazioneRagazzi from "@/models/ConfigurazioneRagazzi";
 import { connectToDB } from "@/utils/database";
 
 export async function POST() {
   try {
     await connectToDB();
 
-    // ✨ Lista di aziende che devono avere stato "ragazzi"
-    const aziendeRagazzi = [
-      "678e0791ad7388a65515a6ae",
-      "679c9fdb986246f7c66dda68",
-      "678e06efad7388a65515a6a5",
-      "678e0697ad7388a65515a69f",
-      "678e019cad7388a65515a668"
-    ];
+    // ✨ Recupera la lista di aziende "ragazzi" dal database
+    let config = await ConfigurazioneRagazzi.findOne();
+    
+    // Se non esiste ancora, usa la lista predefinita e creala
+    if (!config) {
+      const aziendeDefault = [
+        "678e0791ad7388a65515a6ae",
+        "679c9fdb986246f7c66dda68",
+        "678e06efad7388a65515a6a5",
+        "678e0697ad7388a65515a69f",
+        "678e019cad7388a65515a668",
+        "678e0769ad7388a65515a6ab"  // Orizzonte Blu
+      ];
+      config = await ConfigurazioneRagazzi.create({ aziende_ragazzi: aziendeDefault });
+    }
+    
+    const aziendeRagazzi = config.aziende_ragazzi.map(id => id.toString());
 
     // Recupera tutte le collaborazioni attive ESCLUDENDO il collaboratore specificato
     const collaborazioni = await Collaborazione.find({

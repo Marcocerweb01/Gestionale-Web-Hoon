@@ -42,6 +42,7 @@ export async function GET(req) {
     const result = await Promise.all(
       pagamenti.map(async (p) => {
         let collaboratoreNome = "N/A";
+        let collaboratoreId = null;
         
         if (p.cliente?._id) {
           // Cerca la collaborazione attiva per questa azienda
@@ -52,14 +53,17 @@ export async function GET(req) {
           
           if (collaborazione?.collaboratore) {
             collaboratoreNome = `${collaborazione.collaboratore.nome} ${collaborazione.collaboratore.cognome}`;
+            collaboratoreId = collaborazione.collaboratore._id;
           }
         }
 
         return {
           id: p._id,
           cliente: p.cliente?.etichetta || "N/A",
+          cliente_id: p.cliente?._id || null,
           ragione_sociale: p.cliente?.ragioneSociale || "N/A",
           collaboratore: collaboratoreNome,
+          collaboratore_id: collaboratoreId,
           data_fattura: p.data_fattura,
           data_pagato: p.data_pagato,
           stato: p.stato,

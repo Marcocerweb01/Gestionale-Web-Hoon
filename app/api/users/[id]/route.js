@@ -1,5 +1,6 @@
 import { connectToDB } from "@/utils/database";
 import { Azienda, Collaboratore, Contatto, Amministratore } from "@/models/User";
+import Pagamenti from "@/models/Pagamenti";
 import bcrypt from "bcrypt";
 
 // ✨ FORZA DYNAMIC RENDERING - NO CACHE
@@ -16,10 +17,14 @@ export async function GET(req, { params }) {
     // Cerca l'utente in tutte le collezioni
     const models = [Azienda, Collaboratore, Contatto, Amministratore];
     let user = null;
+    let userModel = null;
 
     for (const model of models) {
       user = await model.findById(userId);
-      if (user) break;
+      if (user) {
+        userModel = model;
+        break;
+      }
     }
 
     if (!user) {
@@ -34,6 +39,35 @@ export async function GET(req, { params }) {
           }
         }
       );
+    }
+
+    // Se è un'Azienda, recupera lo stato del pagamento dal mese corrente
+    if (userModel === Azienda) {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      
+      const pagamento = await Pagamenti.findOne({
+        cliente: userId,
+        data_fattura: { $gte: startOfMonth, $lte: endOfMonth }
+      }).sort({ createdAt: -1 });
+
+      // Sovrascrivi il campo pagamento con lo stato reale dal DB Pagamenti
+      if (pagamento) {
+        const userObj = user.toObject();
+        // Converti lo stato del pagamento: "si" = true (pagato), "no"/"ragazzi" = false
+        userObj.pagamento = pagamento.stato === "si";
+        userObj.statoPagamentoReale = pagamento.stato; // Aggiungi anche lo stato originale
+        
+        return new Response(JSON.stringify(userObj), { 
+          status: 200,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          }
+        });
+      }
     }
 
     return new Response(JSON.stringify(user), { 

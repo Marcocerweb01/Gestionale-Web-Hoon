@@ -28,7 +28,13 @@ import {
 const Dashboard = () => {
   const { data: session, status } = useSession();
   const [isVisible, setIsVisible] = useState(false);
-  const [sezioneAperta, setSezioneAperta] = useState(null); // 'pagamenti', 'collaborazioni', 'funzioni' o null
+  const [sezioneAperta, setSezioneAperta] = useState(() => {
+    // Recupera lo stato salvato da localStorage
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('dashboardSezioneAperta') || null;
+    }
+    return null;
+  });
   const [resetLoading, setResetLoading] = useState(false);
   const [fatture, setFatture] = useState([]);
   const [loadingFatture, setLoadingFatture] = useState(false);
@@ -48,6 +54,17 @@ const Dashboard = () => {
   const [filtroData, setFiltroData] = useState(""); // Nuovo filtro data
   const [searchTerm, setSearchTerm] = useState("");
   const [mostraPassati, setMostraPassati] = useState(false);
+
+  // Salva lo stato della sezione aperta in localStorage quando cambia
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (sezioneAperta) {
+        localStorage.setItem('dashboardSezioneAperta', sezioneAperta);
+      } else {
+        localStorage.removeItem('dashboardSezioneAperta');
+      }
+    }
+  }, [sezioneAperta]);
 
   // Carica lead se l'utente è un commerciale
   useEffect(() => {

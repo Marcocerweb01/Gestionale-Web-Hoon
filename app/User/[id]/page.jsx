@@ -462,20 +462,18 @@ const UserDetails = ({ params }) => {
                           <label className="block text-sm font-semibold text-gray-900 mb-2">
                             💳 Stato Pagamento
                           </label>
-                          <select
-                            name="pagamento"
-                            value={formData.pagamento ? "pagato" : "non pagato"}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                pagamento: e.target.value === "pagato",
-                              }))
-                            }
-                            className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base"
-                          >
-                            <option value="pagato">✅ Pagato</option>
-                            <option value="non pagato">❌ Non Pagato</option>
-                          </select>
+                          <div className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 border border-gray-300 rounded-lg bg-gray-50 text-base font-medium ${
+                            user.statoPagamentoReale === 'si' ? 'text-green-600' : 
+                            user.statoPagamentoReale === 'ragazzi' ? 'text-yellow-600' : 
+                            'text-red-600'
+                          }`}>
+                            {user.statoPagamentoReale === 'si' ? '✅ Pagato' : 
+                             user.statoPagamentoReale === 'ragazzi' ? '👥 Ragazzi' : 
+                             '❌ Non Pagato'}
+                            <p className="text-xs text-gray-500 mt-1">
+                              Lo stato viene sincronizzato automaticamente dal sistema pagamenti
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -624,8 +622,14 @@ const UserDetails = ({ params }) => {
                           <span className="text-lg flex-shrink-0">💳</span>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm text-gray-600">Stato Pagamento</p>
-                            <p className={`font-semibold ${user.pagamento ? 'text-green-600' : 'text-red-600'}`}>
-                              {user.pagamento ? '✅ Pagato' : '❌ Non Pagato'}
+                            <p className={`font-semibold ${
+                              user.statoPagamentoReale === 'si' ? 'text-green-600' : 
+                              user.statoPagamentoReale === 'ragazzi' ? 'text-yellow-600' : 
+                              'text-red-600'
+                            }`}>
+                              {user.statoPagamentoReale === 'si' ? '✅ Pagato' : 
+                               user.statoPagamentoReale === 'ragazzi' ? '👥 Ragazzi' : 
+                               '❌ Non Pagato'}
                             </p>
                           </div>
                         </div>

@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 
 const PagamentiTable = () => {
   const [pagamenti, setPagamenti] = useState([]);
@@ -11,6 +12,13 @@ const PagamentiTable = () => {
   const [ordinamento, setOrdinamento] = useState("alfabetico"); // ordinamento (alfabetico, collaboratore)
   const [searchTerm, setSearchTerm] = useState(""); // nuovo stato per la ricerca
   const [meseSelezionato, setMeseSelezionato] = useState(""); // Mese/anno selezionato
+  
+  // Stati per il modal configurazione ragazzi
+  const [showModalRagazzi, setShowModalRagazzi] = useState(false);
+  const [aziendeRagazzi, setAziendeRagazzi] = useState([]);
+  const [tutteAziende, setTutteAziende] = useState([]);
+  const [loadingConfig, setLoadingConfig] = useState(false);
+  const [searchAzienda, setSearchAzienda] = useState("");
 
   // Genera il mese corrente in formato YYYY-MM
   const getMeseCorrente = () => {
@@ -75,6 +83,71 @@ const PagamentiTable = () => {
 
   const handleStatusChange = (id, status) => {
     setCheckedPagamenti((prev) => ({ ...prev, [id]: status }));
+  };
+
+  // Funzione per aprire il modal e caricare la configurazione
+  const apriModalRagazzi = async () => {
+    setShowModalRagazzi(true);
+    setLoadingConfig(true);
+    
+    try {
+      const response = await fetch('/api/configurazione-ragazzi');
+      if (response.ok) {
+        const data = await response.json();
+        console.log("📊 Dati configurazione ricevuti:", data);
+        setAziendeRagazzi(data.aziende_ragazzi || []);
+        setTutteAziende(data.tutte_aziende || []);
+        console.log(`✅ ${data.aziende_ragazzi?.length || 0} aziende con stato ragazzi`);
+      } else {
+        const error = await response.json();
+        console.error("Errore response:", error);
+        alert("Errore nel caricamento della configurazione: " + error.error);
+      }
+    } catch (error) {
+      console.error("Errore caricamento configurazione:", error);
+      alert("Errore nel caricamento della configurazione");
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
+
+  // Funzione per salvare la configurazione
+  const salvaConfigurazioneRagazzi = async () => {
+    setLoadingConfig(true);
+    
+    try {
+      const response = await fetch('/api/configurazione-ragazzi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          aziende_ragazzi: aziendeRagazzi.map(a => a._id)
+        })
+      });
+      
+      if (response.ok) {
+        alert("✅ Configurazione salvata con successo!");
+        setShowModalRagazzi(false);
+      } else {
+        alert("❌ Errore nel salvataggio");
+      }
+    } catch (error) {
+      console.error("Errore salvataggio:", error);
+      alert("❌ Errore nel salvataggio");
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
+
+  // Funzione per aggiungere un'azienda alla lista ragazzi
+  const aggiungiAzienda = (azienda) => {
+    if (!aziendeRagazzi.find(a => a._id === azienda._id)) {
+      setAziendeRagazzi([...aziendeRagazzi, azienda]);
+    }
+  };
+
+  // Funzione per rimuovere un'azienda dalla lista ragazzi
+  const rimuoviAzienda = (aziendaId) => {
+    setAziendeRagazzi(aziendeRagazzi.filter(a => a._id !== aziendaId));
   };
 
   // Filtraggio per ricerca in tempo reale ed esclusione collaboratore Hoon Web
@@ -239,7 +312,7 @@ const PagamentiTable = () => {
       {/* Azioni */}
       <div className="flex justify-between gap-3">
         {/* Barra di Ricerca */}
-      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 ml-4 w-3/5">
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 flex-1">
         <div className="flex items-center gap-4">
             <label htmlFor="search" className="flex items-center justify-center text-lg font-medium text-gray-700">
               🔍
@@ -273,9 +346,9 @@ const PagamentiTable = () => {
       </div>
       {/*bottone edit*/}
         {!editMode ? (
-          <div>
+          <div className="flex gap-3">
           <button
-            className="btn-editpayments mr-4"
+            className="btn-editpayments"
             onClick={() => {
               const initialChecked = {};
               // Usa l'array originale NON ordinato per evitare inconsistenze
@@ -293,6 +366,15 @@ const PagamentiTable = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Modifica Pagamenti
+          </button>
+          <button
+            className="btn-editpayments"
+            onClick={apriModalRagazzi}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+             Pagamenti Ragazzi
           </button>
           </div>
         ) : (
@@ -429,7 +511,16 @@ const PagamentiTable = () => {
                 pagamentiOrdinati.map((p) => (
                 <tr key={p.id || p._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-gray-900 font-medium">
-                    {p.cliente || "N/A"}
+                    {p.cliente_id ? (
+                      <Link 
+                        href={`/User/${p.cliente_id}`}
+                        className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                      >
+                        {p.cliente || "N/A"}
+                      </Link>
+                    ) : (
+                      <span>{p.cliente || "N/A"}</span>
+                    )}
                     {p.data_fattura && (
                       <div className="text-xs text-gray-500 mt-1">
                         Fattura: {new Date(p.data_fattura).toLocaleDateString('it-IT')}
@@ -440,7 +531,16 @@ const PagamentiTable = () => {
                     {p.ragione_sociale || "N/A"}
                   </td>
                   <td className="px-6 py-4 text-gray-700">
-                    {p.collaboratore || "N/A"}
+                    {p.collaboratore_id ? (
+                      <Link 
+                        href={`/User/${p.collaboratore_id}`}
+                        className="text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        {p.collaboratore || "N/A"}
+                      </Link>
+                    ) : (
+                      <span>{p.collaboratore || "N/A"}</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-gray-600">
                     {p.data_fattura ? new Date(p.data_fattura).toLocaleDateString('it-IT') : "-"}
@@ -481,6 +581,180 @@ const PagamentiTable = () => {
           </table>
         </div>
       </div>
+
+      {/* Modal Configurazione Ragazzi */}
+      {showModalRagazzi && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    👥 Configurazione Stato "Ragazzi"
+                  </h2>
+                  <p className="text-purple-100 mt-1 text-sm">
+                    Gestisci quali clienti avranno automaticamente lo stato "Ragazzi" nei pagamenti mensili
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowModalRagazzi(false)}
+                  className="text-white hover:bg-purple-500 rounded-lg p-2 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {loadingConfig ? (
+              <div className="flex items-center justify-center p-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Lista Aziende con stato Ragazzi */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">
+                        {aziendeRagazzi.length}
+                      </span>
+                      Clienti con stato "Ragazzi"
+                    </h3>
+                    <div className="space-y-2 bg-purple-50 rounded-lg p-4 border-2 border-purple-200 min-h-[400px]">
+                      {aziendeRagazzi.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">Nessun cliente configurato</p>
+                      ) : (
+                        aziendeRagazzi.map((azienda) => (
+                          <div
+                            key={azienda._id}
+                            className="bg-white rounded-lg p-3 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{azienda.etichetta}</p>
+                              {azienda.ragioneSociale && (
+                                <p className="text-xs text-gray-500">{azienda.ragioneSociale}</p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => rimuoviAzienda(azienda._id)}
+                              className="text-red-600 hover:bg-red-50 rounded-lg p-2 transition-colors"
+                              title="Rimuovi"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tutte le Aziende disponibili */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Tutti i Clienti
+                    </h3>
+                    
+                    {/* Ricerca */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        placeholder="🔍 Cerca cliente..."
+                        value={searchAzienda}
+                        onChange={(e) => setSearchAzienda(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="space-y-2 bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-[400px] overflow-y-auto">
+                      {tutteAziende
+                        .filter((azienda) => {
+                          if (!searchAzienda) return true;
+                          const search = searchAzienda.toLowerCase();
+                          return (
+                            azienda.etichetta?.toLowerCase().includes(search) ||
+                            azienda.ragioneSociale?.toLowerCase().includes(search)
+                          );
+                        })
+                        .map((azienda) => {
+                          const isInRagazzi = aziendeRagazzi.find(a => a._id === azienda._id);
+                          
+                          return (
+                            <div
+                              key={azienda._id}
+                              className={`bg-white rounded-lg p-3 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow ${
+                                isInRagazzi ? 'opacity-50' : ''
+                              }`}
+                            >
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900">{azienda.etichetta}</p>
+                                {azienda.ragioneSociale && (
+                                  <p className="text-xs text-gray-500">{azienda.ragioneSociale}</p>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => aggiungiAzienda(azienda)}
+                                disabled={isInRagazzi}
+                                className={`${
+                                  isInRagazzi
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-green-600 hover:bg-green-50'
+                                } rounded-lg p-2 transition-colors`}
+                                title={isInRagazzi ? 'Già aggiunto' : 'Aggiungi'}
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                              </button>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t">
+              <p className="text-sm text-gray-600">
+                💡 I clienti selezionati avranno automaticamente lo stato "Ragazzi" nei pagamenti generati
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowModalRagazzi(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={salvaConfigurazioneRagazzi}
+                  disabled={loadingConfig}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
+                >
+                  {loadingConfig ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Salvataggio...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Salva Configurazione
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
