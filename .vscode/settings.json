@@ -1,0 +1,6 @@
+{
+  "console-ninja.featureSet": "Community",
+  "consoleNinja.toolsToEnableSupportAutomaticallyFor": {
+    "next.js": false
+  }
+}

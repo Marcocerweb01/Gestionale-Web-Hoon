@@ -22,7 +22,8 @@ import {
   MessageSquare,
   Settings,
   Monitor,
-  Table
+  Table,
+  Sparkles
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -686,8 +687,8 @@ const Dashboard = () => {
             Pannello Amministratore
           </h2>
           
-          {/* Pulsanti principali - 2 in alto orizzontali */}
-          <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+          {/* Pulsanti principali - 3 in alto orizzontali */}
+          <div className="grid grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
             <Link href="/AddCollab">
               <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group">
                 <PlusCircle className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
@@ -699,6 +700,13 @@ const Dashboard = () => {
               <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 group">
                 <UserPlus className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
                 <span className="font-medium text-sm md:text-base">Registra Utente</span>
+              </button>
+            </Link>
+
+            <Link href="/Operations">
+              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 group shadow-md">
+                <Sparkles className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">Operations</span>
               </button>
             </Link>
           </div>

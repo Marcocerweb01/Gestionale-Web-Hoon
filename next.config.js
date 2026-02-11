@@ -1,13 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ["mongoose"],
-    // Disabilita il pre-rendering statico per pagine con useSearchParams
-    missingSuspenseWithCSRBailout: false,
-  },
+  // Moved from experimental to root level (Next.js 16)
+  serverExternalPackages: ["mongoose"],
+  
   images: {
     unoptimized: process.env.NODE_ENV === 'development',
   },
+  
   // ✨ DISABILITA CACHE PER API ROUTES E PAGINE DINAMICHE
   async headers() {
     return [
@@ -21,6 +20,12 @@ const nextConfig = {
       },
     ];
   },
+  
+  // Turbopack config (Next.js 16+)
+  turbopack: {
+    // Empty config to silence webpack warning
+  },
+  
   webpack(config) {
     config.experiments = {
       ...config.experiments,

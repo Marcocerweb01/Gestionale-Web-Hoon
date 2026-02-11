@@ -1,0 +1,16 @@
+FROM n8nio/n8n:latest
+
+# Variabili ambiente (verranno sovrascritte da Railway)
+ENV N8N_BASIC_AUTH_ACTIVE=true
+ENV N8N_BASIC_AUTH_USER=admin
+ENV N8N_PROTOCOL=https
+ENV WEBHOOK_URL=https://your-domain.com/
+ENV GENERIC_TIMEZONE=Europe/Rome
+ENV N8N_METRICS=true
+
+# Persisti i dati
+VOLUME /home/node/.n8n
+
+EXPOSE 5678
+
+CMD ["n8n"]

@@ -11,7 +11,7 @@ export const metadata = {
 const Rootlayout = ({children}) => {
   return (
     <html lang="it">
-      <body className="min-h-screen bg-gray-50">
+      <body className="min-h-screen bg-gray-50" suppressHydrationWarning>
         <div className='main'>
           <div className='gradient'/>
         </div>
