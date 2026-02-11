@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import '@styles/global.css';
 import { Providers } from './providers';
 import Header from '@Components/Header';
@@ -18,7 +18,9 @@ const Rootlayout = ({children}) => {
         
         <Providers>
           <div className="relative z-10 min-h-screen">
-            <Header />
+            <Suspense fallback={<div className="h-16 bg-white border-b border-gray-200" />}>
+              <Header />
+            </Suspense>
             
             {/* Main content with proper spacing from fixed header */}
             <main className="pt-16">

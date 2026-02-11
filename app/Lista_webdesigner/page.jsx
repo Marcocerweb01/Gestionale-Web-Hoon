@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
-import Header from '@/Components/Header';
 import { Monitor, User, Calendar, ExternalLink, ArrowLeft } from 'lucide-react';
 
 const ListaWebDesigner = () => {
@@ -38,20 +37,15 @@ const ListaWebDesigner = () => {
 
   if (loading) {
     return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          <span className="ml-3 text-gray-600 text-lg">Caricamento web designer...</span>
-        </div>
-      </>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <span className="ml-3 text-gray-600 text-lg">Caricamento web designer...</span>
+      </div>
     );
   }
 
   return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           
           {/* Header della pagina */}
@@ -127,7 +121,6 @@ const ListaWebDesigner = () => {
           )}
         </div>
       </div>
-    </>
   );
 };
 

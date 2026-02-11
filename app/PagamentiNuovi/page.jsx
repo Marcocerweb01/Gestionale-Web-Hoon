@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Header from "@/Components/Header";
 import FormEntrata from "@/Components/FormEntrata";
 import FormUscita from "@/Components/FormUscita";
 import TabellaPagamenti from "@/Components/TabellaPagamenti";
@@ -159,8 +158,6 @@ export default function PagamentiNuovi() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
       <div className="max-w-7xl mx-auto px-4 py-4 md:py-8">
         {/* Header */}
         <div className="mb-6 md:mb-8">

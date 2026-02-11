@@ -6,11 +6,6 @@ const nextConfig = {
   // Disabilita static export per evitare errori di prerender
   output: 'standalone',
   
-  // Disabilita static optimization - forza ogni pagina a essere dinamica
-  experimental: {
-    dynamicIO: true,
-  },
-  
   images: {
     unoptimized: process.env.NODE_ENV === 'development',
   },

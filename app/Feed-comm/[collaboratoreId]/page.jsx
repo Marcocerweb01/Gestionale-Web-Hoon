@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import Header from "@/Components/Header";
 import TimelineLead from "@/Components/TimelineLead";
 import CreaLead from "@/Components/CreaLead";
 import { FaFilter } from "react-icons/fa";
+
+export const dynamic = 'force-dynamic';
 
 const FeedCollaborazione = ({params}) => {
   const { data: session, status } = useSession();
@@ -168,8 +169,6 @@ const FeedCollaborazione = ({params}) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
       <div className="max-w-7xl mx-auto px-4 py-4 md:py-8">
         {/* Header Dashboard - Mobile Responsive */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">

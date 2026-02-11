@@ -8,6 +8,8 @@ import { Menu } from "lucide-react";
 import { 
 Plus
 } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
 const FeedPage = ({ params }) => {
   const { collaboratoreId } = params;
   const searchParams = useSearchParams();
