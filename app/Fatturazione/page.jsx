@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
+
 const FatturazionePage = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
