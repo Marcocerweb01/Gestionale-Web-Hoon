@@ -3,6 +3,9 @@ const nextConfig = {
   // Moved from experimental to root level (Next.js 16)
   serverExternalPackages: ["mongoose"],
   
+  // Disabilita static export per evitare errori di prerender
+  output: 'standalone',
+  
   images: {
     unoptimized: process.env.NODE_ENV === 'development',
   },
