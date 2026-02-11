@@ -3,6 +3,8 @@ import AddCollabForm from '@Components/add-collab'
 import AddWebDesignCollabForm from '@Components/add-webdesign-collab'
 import { UserPlus, PlusCircle } from 'lucide-react'
 
+export const dynamic = 'force-dynamic';
+
 export const AddCollab = () => {
   return (
     <div className="space-y-8">
