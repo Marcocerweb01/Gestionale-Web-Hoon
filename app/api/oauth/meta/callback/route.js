@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
-import connectDB from '@/utils/database';
+import { authOptions } from '@/lib/auth';
+import { connectToDB } from '@/utils/database';
 import SocialAccount from '@/models/SocialAccount';
 import { NextResponse } from 'next/server';
 
@@ -69,7 +69,7 @@ export async function GET(req) {
       );
     }
     
-    await connectDB();
+    await connectToDB();
     
     const accountsToSave = [];
     

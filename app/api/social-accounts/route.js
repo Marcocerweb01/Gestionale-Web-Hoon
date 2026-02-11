@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
-import connectDB from '@/utils/database';
+import { authOptions } from '@/lib/auth';
+import { connectToDB } from '@/utils/database';
 import SocialAccount from '@/models/SocialAccount';
 import { NextResponse } from 'next/server';
 
@@ -12,7 +12,7 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
     }
 
-    await connectDB();
+    await connectToDB();
     
     const { searchParams } = new URL(req.url);
     const platform = searchParams.get('platform');
@@ -50,7 +50,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
     }
 
-    await connectDB();
+    await connectToDB();
     
     const data = await req.json();
     const {
@@ -133,7 +133,7 @@ export async function DELETE(req) {
       return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
     }
 
-    await connectDB();
+    await connectToDB();
     
     const { searchParams } = new URL(req.url);
     const accountId = searchParams.get('id');

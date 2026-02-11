@@ -44,3 +44,6 @@ export const connectToDB = async () => {
   global.mongoose = cached;
   return cached.conn;
 };
+
+// Alias per compatibilità
+export default connectToDB;

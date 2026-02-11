@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../../auth/[...nextauth]/route';
-import connectDB from '@/utils/database';
+import { authOptions } from '@/lib/auth';
+import { connectToDB } from '@/utils/database';
 import SocialAccount from '@/models/SocialAccount';
 import { NextResponse } from 'next/server';
 
@@ -15,7 +15,7 @@ export async function GET(req, context) {
     const params = await context.params;
     const accountId = params.id;
 
-    await connectDB();
+    await connectToDB();
     
     const account = await SocialAccount.findOne({
       _id: accountId,
@@ -53,7 +53,7 @@ export async function PATCH(req, context) {
     const params = await context.params;
     const accountId = params.id;
 
-    await connectDB();
+    await connectToDB();
     
     const account = await SocialAccount.findOne({
       _id: accountId,
