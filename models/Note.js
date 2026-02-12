@@ -35,6 +35,15 @@ const NoteSchema = new Schema({
       return this.tipo === 'appuntamento';
     },
   },
+  feeling_emoji: {
+    type: String,
+    enum: ['😄', '🙂', '😐', '😕', '😤', '😵💫', '🔥', '🧊', ''],
+    default: '',
+  },
+  feeling_note: {
+    type: String,
+    default: '',
+  },
 });
 
 const Nota = models.Nota || model('Nota', NoteSchema);

@@ -504,8 +504,8 @@ const Dashboard = () => {
     <div className="space-y-4 md:space-y-8 p-4 md:p-0">
       {/* Welcome Header - Mobile Responsive */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex-1">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
             <h1 className="text-xl md:text-3xl font-bold text-gray-900">
               Benvenuto, {session?.user?.nome}
             </h1>
@@ -520,12 +520,51 @@ const Dashboard = () => {
               )}
             </div>
           </div>
-          <div className="hidden sm:block">
-            <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-              <Users className="w-6 h-6 md:w-8 md:h-8 text-white" />
+          
+          {/* Bottone Faq & App - Solo per utenti non amministratori */}
+          {session?.user?.role !== "amministratore" && (
+            <button
+              onClick={() => setSezioneAperta(sezioneAperta === 'faq-app' ? null : 'faq-app')}
+              className={`flex items-center justify-center space-x-2 px-4 md:px-6 py-3 rounded-lg transition-colors duration-200 group flex-shrink-0 ${
+                sezioneAperta === 'faq-app' 
+                  ? 'bg-yellow-600 text-white' 
+                  : 'bg-yellow-500 text-white hover:bg-yellow-600'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium text-sm md:text-base">Faq & App</span>
+              <span className="ml-1">{sezioneAperta === 'faq-app' ? '▲' : '▼'}</span>
+            </button>
+          )}
+        </div>
+        
+        {/* Contenuto Sezione Faq & App - Giallo */}
+        {session?.user?.role !== "amministratore" && sezioneAperta === 'faq-app' && (
+          <div className="mt-6 grid grid-cols-3 gap-3 md:gap-4 border-t border-yellow-200 pt-6">
+            <Link href="/Faq">
+              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors duration-200 group">
+                <MessageSquare className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">FAQ</span>
+              </button>
+            </Link>
+            
+            <div 
+              className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed opacity-60 pointer-events-none select-none"
+              title="Disponibile solo per amministratori"
+            >
+              <Settings className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="font-medium text-sm md:text-base">Operations</span>
+            </div>
+            
+            <div 
+              className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed opacity-60 pointer-events-none select-none"
+              title="Disponibile solo per amministratori"
+            >
+              <Download className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="font-medium text-sm md:text-base">Dispense</span>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Sezione Fatturazione - Solo per collaboratori - Mobile Responsive */}
@@ -703,12 +742,18 @@ const Dashboard = () => {
               </button>
             </Link>
 
-            <Link href="/Operations">
-              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 group shadow-md">
-                <Sparkles className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-sm md:text-base">Operations</span>
-              </button>
-            </Link>
+            <button
+              onClick={() => setSezioneAperta(sezioneAperta === 'faq-app' ? null : 'faq-app')}
+              className={`w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 rounded-lg transition-colors duration-200 group ${
+                sezioneAperta === 'faq-app' 
+                  ? 'bg-yellow-600 text-white' 
+                  : 'bg-yellow-500 text-white hover:bg-yellow-600'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium text-sm md:text-base">Faq & App</span>
+              <span className="ml-1">{sezioneAperta === 'faq-app' ? '▲' : '▼'}</span>
+            </button>
           </div>
 
           {/* Sezioni espandibili - 3 in basso orizzontali */}
@@ -831,6 +876,32 @@ const Dashboard = () => {
                 <RotateCcw className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
                 <span className="font-medium text-sm md:text-base">{resetLoading ? "Reset..." : "Reset Trimestrali"}</span>
               </button>
+            </div>
+          )}
+
+          {/* Contenuto Sezione Faq & App - Giallo */}
+          {sezioneAperta === 'faq-app' && (
+            <div className="mt-4 md:mt-6 grid grid-cols-3 gap-3 md:gap-4 border-t border-yellow-200 pt-4 md:pt-6">
+              <Link href="/Operations">
+                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors duration-200 group">
+                  <Settings className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium text-sm md:text-base">Operations</span>
+                </button>
+              </Link>
+              
+              <Link href="/Faq">
+                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors duration-200 group">
+                  <MessageSquare className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium text-sm md:text-base">FAQ</span>
+                </button>
+              </Link>
+              
+              <Link href="/Dispense">
+                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors duration-200 group">
+                  <Download className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium text-sm md:text-base">Dispense</span>
+                </button>
+              </Link>
             </div>
           )}
         </div>

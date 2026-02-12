@@ -26,7 +26,11 @@ export default function OperationsPage() {
       router.push('/Login');
     }
     
-    if (session) {
+    if (status === 'authenticated' && session?.user?.role !== 'amministratore') {
+      router.push('/unauthorized');
+    }
+    
+    if (session && session.user.role === 'amministratore') {
       loadStats();
     }
   }, [status, router, session]);

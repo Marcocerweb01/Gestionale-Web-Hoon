@@ -9,7 +9,7 @@ export default function Unauthorized() {
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Accesso Negato</h1>
         <p className="text-gray-600 mb-6">Non hai i permessi necessari per accedere a questa pagina.</p>
-        <Link href="/" className="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-600 text-white font-medium rounded-lg transition-colors">
+        <Link href="/" className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
           🏠 Torna alla Home
         </Link>
       </div>

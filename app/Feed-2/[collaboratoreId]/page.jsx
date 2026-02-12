@@ -633,6 +633,10 @@ const FeedPage = ({ params }) => {
                   const isProblem = note.tipo === "problema";
                   const isPostMancante = note.tipo === "post_mancante";
                   
+                  // Feeling Report abilitato solo per questi SMM
+                  const FEELING_ENABLED_USERS = ['678e57e508b3d51f4e9466e2', '678e582008b3d51f4e9466e8'];
+                  const isFeelingEnabled = FEELING_ENABLED_USERS.includes(note.autoreId?.toString() || '');
+                  
                   return (
                     <div
                       key={note._id}
@@ -729,6 +733,23 @@ const FeedPage = ({ params }) => {
                           </p>
                         </div>
 
+                        {/* Feeling Report - Se presente e utente abilitato */}
+                        {note.tipo === "appuntamento" && note.feeling_emoji && isFeelingEnabled && (
+                          <div className={`mb-2 px-2 py-2 rounded-lg ${
+                            isOwn ? "bg-white/20" : "bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-300"
+                          }`}>
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className={`text-xs font-semibold ${isOwn ? "text-white/90" : "text-gray-700"}`}>Feeling</span>
+                              <span className="text-2xl">{note.feeling_emoji}</span>
+                            </div>
+                            {note.feeling_note && (
+                              <p className={`text-xs italic ${isOwn ? "text-white/80" : "text-gray-600"}`}>
+                                {note.feeling_note}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
                         {/* Footer con timestamp - Compatto */}
                         <div className={`flex items-center text-[10px] sm:text-xs ${
                           isOwn ? "justify-start text-white/60" : "justify-end text-gray-400"
@@ -767,16 +788,29 @@ const FeedPage = ({ params }) => {
 const EditNoteModal = ({ note, onClose, onUpdateNote }) => {
   const [tipo, setTipo] = useState(note.tipo || "");
   const [nota, setNota] = useState(note.nota || "");
+  const [feelingEmoji, setFeelingEmoji] = useState(note.feeling_emoji || "");
+  const [feelingNote, setFeelingNote] = useState(note.feeling_note || "");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [data_appuntamento, setDataAppuntamento] = useState(
     note.data_appuntamento ? note.data_appuntamento.split("T")[0] : ""
   );
+  
+  // Feeling Report abilitato solo per questi SMM
+  const FEELING_ENABLED_USERS = ['678e57e508b3d51f4e9466e2', '678e582008b3d51f4e9466e8'];
+  const isFeelingEnabled = FEELING_ENABLED_USERS.includes(note.autoreId?.toString() || '');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
+    
+    // Validazione: se il tipo è appuntamento e l'utente ha feeling abilitato, l'emoji è obbligatoria
+    if (tipo === "appuntamento" && isFeelingEnabled && !feelingEmoji) {
+      setError("L'emoji del Feeling Report è obbligatoria per gli appuntamenti!");
+      setIsLoading(false);
+      return;
+    }
     
     try {
       const response = await fetch("/api/edit_note", {
@@ -784,7 +818,13 @@ const EditNoteModal = ({ note, onClose, onUpdateNote }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: note._id,
-          updatedData: { tipo, nota, data_appuntamento },
+          updatedData: { 
+            tipo, 
+            nota, 
+            data_appuntamento,
+            feeling_emoji: tipo === "appuntamento" && isFeelingEnabled ? feelingEmoji : "",
+            feeling_note: tipo === "appuntamento" && isFeelingEnabled ? feelingNote : "",
+          },
         }),
       });
       
@@ -851,18 +891,77 @@ const EditNoteModal = ({ note, onClose, onUpdateNote }) => {
 
           {/* Data Appuntamento - Mobile Optimized */}
           {tipo === "appuntamento" && (
-            <div className="bg-blue-50 rounded-xl p-3 sm:p-4 border border-blue-200">
-              <label className="block text-sm font-medium text-blue-900 mb-2">
-                📅 Data Appuntamento
-              </label>
-              <input
-                type="date"
-                value={data_appuntamento || ""}
-                onChange={(e) => setDataAppuntamento(e.target.value)}
-                className="w-full p-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm sm:text-base"
-                disabled={isLoading}
-              />
-            </div>
+            <>
+              <div className="bg-blue-50 rounded-xl p-3 sm:p-4 border border-blue-200">
+                <label className="block text-sm font-medium text-blue-900 mb-2">
+                  📅 Data Appuntamento
+                </label>
+                <input
+                  type="date"
+                  value={data_appuntamento || ""}
+                  onChange={(e) => setDataAppuntamento(e.target.value)}
+                  className="w-full p-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm sm:text-base"
+                  disabled={isLoading}
+                />
+              </div>
+              
+              {/* Feeling Report - Solo per utenti abilitati */}
+              {isFeelingEnabled && (
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-3 sm:p-4 space-y-3">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-xl">👉</span>
+                  <h4 className="text-sm font-bold text-gray-900">Feeling Report</h4>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-gray-800 mb-2">
+                    Come sono uscito dall'incontro? <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { emoji: '😄', label: 'Molto positivo, carico' },
+                      { emoji: '🙂', label: 'Buono, sereno' },
+                      { emoji: '😐', label: 'Neutro' },
+                      { emoji: '😕', label: 'Qualcosa non ha convinto' },
+                      { emoji: '😤', label: 'Teso, frustrante' },
+                      { emoji: '😵💫', label: 'Confuso' },
+                      { emoji: '🔥', label: 'Super gas' },
+                      { emoji: '🧊', label: 'Freddo' },
+                    ].map(({ emoji, label }) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setFeelingEmoji(emoji)}
+                        className={`p-2 rounded-lg border-2 transition-all ${
+                          feelingEmoji === emoji
+                            ? 'bg-yellow-400 border-yellow-600 shadow-md scale-105'
+                            : 'bg-white border-gray-300 hover:border-yellow-400'
+                        }`}
+                        title={label}
+                        disabled={isLoading}
+                      >
+                        <span className="text-2xl">{emoji}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Perché? (Opzionale)
+                  </label>
+                  <textarea
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-xs resize-none"
+                    value={feelingNote}
+                    onChange={(e) => setFeelingNote(e.target.value)}
+                    placeholder="Spiega brevemente..."
+                    rows={2}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+              )}
+            </>
           )}
 
           {/* Contenuto Nota - Mobile Optimized */}

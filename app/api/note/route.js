@@ -6,7 +6,7 @@ export async function POST(req) {
   try {
     await connectToDB();
 
-    const { nota, autoreId, autore, collaborazione, tipo, data_appuntamento } = await req.json();
+    const { nota, autoreId, autore, collaborazione, tipo, data_appuntamento, feeling_emoji, feeling_note } = await req.json();
 
     if (!nota || !autore || !collaborazione || !tipo) {
       return new Response(JSON.stringify({ message: "Dati mancanti" }), { status: 400 });
@@ -19,6 +19,8 @@ export async function POST(req) {
       collaborazione,
       tipo,
       data_appuntamento: tipo === 'appuntamento' ? data_appuntamento : null,
+      feeling_emoji: tipo === 'appuntamento' ? feeling_emoji : '',
+      feeling_note: tipo === 'appuntamento' ? feeling_note : '',
     });
 
     await newNote.save();
