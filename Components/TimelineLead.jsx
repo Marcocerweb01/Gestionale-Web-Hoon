@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { FaCheck, FaTimes, FaClock, FaPhone, FaCalendar, FaMapMarkerAlt, FaEnvelope, FaStickyNote, FaEdit } from "react-icons/fa";
+import ModificaLead from "@/Components/ModificaLead";
 
 const STATI = [
   { key: "contatto", label: "Contatto", icon: FaPhone },
@@ -18,6 +19,9 @@ export default function TimelineLead({ lead, onUpdate, onDelete, onArchive }) {
   // Editing nota generale
   const [isEditingNota, setIsEditingNota] = useState(false);
   const [notaGenerale, setNotaGenerale] = useState(lead.nota_generale || "");
+  
+  // Modal modifica dati
+  const [isModalModificaOpen, setIsModalModificaOpen] = useState(false);
   
   // Nuovo stato selezionato
   const [nuovoStato, setNuovoStato] = useState(lead.stato_attuale || "in_lavorazione");
@@ -232,7 +236,19 @@ export default function TimelineLead({ lead, onUpdate, onDelete, onArchive }) {
         {/* Header Lead - Mobile Responsive */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3 gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="text-base md:text-lg font-bold text-gray-800 break-words">{lead.nome_attivita}</h3>
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h3 className="text-base md:text-lg font-bold text-gray-800 break-words flex-1">{lead.nome_attivita}</h3>
+              {!isArchiviato && (
+                <button
+                  onClick={() => setIsModalModificaOpen(true)}
+                  disabled={isUpdating}
+                  className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold text-xs flex items-center gap-1.5 flex-shrink-0 shadow-sm transition-all"
+                >
+                  <FaEdit />
+                  Modifica
+                </button>
+              )}
+            </div>
             {lead.referente && (
               <p className="text-xs md:text-sm text-gray-600">📞 {lead.referente}</p>
             )}
@@ -475,6 +491,14 @@ export default function TimelineLead({ lead, onUpdate, onDelete, onArchive }) {
           </div>
         )}
       </div>
+      
+      {/* Modal Modifica Dati */}
+      <ModificaLead
+        lead={lead}
+        isOpen={isModalModificaOpen}
+        onClose={() => setIsModalModificaOpen(false)}
+        onLeadAggiornato={onUpdate}
+      />
     </>
   );
 }
