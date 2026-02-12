@@ -4,10 +4,11 @@ import mongoose from "mongoose";
 
 export async function PATCH(req, { params }) {
     try {
+      const resolvedParams = await params;
       await connectToDB();
   
-      const { collaborazioneId } = params;
-      console.log(params)
+      const { collaborazioneId } = resolvedParams;
+      console.log(resolvedParams)
       const { post_ig_fb_fatti, post_tiktok_fatti, post_linkedin_fatti } = await req.json();
   
       if (!mongoose.Types.ObjectId.isValid(collaborazioneId)) {

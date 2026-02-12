@@ -4,9 +4,10 @@ import mongoose from "mongoose";
 
 export async function PATCH(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { collaborazioneId } = params;
+    const { collaborazioneId } = resolvedParams;
     const { 
       numero_appuntamenti, 
       post_ig_fb, 

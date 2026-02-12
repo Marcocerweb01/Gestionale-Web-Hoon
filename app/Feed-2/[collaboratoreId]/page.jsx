@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, use } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -11,7 +11,7 @@ Plus
 
 export const dynamic = 'force-dynamic';
 const FeedPage = ({ params }) => {
-  const { collaboratoreId } = params;
+  const { collaboratoreId } = use(params);
   const searchParams = useSearchParams();
   const collaborazioneIdFromQuery = searchParams.get("collaborazioneId");
 

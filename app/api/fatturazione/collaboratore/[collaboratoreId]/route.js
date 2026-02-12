@@ -4,9 +4,10 @@ import { connectToDB } from "@/utils/database";
 // GET - Recupera tutte le fatture di un collaboratore specifico
 export async function GET(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { collaboratoreId } = params;
+    const { collaboratoreId } = resolvedParams;
 
     if (!collaboratoreId) {
       return new Response(

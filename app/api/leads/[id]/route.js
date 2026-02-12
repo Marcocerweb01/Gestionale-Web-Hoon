@@ -5,9 +5,10 @@ import { NextResponse } from "next/server";
 // GET - Recupera singolo lead
 export async function GET(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { id } = params;
+    const { id } = resolvedParams;
 
     const lead = await LeadCommerciale.findById(id)
       .populate('commerciale', 'nome cognome email');
@@ -33,9 +34,10 @@ export async function GET(req, { params }) {
 // PATCH - Aggiorna lead (timeline, dati, stati)
 export async function PATCH(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { id } = params;
+    const { id } = resolvedParams;
     const body = await req.json();
 
     const lead = await LeadCommerciale.findById(id);
@@ -124,9 +126,10 @@ export async function PATCH(req, { params }) {
 // DELETE - Elimina lead
 export async function DELETE(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { id } = params;
+    const { id } = resolvedParams;
 
     const lead = await LeadCommerciale.findByIdAndDelete(id);
 

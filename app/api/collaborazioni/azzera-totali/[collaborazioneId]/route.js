@@ -4,9 +4,10 @@ import mongoose from "mongoose";
 
 export async function PATCH(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { collaborazioneId } = params;
+    const { collaborazioneId } = resolvedParams;
 
     if (!mongoose.Types.ObjectId.isValid(collaborazioneId)) {
       return new Response(JSON.stringify({ message: "ID collaborazione non valido" }), { status: 400 });

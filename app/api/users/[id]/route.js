@@ -10,9 +10,10 @@ export const revalidate = 0;
 
 export async function GET(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const userId = params.id;
+    const userId = resolvedParams.id;
 
     // Cerca l'utente in tutte le collezioni
     const models = [Azienda, Collaboratore, Contatto, Amministratore];
@@ -89,9 +90,10 @@ export async function GET(req, { params }) {
 
 export async function PUT(req, { params }) {
     try {
+      const resolvedParams = await params;
       await connectToDB();
   
-      const userId = params.id; // Estrai l'ID dalla route
+      const userId = resolvedParams.id; // Estrai l'ID dalla route
       const body = await req.json();
       const { nome, cognome, email, password, ...rest } = body;
       
@@ -162,9 +164,10 @@ export async function PUT(req, { params }) {
   
   export async function PATCH(req, { params }) {
     try {
+      const resolvedParams = await params;
       await connectToDB();
   
-      const userId = params.id; // ID dell'utente dalla route
+      const userId = resolvedParams.id; // ID dell'utente dalla route
       const updates = await req.json(); // Dati da aggiornare
       
       console.log(`🔄 [PATCH] Aggiornamento utente ${userId}. Dati ricevuti:`, updates);

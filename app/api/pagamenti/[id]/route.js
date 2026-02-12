@@ -3,8 +3,9 @@ import { connectToDB } from "@/utils/database";
 
 export async function PATCH(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
-    const { id } = params;
+    const { id } = resolvedParams;
     const body = await req.json();
 
     const pagamento = await Pagamenti.findByIdAndUpdate(id, body, { new: true });

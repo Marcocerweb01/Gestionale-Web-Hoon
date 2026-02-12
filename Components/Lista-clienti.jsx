@@ -16,6 +16,15 @@ const ListaClienti = ({ id, amministratore }) => {
 
   const fetchCollaborazioni = useCallback(async (retryCount = 0) => {
     console.log("🌐 FETCH Lista Clienti - ID:", id, "Retry:", retryCount);
+    
+    // ✅ Controllo robusto dell'ID prima di fare il fetch
+    if (!id || id === 'undefined' || id === 'null') {
+      console.error("❌ ID non valido:", id);
+      setError("ID collaboratore non valido");
+      setLoading(false);
+      return;
+    }
+    
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout

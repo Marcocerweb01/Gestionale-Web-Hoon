@@ -3,10 +3,11 @@ import Nota from "@models/Note";
 
 export async function GET(req, { params }) {
   try {
-    console.log("Parametri ricevuti:", params);
+    const resolvedParams = await params;
+    console.log("Parametri ricevuti:", resolvedParams);
 
     // Assicurati che collaborazioneId sia definito
-    const { collaborazioneId } = params;
+    const { collaborazioneId } = resolvedParams;
     console.log(collaborazioneId)
     if (!collaborazioneId) {
       console.error("ID collaborazione mancante");

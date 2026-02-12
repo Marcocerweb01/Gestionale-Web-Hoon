@@ -4,10 +4,11 @@ import {Collaboratore} from "@/models/User";
 
 export async function PATCH(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
     console.log("Connesso al database");
   
-    const { collaborazioneid } = params;
+    const { collaborazioneid } = resolvedParams;
     const { collaboratoreId } = await req.json();
 
     console.log("Collaborazione ID:", collaborazioneid);

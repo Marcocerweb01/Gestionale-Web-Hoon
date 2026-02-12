@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import TimelineWebDesigner from "@/Components/timeline-web-designer"; // Dashboard per Web Designer
@@ -9,7 +9,7 @@ import AdminCollaborationsList from "@/Components/edit-collab"; // Dashboard per
 import AziendaCollab from "@/Components/azienda-collab"; // Dashboard per Cliente
 
 const UserDetails = ({ params }) => {
-  const { id } = params; // ID utente dalla route
+  const { id } = use(params); // ID utente dalla route
   const [user, setUser] = useState(null);
   const [collaborazioni, setCollab] = useState([]);
   const [loading, setLoading] = useState(true);

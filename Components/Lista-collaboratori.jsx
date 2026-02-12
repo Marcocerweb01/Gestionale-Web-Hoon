@@ -34,30 +34,23 @@ const Lista_collaboratori = ({ collaboratori }) => {
   const [openComm, setOpenComm] = useState(() => getInitialState("comm"));
   const [openLists, setOpenLists] = useState(() => getOpenLists());
 
-  // Funzione per aggiornare l'URL senza ricaricare la pagina
-  const updateURL = useCallback((newOpenWeb, newOpenSmm, newOpenComm, newOpenLists) => {
-    const params = new URLSearchParams(searchParams.toString());
+  // ✨ useEffect per aggiornare l'URL quando cambia lo stato
+  useEffect(() => {
+    const params = new URLSearchParams();
     
     // Aggiorna i parametri delle sezioni
-    if (newOpenWeb) params.set("web", "true");
-    else params.delete("web");
-    
-    if (newOpenSmm) params.set("smm", "true");
-    else params.delete("smm");
-    
-    if (newOpenComm) params.set("comm", "true");
-    else params.delete("comm");
+    if (openWeb) params.set("web", "true");
+    if (openSmm) params.set("smm", "true");
+    if (openComm) params.set("comm", "true");
     
     // Aggiorna le liste aperte dei singoli collaboratori
-    if (newOpenLists.length > 0) {
-      params.set("openLists", newOpenLists.join(","));
-    } else {
-      params.delete("openLists");
+    if (openLists.length > 0) {
+      params.set("openLists", openLists.join(","));
     }
     
     const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
     router.replace(newUrl, { scroll: false });
-  }, [searchParams, pathname, router]);
+  }, [openWeb, openSmm, openComm, openLists, pathname, router]);
 
   // Filtra i collaboratori in base al ruolo E allo status attivo
   const webDesigners = collaboratori.filter((c) => c.subRole === "web designer" && c.status === "attivo");
@@ -66,33 +59,25 @@ const Lista_collaboratori = ({ collaboratori }) => {
 
   // Funzioni per togglare l'apertura/chiusura di ciascuna sezione
   const toggleWeb = () => {
-    const newValue = !openWeb;
-    setOpenWeb(newValue);
-    updateURL(newValue, openSmm, openComm, openLists);
+    setOpenWeb(prev => !prev);
   };
   
   const toggleSmm = () => {
-    const newValue = !openSmm;
-    setOpenSmm(newValue);
-    updateURL(openWeb, newValue, openComm, openLists);
+    setOpenSmm(prev => !prev);
   };
   
   const toggleComm = () => {
-    const newValue = !openComm;
-    setOpenComm(newValue);
-    updateURL(openWeb, openSmm, newValue, openLists);
+    setOpenComm(prev => !prev);
   };
 
   // Funzione per togglare la lista di un singolo collaboratore
   const toggleCollaboratorList = useCallback((collabId) => {
     setOpenLists(prev => {
-      const newLists = prev.includes(collabId) 
+      return prev.includes(collabId) 
         ? prev.filter(id => id !== collabId)
         : [...prev, collabId];
-      updateURL(openWeb, openSmm, openComm, newLists);
-      return newLists;
     });
-  }, [openWeb, openSmm, openComm, updateURL]);
+  }, []);
 
   // Verifica se una lista è aperta
   const isListOpen = useCallback((collabId) => {

@@ -7,7 +7,8 @@ export async function GET(req, { params }) {
     await connectToDB();
 
     // Ottieni il collaboratoreId dai parametri dell'URL
-    const { clienteId } = params;
+    const resolvedParams = await params;
+    const { clienteId } = resolvedParams;
 
     if (!clienteId) {
       return new Response(JSON.stringify({ message: "ID azienda mancante" }), { status: 400 });

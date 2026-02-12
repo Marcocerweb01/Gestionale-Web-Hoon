@@ -866,30 +866,48 @@ const Dashboard = () => {
           {session?.user?.role === "amministratore" ? (
             <ListaCollaboratori collaboratori={collaboratoriAttivi} />
           ) : session?.user?.subrole === "commerciale" ? (
-            <LeadDashboard 
-              leads={leads}
-              isLoading={isLoadingLeads}
-              filtroStato={filtroStato}
-              setFiltroStato={setFiltroStato}
-              filtroTimeline={filtroTimeline}
-              setFiltroTimeline={setFiltroTimeline}
-              filtroData={filtroData}
-              setFiltroData={setFiltroData}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              leadsFiltrati={leadsFiltrati()}
-              conteggioPerStato={conteggioPerStato}
-              handleLeadCreato={handleLeadCreato}
-              handleLeadUpdate={handleLeadUpdate}
-              handleLeadDelete={handleLeadDelete}
-              commercialeId={session.user.id}
-              mostraPassati={mostraPassati}
-              setMostraPassati={setMostraPassati}
-            />
+            session?.user?.id ? (
+              <LeadDashboard 
+                leads={leads}
+                isLoading={isLoadingLeads}
+                filtroStato={filtroStato}
+                setFiltroStato={setFiltroStato}
+                filtroTimeline={filtroTimeline}
+                setFiltroTimeline={setFiltroTimeline}
+                filtroData={filtroData}
+                setFiltroData={setFiltroData}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                leadsFiltrati={leadsFiltrati()}
+                conteggioPerStato={conteggioPerStato}
+                handleLeadCreato={handleLeadCreato}
+                handleLeadUpdate={handleLeadUpdate}
+                handleLeadDelete={handleLeadDelete}
+                commercialeId={session.user.id}
+                mostraPassati={mostraPassati}
+                setMostraPassati={setMostraPassati}
+              />
+            ) : (
+              <div className="text-center py-8 text-red-600">
+                ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
+              </div>
+            )
           ) : session?.user?.subrole === "smm" ? (
-            <ListaClienti id={session?.user.id} amministratore={false} />
+            session?.user?.id ? (
+              <ListaClienti id={session.user.id} amministratore={false} />
+            ) : (
+              <div className="text-center py-8 text-red-600">
+                ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
+              </div>
+            )
           ) : (
-            <TimelineWebDesigner userId={session?.user.id} />
+            session?.user?.id ? (
+              <TimelineWebDesigner userId={session.user.id} />
+            ) : (
+              <div className="text-center py-8 text-red-600">
+                ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
+              </div>
+            )
           )}
         </div>
       </div>

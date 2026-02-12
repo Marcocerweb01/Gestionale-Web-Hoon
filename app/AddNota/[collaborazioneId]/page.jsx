@@ -1,4 +1,5 @@
 'use client'
+import { use } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import CreaNota from "@Components/add-nota";
@@ -6,7 +7,7 @@ import CreaNota from "@Components/add-nota";
 export const dynamic = 'force-dynamic';
 
 const EditCollaboration = ({ params }) => {
-  const { collaborazioneId } = params; // Ottieni il parametro dalla route dinamica
+  const { collaborazioneId } = use(params); // Ottieni il parametro dalla route dinamica
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const clienteQuery = searchParams.get("cliente");

@@ -3,7 +3,8 @@ import Nota from "@models/Note";
 
 export async function GET(req, { params }) {
   try {
-    const { collaborazioneId } = params;
+    const resolvedParams = await params;
+    const { collaborazioneId } = resolvedParams;
     
     if (!collaborazioneId) {
       return new Response(

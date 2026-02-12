@@ -3,9 +3,10 @@ import NotaComm from "@models/Note-comm";
 
 export async function GET(req, { params }) {
   try {
-    console.log("Parametri ricevuti:", params);
+    const resolvedParams = await params;
+    console.log("Parametri ricevuti:", resolvedParams);
 
-    const { collaboratoreId } = params;
+    const { collaboratoreId } = resolvedParams;
     const { searchParams } = new URL(req.url);
 
     // Recupera i parametri di query (se presenti)

@@ -4,9 +4,10 @@ import mongoose from "mongoose";
 
 export async function GET(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { id } = params;
+    const { id } = resolvedParams;
 
     if (!id) {
       return new Response(JSON.stringify({ message: "ID mancante" }), { status: 400 });
@@ -46,9 +47,10 @@ export async function GET(req, { params }) {
 
 export async function PATCH(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { id } = params; // ID della collaborazione
+    const { id } = resolvedParams; // ID della collaborazione
     const body = await req.json();
 
     if (!id) {

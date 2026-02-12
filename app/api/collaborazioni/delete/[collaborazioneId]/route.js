@@ -3,9 +3,10 @@ import Collaborazione from "@/models/Collaborazioni";
 
 export async function DELETE(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { collaborazioneId } = params;
+    const { collaborazioneId } = resolvedParams;
 
     // Elimina la collaborazione dal database
     const deletedCollaborazione = await Collaborazione.findByIdAndDelete(collaborazioneId);

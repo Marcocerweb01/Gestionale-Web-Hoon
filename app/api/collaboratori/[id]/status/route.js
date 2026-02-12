@@ -4,9 +4,10 @@ import { Collaboratore } from "@/models/User";
 // API per attivare/disattivare rapidamente un collaboratore
 export async function PATCH(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { id } = params; // ID del collaboratore
+    const { id } = resolvedParams; // ID del collaboratore
     const { action } = await req.json(); // "activate" o "deactivate"
 
     if (!id) {
@@ -70,9 +71,10 @@ export async function PATCH(req, { params }) {
 // GET per verificare lo status attuale
 export async function GET(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { id } = params;
+    const { id } = resolvedParams;
 
     const collaboratore = await Collaboratore.findById(id).select('nome cognome email status');
     if (!collaboratore) {

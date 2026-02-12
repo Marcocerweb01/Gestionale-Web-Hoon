@@ -4,9 +4,10 @@ import { connectToDB } from "@/utils/database";
 // GET - Recupera una singola fattura
 export async function GET(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { id } = params;
+    const { id } = resolvedParams;
 
     if (!id) {
       return new Response(
@@ -53,9 +54,10 @@ export async function GET(req, { params }) {
 // PATCH - Aggiorna una fattura
 export async function PATCH(req, { params }) {
   try {
+    const resolvedParams = await params;
     await connectToDB();
 
-    const { id } = params;
+    const { id } = resolvedParams;
     const body = await req.json();
 
     if (!id) {

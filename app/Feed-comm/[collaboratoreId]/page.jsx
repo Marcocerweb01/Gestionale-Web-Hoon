@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import TimelineLead from "@/Components/TimelineLead";
@@ -14,7 +14,7 @@ const FeedCollaborazione = ({params}) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nome = searchParams.get("nome");
-  const { collaboratoreId } = params;
+  const { collaboratoreId } = use(params);
 
   const [leads, setLeads] = useState([]);
   const [commercialeInfo, setCommercialeInfo] = useState(null);
