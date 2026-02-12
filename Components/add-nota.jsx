@@ -96,9 +96,23 @@ const CreaNota = ({ collaborazioneId, autoreId, autorenome, collaboratoreId }) =
                 onChange={(e) => setDataAppuntamento(e.target.value)}
               />
             </div>
-            
-            {/* Feeling Report - Solo per utenti abilitati */}
-            {isFeelingEnabled && (
+          </>
+        )}
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Nota:
+          </label>
+          <textarea
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base min-h-[120px] resize-y"
+            value={nota}
+            onChange={(e) => setNota(e.target.value)}
+            placeholder="Scrivi qui la tua nota..."
+            required
+          />
+        </div>
+        
+        {tipo === "appuntamento" && isFeelingEnabled && (
             <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-4 space-y-4">
               <div className="flex items-center space-x-2 mb-3">
                 <span className="text-2xl">👉</span>
@@ -179,21 +193,6 @@ const CreaNota = ({ collaborazioneId, autoreId, autorenome, collaboratoreId }) =
               </div>
             </div>
             )}
-          </>
-        )}
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Nota:
-          </label>
-          <textarea
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base min-h-[120px] resize-y"
-            value={nota}
-            onChange={(e) => setNota(e.target.value)}
-            placeholder="Scrivi qui la tua nota..."
-            required
-          />
-        </div>
         
         {/* Button container mobile-friendly */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
