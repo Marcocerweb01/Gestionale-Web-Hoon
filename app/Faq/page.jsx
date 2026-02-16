@@ -154,7 +154,9 @@ export default function FaqPage() {
       console.error("Errore eliminazione categoria:", error);
       alert("Errore durante l'eliminazione della categoria");
     } finally {
-    
+      setEliminandoCategoria(null);
+    }
+  };
 
   const handleRinominaCategoria = async (vecchioNome) => {
     if (!nuovoNomeCategoria.trim()) {
@@ -223,10 +225,6 @@ export default function FaqPage() {
     } catch (error) {
       console.error("Errore modifica FAQ:", error);
       alert("Errore durante la modifica della FAQ");
-    }
-  };
-
-  setEliminandoCategoria(null);
     }
   };
 
