@@ -27,6 +27,12 @@ export default function FaqPage() {
   const [eliminandoCategoria, setEliminandoCategoria] = useState(null);
   const [modificandoCategoria, setModificandoCategoria] = useState(null);
   const [nuovoNomeCategoria, setNuovoNomeCategoria] = useState('');
+  const [modificandoFaq, setModificandoFaq] = useState(null);
+  const [faqModificata, setFaqModificata] = useState({
+    categoria: '',
+    titolo: '',
+    testo: ''
+  });
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -178,7 +184,49 @@ export default function FaqPage() {
       console.error("Errore rinomina categoria:", error);
       alert("Errore durante la rinomina della categoria");
     }
-  };  setEliminandoCategoria(null);
+  };
+
+  const iniziaModificaFaq = (faq) => {
+    setModificandoFaq(faq._id);
+    setFaqModificata({
+      categoria: faq.categoria,
+      titolo: faq.titolo,
+      testo: faq.testo
+    });
+  };
+
+  const annullaModificaFaq = () => {
+    setModificandoFaq(null);
+    setFaqModificata({ categoria: '', titolo: '', testo: '' });
+  };
+
+  const handleModificaFaq = async (id) => {
+    if (!faqModificata.categoria || !faqModificata.titolo || !faqModificata.testo) {
+      alert("Compila tutti i campi");
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/faq/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(faqModificata)
+      });
+      
+      if (res.ok) {
+        setModificandoFaq(null);
+        setFaqModificata({ categoria: '', titolo: '', testo: '' });
+        await caricaDati();
+      } else {
+        alert("Errore durante la modifica della FAQ");
+      }
+    } catch (error) {
+      console.error("Errore modifica FAQ:", error);
+      alert("Errore durante la modifica della FAQ");
+    }
+  };
+
+  setEliminandoCategoria(null);
     }
   };
 
@@ -418,43 +466,120 @@ export default function FaqPage() {
                   key={faq._id}
                   className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md"
                 >
-                  <div className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                    <div 
-                      onClick={() => toggleFaq(faq._id)}
-                      className="flex-1 cursor-pointer"
-                    >
-                      <span className="font-semibold text-gray-900 text-lg pr-4">
-                        {faq.titolo}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleElimina(faq._id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  {modificandoFaq === faq._id ? (
+                    // Form di modifica inline
+                    <div className="p-6 space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Modifica FAQ</h3>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Categoria
+                        </label>
+                        <select
+                          value={faqModificata.categoria}
+                          onChange={(e) => setFaqModificata({...faqModificata, categoria: e.target.value})}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {categorie.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Titolo Domanda
+                        </label>
+                        <input
+                          type="text"
+                          value={faqModificata.titolo}
+                          onChange={(e) => setFaqModificata({...faqModificata, titolo: e.target.value})}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Risposta
+                        </label>
+                        <textarea
+                          value={faqModificata.testo}
+                          onChange={(e) => setFaqModificata({...faqModificata, testo: e.target.value})}
+                          rows={5}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleModificaFaq(faq._id)}
+                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          Salva Modifiche
                         </button>
+                        <button
+                          onClick={annullaModificaFaq}
+                          className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                        >
+                          Annulla
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Vista normale FAQ
+                    <>
+                      <div className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        <div 
+                          onClick={() => toggleFaq(faq._id)}
+                          className="flex-1 cursor-pointer"
+                        >
+                          <span className="font-semibold text-gray-900 text-lg pr-4">
+                            {faq.titolo}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {isAdmin && (
+                            <>
+                              <button
+                                onClick={() => iniziaModificaFaq(faq)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Modifica FAQ"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleElimina(faq._id)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Elimina FAQ"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => toggleFaq(faq._id)}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          >
+                            {openFaq === faq._id ? (
+                              <ChevronUp className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {openFaq === faq._id && (
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                            {faq.testo}
+                          </p>
+                        </div>
                       )}
-                      <button
-                        onClick={() => toggleFaq(faq._id)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        {openFaq === faq._id ? (
-                          <ChevronUp className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {openFaq === faq._id && (
-                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                        {faq.testo}
-                      </p>
-                    </div>
+                    </>
                   )}
                 </div>
               ))}
