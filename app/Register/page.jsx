@@ -172,20 +172,56 @@ const Registrazione = () => {
                 <h3 className="text-lg font-semibold text-green-900 mb-4">Informazioni Collaboratore</h3>
                 
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Specializzazione <span className="text-red-500">*</span>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Seleziona almeno una specializzazione <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="subRole"
-                    onChange={handleDettagliInput}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  >
-                    <option value="">Seleziona una specializzazione</option>
-                    <option value="commerciale">Commerciale</option>
-                    <option value="smm">Social Media Manager</option>
-                    <option value="web designer">Web Designer</option>
-                  </select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[
+                      { value: "commerciale", label: "Commerciale", icon: "💼" },
+                      { value: "smm", label: "Social Media Manager", icon: "📱" },
+                      { value: "web designer", label: "Web Designer", icon: "🎨" },
+                      { value: "seo", label: "SEO", icon: "🔍" },
+                      { value: "google ads", label: "Google ADS", icon: "📢" },
+                      { value: "meta ads", label: "Meta ADS", icon: "📱" }
+                    ].map((ruolo) => (
+                      <label
+                        key={ruolo.value}
+                        className="flex items-center space-x-3 p-3 bg-white border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-400 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          name="subRoles"
+                          value={ruolo.value}
+                          onChange={(e) => {
+                            const currentRoles = info.ruolo.dettagli.subRoles || [];
+                            const newRoles = e.target.checked
+                              ? [...currentRoles, ruolo.value]
+                              : currentRoles.filter(r => r !== ruolo.value);
+                            setInfo(prev => ({
+                              ...prev,
+                              ruolo: {
+                                ...prev.ruolo,
+                                dettagli: {
+                                  ...prev.ruolo.dettagli,
+                                  subRoles: newRoles
+                                }
+                              }
+                            }));
+                          }}
+                          checked={(info.ruolo.dettagli.subRoles || []).includes(ruolo.value)}
+                          className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          {ruolo.icon} {ruolo.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {info.ruolo.dettagli.subRoles && info.ruolo.dettagli.subRoles.length > 0 && (
+                    <div className="mt-2 text-sm text-green-700">
+                      ✓ {info.ruolo.dettagli.subRoles.length} specializzazione/i selezionate
+                    </div>
+                  )}
                 </div>
               </div>
             )}

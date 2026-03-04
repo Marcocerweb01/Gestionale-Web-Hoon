@@ -10,8 +10,8 @@ const EditUserForm = ({ userId }) => {
     email: "",
     password: "",
     partitaIva: "",
-    subRole: "",
-    status: "attivo", // Nuovo campo status
+    subRoles: [], // Array di ruoli
+    status: "attivo",
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -32,8 +32,8 @@ const EditUserForm = ({ userId }) => {
           cognome: data.cognome || "",
           email: data.email || "",
           partitaIva: data.partitaIva || "",
-          subRole: data.subRole || "",
-          status: data.status || "attivo", // Nuovo campo status
+          subRoles: data.subRoles || data.subRole ? [data.subRole] : [], // Supporta sia subRoles che subRole legacy
+          status: data.status || "attivo",
         });
       } catch (err) {
         console.error(err);
@@ -72,6 +72,11 @@ const EditUserForm = ({ userId }) => {
       const updatedUser = await response.json();
       setSuccess("Utente aggiornato con successo.");
       setUser(updatedUser);
+      
+      // ✨ Trigger refresh globale per aggiornare la lista collaboratori
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('collaboratori-updated'));
+      }
     } catch (err) {
       console.error(err);
       setError("Errore durante l'aggiornamento dell'utente.");
@@ -126,13 +131,43 @@ const EditUserForm = ({ userId }) => {
           />
         </div>
         <div className="inputWrapper">
-          <label>Sub-ruolo</label>
-          <input
-            type="text"
-            name="subRole"
-            value={formData.subRole}
-            onChange={handleInputChange}
-          />
+          <label>Specializzazioni</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+            {[
+              { value: "commerciale", label: "Commerciale", icon: "💼" },
+              { value: "smm", label: "Social Media Manager", icon: "📱" },
+              { value: "web designer", label: "Web Designer", icon: "🎨" },
+              { value: "seo", label: "SEO", icon: "🔍" },
+              { value: "google ads", label: "Google ADS", icon: "📢" },
+              { value: "meta ads", label: "Meta ADS", icon: "📱" }
+            ].map((ruolo) => (
+              <label
+                key={ruolo.value}
+                className="flex items-center space-x-3 p-3 bg-white border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  value={ruolo.value}
+                  checked={formData.subRoles.includes(ruolo.value)}
+                  onChange={(e) => {
+                    const newRoles = e.target.checked
+                      ? [...formData.subRoles, ruolo.value]
+                      : formData.subRoles.filter(r => r !== ruolo.value);
+                    setFormData(prev => ({ ...prev, subRoles: newRoles }));
+                  }}
+                  className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  {ruolo.icon} {ruolo.label}
+                </span>
+              </label>
+            ))}
+          </div>
+          {formData.subRoles.length > 0 && (
+            <small className="text-green-600 mt-2 block">
+              ✓ {formData.subRoles.length} specializzazione/i selezionate
+            </small>
+          )}
         </div>
         <div className="inputWrapper">
           <label>Status Account</label>

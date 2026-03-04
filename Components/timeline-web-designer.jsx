@@ -387,6 +387,142 @@ const TimelineWebDesigner = ({ userId }) => {
                   </table>
                 </div>
 
+                {/* Sezione Gestione Dominio */}
+                <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <span className="mr-2">🌐</span>
+                    Gestione Dominio
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* URL Dominio */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        URL Dominio
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue={collaborazione.dominio?.urlDominio || ''}
+                        onBlur={(e) => {
+                          if (e.target.value !== (collaborazione.dominio?.urlDominio || '')) {
+                            handleUpdateCollaboration(collaborazione._id, 'dominio', {
+                              ...collaborazione.dominio,
+                              urlDominio: e.target.value
+                            });
+                          }
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                        placeholder="www.esempio.it"
+                      />
+                    </div>
+
+                    {/* Data Acquisto */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Data Acquisto
+                      </label>
+                      <input
+                        type="date"
+                        defaultValue={collaborazione.dominio?.dataAcquisto 
+                          ? new Date(collaborazione.dominio.dataAcquisto).toISOString().split('T')[0] 
+                          : ''
+                        }
+                        key={`data-acquisto-${collaborazione._id}`}
+                        onChange={(e) => {
+                          const oldValue = collaborazione.dominio?.dataAcquisto 
+                            ? new Date(collaborazione.dominio.dataAcquisto).toISOString().split('T')[0] 
+                            : '';
+                          
+                          if (e.target.value && e.target.value !== oldValue) {
+                            handleUpdateCollaboration(collaborazione._id, 'dominio', {
+                              ...collaborazione.dominio,
+                              dataAcquisto: e.target.value
+                            });
+                          }
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                      />
+                    </div>
+
+                    {/* Data Scadenza (calcolata automaticamente) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Data Scadenza
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={collaborazione.dominio?.dataScadenza 
+                            ? new Date(collaborazione.dominio.dataScadenza).toISOString().split('T')[0] 
+                            : ''
+                          }
+                          disabled
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                          placeholder="Calcolata automaticamente"
+                        />
+                        {collaborazione.dominio?.dataScadenza && (() => {
+                          const oggi = new Date();
+                          const scadenza = new Date(collaborazione.dominio.dataScadenza);
+                          const giorniMancanti = Math.ceil((scadenza - oggi) / (1000 * 60 * 60 * 24));
+                          
+                          if (giorniMancanti < 0) {
+                            return (
+                              <div className="absolute -top-2 -right-2">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-500 text-white shadow-lg animate-pulse">
+                                  🚨 SCADUTO
+                                </span>
+                              </div>
+                            );
+                          } else if (giorniMancanti <= 30) {
+                            return (
+                              <div className="absolute -top-2 -right-2">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-orange-500 text-white shadow-lg">
+                                  ⚠️ {giorniMancanti}gg
+                                </span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Messaggio informativo */}
+                  {collaborazione.dominio?.dataScadenza && (() => {
+                    const oggi = new Date();
+                    const scadenza = new Date(collaborazione.dominio.dataScadenza);
+                    const giorniMancanti = Math.ceil((scadenza - oggi) / (1000 * 60 * 60 * 24));
+                    
+                    if (giorniMancanti < 0) {
+                      return (
+                        <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+                          <p className="text-sm text-red-800 font-medium">
+                            🚨 <strong>ATTENZIONE:</strong> Il dominio è scaduto da {Math.abs(giorniMancanti)} giorni! Rinnovare immediatamente.
+                          </p>
+                        </div>
+                      );
+                    } else if (giorniMancanti <= 30) {
+                      return (
+                        <div className="mt-4 p-3 bg-orange-100 border border-orange-300 rounded-lg">
+                          <p className="text-sm text-orange-800 font-medium">
+                            ⚠️ <strong>ALERT:</strong> Il dominio scadrà tra {giorniMancanti} giorni. Prepararsi al rinnovo!
+                          </p>
+                        </div>
+                      );
+                    } else if (giorniMancanti <= 60) {
+                      return (
+                        <div className="mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
+                          <p className="text-sm text-yellow-800 font-medium">
+                            📅 Il dominio scadrà tra {giorniMancanti} giorni ({scadenza.toLocaleDateString('it-IT')})
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+
                 {/* Campi Note e Problemi */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>

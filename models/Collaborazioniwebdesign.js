@@ -39,6 +39,14 @@ const CollaborazioneWebDesignSchema = new Schema(
     },
     dataInizioContratto: { type: Date, required: true }, // Data di inizio contratto
     dataFineContratto: { type: Date, required: true }, // Data di fine contratto
+    // Gestione domini
+    dominio: {
+      dataAcquisto: { type: Date, default: null },
+      dataScadenza: { type: Date, default: null },
+      urlDominio: { type: String, default: "" },
+      alertInviato: { type: Boolean, default: false }, // Per tracciare se l'alert è già stato inviato
+      novaAlertData: { type: Date, default: null } // Per evitare spam di notifiche
+    },
   },
   { timestamps: true }
 );

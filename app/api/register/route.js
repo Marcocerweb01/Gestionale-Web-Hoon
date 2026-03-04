@@ -71,9 +71,12 @@ export async function POST(req) {
         indirizzo: ruolo.dettagli.indirizzo,
       });
     } else if (ruolo.nome === "collaboratore") {
-      if (!partitaIva || !ruolo.dettagli?.subRole) {
+      // Supporta sia subRoles (array) che subRole (singolo) per retrocompatibilità
+      const subRoles = ruolo.dettagli?.subRoles || (ruolo.dettagli?.subRole ? [ruolo.dettagli.subRole] : []);
+      
+      if (!partitaIva || subRoles.length === 0) {
         return NextResponse.json(
-          { message: "Dati specifici del collaboratore mancanti" },
+          { message: "Dati specifici del collaboratore mancanti o nessuna specializzazione selezionata" },
           { status: 400 }
         );
       }
@@ -84,7 +87,7 @@ export async function POST(req) {
         email,
         password: hashedPassword,
         partitaIva,
-        subRole: ruolo.dettagli.subRole,
+        subRoles: subRoles, // Array di ruoli
       });
     } else if (ruolo.nome === "contatto") {
       nuovoUtente = await Contatto.create({

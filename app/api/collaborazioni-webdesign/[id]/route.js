@@ -72,6 +72,33 @@ export async function PATCH(req, { params }) {
       collaborazione.problemi = body.problemi;
     }
 
+    if (body.stato !== undefined) {
+      collaborazione.stato = body.stato;
+    }
+
+    // Gestione dominio
+    if (body.dominio !== undefined) {
+      // Se viene passata una data di acquisto, calcola automaticamente la scadenza (1 anno dopo)
+      if (body.dominio.dataAcquisto) {
+        const dataAcquisto = new Date(body.dominio.dataAcquisto);
+        const dataScadenza = new Date(dataAcquisto);
+        dataScadenza.setFullYear(dataScadenza.getFullYear() + 1);
+        
+        collaborazione.dominio = {
+          ...collaborazione.dominio,
+          ...body.dominio,
+          dataScadenza: dataScadenza,
+          alertInviato: false, // Reset alert quando si aggiorna la data
+          novaAlertData: null
+        };
+      } else {
+        collaborazione.dominio = {
+          ...collaborazione.dominio,
+          ...body.dominio
+        };
+      }
+    }
+
     // Aggiorna i task
     if (body.tasks) {
       collaborazione.tasks = body.tasks;

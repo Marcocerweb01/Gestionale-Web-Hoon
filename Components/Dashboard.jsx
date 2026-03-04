@@ -7,6 +7,7 @@ import ListaClienti from './Lista-clienti';
 import TimelineWebDesigner from './timeline-web-designer'; // ✨ Uso TimelineWebDesigner al posto di ListaClientiWebDesigner
 import TimelineLead from './TimelineLead';
 import CreaLead from './CreaLead';
+import VistaGoogleAdsCollaboratore from './VistaGoogleAdsCollaboratore';
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import { 
@@ -23,7 +24,11 @@ import {
   Settings,
   Monitor,
   Table,
-  Sparkles
+  Sparkles,
+  TrendingUp,
+  Search,
+  Target,
+  Share2
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -40,6 +45,7 @@ const Dashboard = () => {
   const [fatture, setFatture] = useState([]);
   const [loadingFatture, setLoadingFatture] = useState(false);
   const [anniAperti, setAnniAperti] = useState({ 2025: true }); // Anno corrente aperto di default
+  const [sottoMenuMarketing, setSottoMenuMarketing] = useState(false); // Stato per sotto-menu marketing
   
   // ✨ Usa il nuovo hook con refresh automatico
   const { collaboratori: data, loading, error, refreshCollaboratori } = useCollaboratoriWithGlobalRefresh();
@@ -56,6 +62,28 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [mostraPassati, setMostraPassati] = useState(false);
 
+  // Helper per verificare se l'utente ha un determinato ruolo
+  const hasRole = (role) => {
+    if (!session?.user) return false;
+    
+    console.log('🔍 hasRole check:', {
+      lookingFor: role,
+      subRoles: session.user.subRoles,
+      subRole: session.user.subrole,
+      hasSubRolesArray: session.user.subRoles && Array.isArray(session.user.subRoles)
+    });
+    
+    // Supporta sia subRoles (array) che subRole (stringa) per retrocompatibilità
+    if (session.user.subRoles && Array.isArray(session.user.subRoles)) {
+      const result = session.user.subRoles.some(r => r.toLowerCase() === role.toLowerCase());
+      console.log(`✅ Result (array): ${result}`);
+      return result;
+    }
+    const result = session.user.subrole?.toLowerCase() === role.toLowerCase();
+    console.log(`✅ Result (string): ${result}`);
+    return result;
+  };
+
   // Salva lo stato della sezione aperta in localStorage quando cambia
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -69,8 +97,14 @@ const Dashboard = () => {
 
   // Carica lead se l'utente è un commerciale
   useEffect(() => {
-    if (session?.user?.subrole === "commerciale" && session?.user?.id) {
-      fetchLeads();
+    if (session?.user?.id) {
+      const isCommerciale = session.user.subRoles 
+        ? session.user.subRoles.some(r => r.toLowerCase() === 'commerciale')
+        : session.user.subrole?.toLowerCase() === 'commerciale';
+      
+      if (isCommerciale) {
+        fetchLeads();
+      }
     }
   }, [session]);
 
@@ -513,7 +547,15 @@ const Dashboard = () => {
               <span className="text-sm md:text-base text-gray-600">
                 Ruolo: <span className="font-medium">{session?.user?.role}</span>
               </span>
-              {session?.user?.subrole && (
+              {session?.user?.subRoles && session.user.subRoles.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {session.user.subRoles.map((role, index) => (
+                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {role}
+                    </span>
+                  ))}
+                </div>
+              ) : session?.user?.subrole && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 w-fit">
                   {session?.user?.subrole}
                 </span>
@@ -824,27 +866,39 @@ const Dashboard = () => {
 
           {/* Contenuto Sezione Clienti e Collaborazioni - Viola */}
           {sezioneAperta === 'collaborazioni' && (
-            <div className="mt-4 md:mt-6 grid grid-cols-3 gap-3 md:gap-4 border-t border-purple-200 pt-4 md:pt-6">
-              <Link href="/Lista_clienti">
-                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 group">
-                  <Building2 className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                  <span className="font-medium text-sm md:text-base">Lista Clienti</span>
-                </button>
-              </Link>
+            <div className="mt-4 md:mt-6 space-y-3 md:space-y-4 border-t border-purple-200 pt-4 md:pt-6">
+              <div className="grid grid-cols-3 gap-3 md:gap-4">
+                <Link href="/Lista_clienti">
+                  <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 group">
+                    <Building2 className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium text-sm md:text-base">Lista Clienti</span>
+                  </button>
+                </Link>
+                
+                <Link href="/Lista_collaboratori">
+                  <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 group">
+                    <Users className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium text-sm md:text-base">Lista Collaboratori</span>
+                  </button>
+                </Link>
+                
+                <Link href="/Tabella-collaborazioni">
+                  <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 group">
+                    <Table className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium text-sm md:text-base">Tabella Collaborazioni</span>
+                  </button>
+                </Link>
+              </div>
               
-              <Link href="/Lista_collaboratori">
-                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 group">
-                  <Users className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                  <span className="font-medium text-sm md:text-base">Lista Collaboratori</span>
-                </button>
-              </Link>
-              
-              <Link href="/Tabella-collaborazioni">
-                <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 group">
-                  <Table className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                  <span className="font-medium text-sm md:text-base">Tabella Collaborazioni</span>
-                </button>
-              </Link>
+              {/* Gestione Domini Web Design */}
+              <div className="grid grid-cols-1">
+                <Link href="/Gestione-Domini">
+                  <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
+                    <Monitor className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium text-sm md:text-base">🌐 Gestione Domini Web Design</span>
+                  </button>
+                </Link>
+              </div>
             </div>
           )}
 
@@ -910,75 +964,142 @@ const Dashboard = () => {
       {/* Main Content - Mobile Responsive */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-4 md:p-6 border-b border-gray-200">
-          {session?.user?.role === "amministratore" ? (
-            <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
-              <Users className="w-5 h-5 md:w-6 md:h-6 mr-2 text-blue-600" />
-              Lista Collaboratori
-            </h2>
-          ) : session?.user?.subrole === "commerciale" ? (
-            <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
-              <MessageSquare className="w-5 h-5 md:w-6 md:h-6 mr-2 text-green-600" />
-              Dashboard Lead Commerciali
-            </h2>
-          ) : session?.user?.subrole === "smm" ? (
-            <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
-              <Building2 className="w-5 h-5 md:w-6 md:h-6 mr-2 text-purple-600" />
-              Lista Clienti
-            </h2>
-          ) : (
-            <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
-              <Clock className="w-5 h-5 md:w-6 md:h-6 mr-2 text-orange-600" />
-              I tuoi progetti Web Design
-            </h2>
-          )}
+          <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
+            {session?.user?.role === "amministratore" ? (
+              <>
+                <Users className="w-5 h-5 md:w-6 md:h-6 mr-2 text-blue-600" />
+                Lista Collaboratori
+              </>
+            ) : (
+              <>
+                <Clock className="w-5 h-5 md:w-6 md:h-6 mr-2 text-blue-600" />
+                Dashboard
+              </>
+            )}
+          </h2>
         </div>
         
         <div className="p-4 md:p-6">
           {session?.user?.role === "amministratore" ? (
             <ListaCollaboratori collaboratori={collaboratoriAttivi} />
-          ) : session?.user?.subrole === "commerciale" ? (
-            session?.user?.id ? (
-              <LeadDashboard 
-                leads={leads}
-                isLoading={isLoadingLeads}
-                filtroStato={filtroStato}
-                setFiltroStato={setFiltroStato}
-                filtroTimeline={filtroTimeline}
-                setFiltroTimeline={setFiltroTimeline}
-                filtroData={filtroData}
-                setFiltroData={setFiltroData}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                leadsFiltrati={leadsFiltrati()}
-                conteggioPerStato={conteggioPerStato}
-                handleLeadCreato={handleLeadCreato}
-                handleLeadUpdate={handleLeadUpdate}
-                handleLeadDelete={handleLeadDelete}
-                commercialeId={session.user.id}
-                mostraPassati={mostraPassati}
-                setMostraPassati={setMostraPassati}
-              />
-            ) : (
-              <div className="text-center py-8 text-red-600">
-                ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
-              </div>
-            )
-          ) : session?.user?.subrole === "smm" ? (
-            session?.user?.id ? (
-              <ListaClienti id={session.user.id} amministratore={false} />
-            ) : (
-              <div className="text-center py-8 text-red-600">
-                ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
-              </div>
-            )
           ) : (
-            session?.user?.id ? (
-              <TimelineWebDesigner userId={session.user.id} />
-            ) : (
-              <div className="text-center py-8 text-red-600">
-                ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
-              </div>
-            )
+            <>
+              {/* Lead Commerciali */}
+              {hasRole("commerciale") && (
+                <div className="mb-8">
+                  <div className="flex items-center mb-4">
+                    <MessageSquare className="w-6 h-6 mr-2 text-green-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Lead Commerciali</h3>
+                  </div>
+                  {session?.user?.id ? (
+                    <LeadDashboard 
+                      leads={leads}
+                      isLoading={isLoadingLeads}
+                      filtroStato={filtroStato}
+                      setFiltroStato={setFiltroStato}
+                      filtroTimeline={filtroTimeline}
+                      setFiltroTimeline={setFiltroTimeline}
+                      filtroData={filtroData}
+                      setFiltroData={setFiltroData}
+                      searchTerm={searchTerm}
+                      setSearchTerm={setSearchTerm}
+                      leadsFiltrati={leadsFiltrati()}
+                      conteggioPerStato={conteggioPerStato}
+                      handleLeadCreato={handleLeadCreato}
+                      handleLeadUpdate={handleLeadUpdate}
+                      handleLeadDelete={handleLeadDelete}
+                      commercialeId={session.user.id}
+                      mostraPassati={mostraPassati}
+                      setMostraPassati={setMostraPassati}
+                    />
+                  ) : (
+                    <div className="text-center py-8 text-red-600">
+                      ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Progetti Web Design */}
+              {hasRole("web designer") && (
+                <div className="mb-8">
+                  <div className="flex items-center mb-4">
+                    <Clock className="w-6 h-6 mr-2 text-orange-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">I tuoi progetti Web Design</h3>
+                  </div>
+                  {session?.user?.id ? (
+                    <TimelineWebDesigner userId={session.user.id} />
+                  ) : (
+                    <div className="text-center py-8 text-red-600">
+                      ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Social Media Manager */}
+              {hasRole("smm") && (
+                <div className="mb-8">
+                  <div className="flex items-center mb-4">
+                    <Building2 className="w-6 h-6 mr-2 text-purple-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Lista Clienti Social Media</h3>
+                  </div>
+                  {session?.user?.id ? (
+                    <ListaClienti id={session.user.id} amministratore={false} />
+                  ) : (
+                    <div className="text-center py-8 text-red-600">
+                      ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Google ADS */}
+              {hasRole("google ads") && (
+                <div className="mb-8">
+                  <div className="flex items-center mb-4">
+                    <Target className="w-6 h-6 mr-2 text-orange-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Le mie Campagne Google ADS</h3>
+                  </div>
+                  <VistaGoogleAdsCollaboratore />
+                </div>
+              )}
+
+              {/* Meta ADS */}
+              {hasRole("meta ads") && (
+                <div className="mb-8">
+                  <div className="flex items-center mb-4">
+                    <Share2 className="w-6 h-6 mr-2 text-blue-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Le mie Campagne Meta ADS</h3>
+                  </div>
+                  <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <Share2 className="w-16 h-16 mx-auto mb-4 text-blue-400" />
+                    <p className="text-gray-600 text-lg">Sezione Meta ADS in arrivo...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* SEO */}
+              {hasRole("seo") && (
+                <div className="mb-8">
+                  <div className="flex items-center mb-4">
+                    <Search className="w-6 h-6 mr-2 text-purple-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">I miei Progetti SEO</h3>
+                  </div>
+                  <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <Search className="w-16 h-16 mx-auto mb-4 text-purple-400" />
+                    <p className="text-gray-600 text-lg">Sezione SEO in arrivo...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Nessun ruolo assegnato */}
+              {!hasRole("commerciale") && !hasRole("web designer") && !hasRole("smm") && !hasRole("google ads") && !hasRole("meta ads") && !hasRole("seo") && (
+                <div className="text-center py-12">
+                  <p className="text-gray-600 text-lg">Nessun ruolo assegnato</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

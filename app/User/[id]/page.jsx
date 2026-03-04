@@ -59,6 +59,11 @@ const UserDetails = ({ params }) => {
           data.noteAmministratore = "";
         }
         
+        // ✨ Converti subRole in subRoles per supporto multi-ruolo
+        if (data.subRole && !data.subRoles) {
+          data.subRoles = [data.subRole];
+        }
+        
         setUser(data);
         setFormData(data); // Imposta i dati iniziali del form
         
@@ -132,6 +137,15 @@ const UserDetails = ({ params }) => {
     const { name, value } = e.target;
     console.log(`📝 Campo modificato: ${name} = "${value}"`);
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Gestione toggle checkbox ruoli
+  const handleRoleToggle = (roleValue) => {
+    const currentRoles = formData.subRoles || [];
+    const newRoles = currentRoles.includes(roleValue)
+      ? currentRoles.filter(r => r !== roleValue)
+      : [...currentRoles, roleValue];
+    setFormData((prev) => ({ ...prev, subRoles: newRoles }));
   };
 
   // Salva modifiche
@@ -353,20 +367,40 @@ const UserDetails = ({ params }) => {
                       </div>
                       
                       {user.subRole && (
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            💼 Ruolo
+                        <div className="sm:col-span-2">
+                          <label className="block text-sm font-semibold text-gray-900 mb-3">
+                            💼 Specializzazioni
                           </label>
-                          <select
-                            name="subRole"
-                            value={formData.subRole || ""}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base"
-                          >
-                            <option value="commerciale">💼 Commerciale</option>
-                            <option value="smm">📱 Social Media Manager</option>
-                            <option value="web designer">💻 Web Designer</option>
-                          </select>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {[
+                              { value: "commerciale", label: "Commerciale", icon: "💼" },
+                              { value: "smm", label: "Social Media Manager", icon: "📱" },
+                              { value: "web designer", label: "Web Designer", icon: "🎨" },
+                              { value: "seo", label: "SEO", icon: "🔍" },
+                              { value: "google ads", label: "Google ADS", icon: "📢" },
+                              { value: "meta ads", label: "Meta ADS", icon: "📱" }
+                            ].map((ruolo) => (
+                              <label
+                                key={ruolo.value}
+                                className="flex items-center space-x-3 p-3 bg-white border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 transition-colors"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={(formData.subRoles || []).includes(ruolo.value)}
+                                  onChange={() => handleRoleToggle(ruolo.value)}
+                                  className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-sm font-medium text-gray-700">
+                                  {ruolo.icon} {ruolo.label}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                          {(formData.subRoles || []).length > 0 && (
+                            <p className="text-xs text-green-600 mt-2">
+                              ✓ {formData.subRoles.length} specializzazione/i selezionate
+                            </p>
+                          )}
                         </div>
                       )}
                       
@@ -530,16 +564,39 @@ const UserDetails = ({ params }) => {
                     </div>
                     
                     {user.subRole && (
-                      <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                        <div className="flex items-center space-x-2">
+                      <div className="bg-gray-50 rounded-lg p-3 sm:p-4 sm:col-span-2 lg:col-span-3">
+                        <div className="flex items-start space-x-2">
                           <span className="text-lg flex-shrink-0">💼</span>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm text-gray-600">Ruolo</p>
-                            <p className="font-semibold text-gray-900 text-sm sm:text-base">
-                              {user.subRole === 'web designer' ? '💻 Web Designer' : 
-                               user.subRole === 'smm' ? '📱 Social Media Manager' : 
-                               user.subRole === 'commerciale' ? '💼 Commerciale' : user.subRole}
-                            </p>
+                            <p className="text-sm text-gray-600 mb-2">Specializzazioni</p>
+                            <div className="flex flex-wrap gap-2">
+                              {(user.subRoles || [user.subRole]).map((role, index) => {
+                                const roleIcons = {
+                                  'commerciale': '💼',
+                                  'smm': '📱',
+                                  'web designer': '🎨',
+                                  'seo': '🔍',
+                                  'google ads': '📢',
+                                  'meta ads': '📱'
+                                };
+                                const roleLabels = {
+                                  'commerciale': 'Commerciale',
+                                  'smm': 'Social Media Manager',
+                                  'web designer': 'Web Designer',
+                                  'seo': 'SEO',
+                                  'google ads': 'Google ADS',
+                                  'meta ads': 'Meta ADS'
+                                };
+                                return (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold"
+                                  >
+                                    {roleIcons[role]} {roleLabels[role] || role}
+                                  </span>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -23,7 +23,8 @@ export async function GET(req) {
       nome: collaboratore.nome,
       cognome:collaboratore.cognome,
       email: collaboratore.email,
-      subRole: collaboratore.subRole,
+      subRole: collaboratore.subRole, // Mantieni per retrocompatibilità
+      subRoles: collaboratore.subRoles || (collaboratore.subRole ? [collaboratore.subRole] : []), // Nuovo campo array
       partitaIva: collaboratore.partitaIva,
       status: collaboratore.status || 'attivo', // ✨ Aggiungi il campo status
       noteAmministratore: collaboratore.noteAmministratore || '', // ✨ Aggiungi le note amministratore

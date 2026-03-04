@@ -26,16 +26,16 @@ const nextConfig = {
   
   // Turbopack config (Next.js 16+)
   turbopack: {
-    // Empty config to silence webpack warning
+    resolveExtensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
   },
   
-  webpack(config) {
-    config.experiments = {
-      ...config.experiments,
-      topLevelAwait: true,
-    }
-    return config
-  }
+  // webpack(config) {
+  //   config.experiments = {
+  //     ...config.experiments,
+  //     topLevelAwait: true,
+  //   }
+  //   return config
+  // }
 }
 
 module.exports = nextConfig

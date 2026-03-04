@@ -19,9 +19,10 @@ const CollaboratoreSchema = new Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   partitaIva: { type: String, required: true },
-  subRole: {
-    type: String,
-    enum: ["commerciale", "smm", "web designer"],
+  subRoles: {
+    type: [String],
+    enum: ["commerciale", "smm", "web designer", "seo", "google ads", "meta ads"],
+    default: [],
     required: true,
   },
   status: {
