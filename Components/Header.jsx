@@ -73,6 +73,17 @@ const Header = () => {
 
           {/* Navigation */}
           <nav className="flex items-center space-x-4">
+            {/* Contatta Admin WhatsApp */}
+            <a
+              href="https://wa.me/393715820785"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg shadow-sm transition-all duration-200"
+            >
+              <span className="text-base">💬</span>
+              <span className="hidden sm:block">Contatta Admin</span>
+            </a>
+
             {status === "loading" ? (
               <div className="flex items-center space-x-2">
                 <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
