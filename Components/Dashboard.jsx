@@ -1322,6 +1322,33 @@ const LeadDashboard = ({
           </div>
         </div>
       )}
+      {/* Banner Contatta Admin */}
+      <div className="mt-4 rounded-2xl overflow-hidden shadow-lg">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-center sm:text-left">
+            <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-white/10 shrink-0">
+              <span className="text-2xl">🐞</span>
+            </div>
+            <div>
+              <p className="text-white font-semibold text-base md:text-lg leading-tight">
+                Hai notato qualche problema?
+              </p>
+              <p className="text-slate-400 text-sm mt-0.5">
+                Segnalalo all&apos;admin e lo risolviamo subito.
+              </p>
+            </div>
+          </div>
+          <a
+            href="https://wa.me/393715820785"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-400 active:bg-green-600 text-white text-sm font-semibold rounded-xl shadow-md transition-all duration-200 whitespace-nowrap shrink-0"
+          >
+            <span className="text-base">💬</span>
+            Contatta l&apos;Admin
+          </a>
+        </div>
+      </div>
     </div>
   );
 };
