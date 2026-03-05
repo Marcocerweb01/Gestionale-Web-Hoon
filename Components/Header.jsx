@@ -92,11 +92,6 @@ const Header = () => {
                   </Link>
                 )}
                 
-                {/* User info */}
-                <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-700">
-                  <User className="w-4 h-4" />
-                  <span>Ciao, {session.user.nome}</span>
-                </div>
                 
                 {/* Logout button */}
                 <button

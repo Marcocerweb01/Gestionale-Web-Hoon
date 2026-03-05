@@ -28,6 +28,28 @@ const Rootlayout = ({children}) => {
                 {children}
               </div>
             </main>
+
+            {/* Footer WhatsApp Admin */}
+            <footer className="bg-slate-900 border-t border-slate-700 py-4 px-4">
+              <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-3 text-center sm:text-left">
+                  <span className="text-xl">🐞</span>
+                  <div>
+                    <p className="text-white font-semibold text-sm leading-tight">Hai notato qualche problema?</p>
+                    <p className="text-slate-400 text-xs">Segnalalo all&apos;admin e lo risolviamo subito.</p>
+                  </div>
+                </div>
+                <a
+                  href="https://wa.me/393715820785"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-400 active:bg-green-600 text-white text-sm font-semibold rounded-xl shadow-md transition-all duration-200 whitespace-nowrap"
+                >
+                  <span className="text-base">💬</span>
+                  Contatta l&apos;Admin
+                </a>
+              </div>
+            </footer>
           </div>
         </Providers>
       </body>
