@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Header from '@/Components/Header';
-import { HelpCircle, ChevronDown, ChevronUp, ArrowLeft, Plus, X, Trash2, Edit2 } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp, ArrowLeft, Plus, X, Trash2, Edit2, Lightbulb, Send, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 
 export default function FaqPage() {
@@ -33,6 +33,17 @@ export default function FaqPage() {
     titolo: '',
     testo: ''
   });
+  
+  // Stati per FAQ suggerite
+  const [mostraFormSuggerimento, setMostraFormSuggerimento] = useState(false);
+  const [domandaSuggerita, setDomandaSuggerita] = useState('');
+  const [faqSuggerite, setFaqSuggerite] = useState([]);
+  const [rispondendoAFaq, setRispondendoAFaq] = useState(null);
+  const [rispostaFaq, setRispostaFaq] = useState({
+    categoria: '',
+    titolo: '',
+    testo: ''
+  });
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -57,6 +68,15 @@ export default function FaqPage() {
         // Seleziona la prima categoria
         if (catUniche.length > 0 && !categoriaSelezionata) {
           setCategoriaSelezionata(catUniche[0]);
+        }
+      }
+      
+      // Carica FAQ suggerite (solo per admin)
+      if (session?.user?.role === 'amministratore') {
+        const resSuggerite = await fetch('/api/faq-suggerite');
+        if (resSuggerite.ok) {
+          const dataSuggerite = await resSuggerite.json();
+          setFaqSuggerite(dataSuggerite);
         }
       }
     } catch (error) {
@@ -228,6 +248,116 @@ export default function FaqPage() {
     }
   };
 
+  // Funzioni per FAQ suggerite
+  const handleSuggerisciFaq = async (e) => {
+    e.preventDefault();
+    
+    if (!domandaSuggerita.trim()) {
+      alert("Scrivi una domanda prima di inviare");
+      return;
+    }
+    
+    try {
+      setSalvando(true);
+      
+      const res = await fetch('/api/faq-suggerite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domanda: domandaSuggerita })
+      });
+      
+      if (res.ok) {
+        alert("Grazie per il tuo suggerimento! Gli amministratori lo esamineranno presto.");
+        setDomandaSuggerita('');
+        setMostraFormSuggerimento(false);
+        await caricaDati();
+      } else {
+        const error = await res.json();
+        alert(`Errore: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Errore invio suggerimento:", error);
+      alert("Errore durante l'invio del suggerimento");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const handleEliminaFaqSuggerita = async (id) => {
+    if (!confirm("Sei sicuro di voler eliminare questo suggerimento?")) return;
+    
+    try {
+      const res = await fetch(`/api/faq-suggerite/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (res.ok) {
+        await caricaDati();
+      } else {
+        alert("Errore durante l'eliminazione");
+      }
+    } catch (error) {
+      console.error("Errore eliminazione suggerimento:", error);
+      alert("Errore durante l'eliminazione");
+    }
+  };
+
+  const iniziaRispostaFaq = (faqSuggerita) => {
+    setRispondendoAFaq(faqSuggerita._id);
+    setRispostaFaq({
+      categoria: categorie.length > 0 ? categorie[0] : '',
+      titolo: faqSuggerita.domanda,
+      testo: ''
+    });
+  };
+
+  const annullaRispostaFaq = () => {
+    setRispondendoAFaq(null);
+    setRispostaFaq({ categoria: '', titolo: '', testo: '' });
+  };
+
+  const handlePubblicaFaqSuggerita = async (idSuggerita) => {
+    const categoriaFinale = usaNuovaCategoria ? nuovaCategoria : rispostaFaq.categoria;
+    
+    if (!categoriaFinale || !rispostaFaq.titolo || !rispostaFaq.testo) {
+      alert("Compila tutti i campi");
+      return;
+    }
+    
+    try {
+      setSalvando(true);
+      
+      const res = await fetch(`/api/faq-suggerite/${idSuggerita}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categoria: categoriaFinale,
+          titolo: rispostaFaq.titolo,
+          testo: rispostaFaq.testo
+        })
+      });
+      
+      if (res.ok) {
+        alert("FAQ pubblicata con successo!");
+        // Rimuovi immediatamente la FAQ suggerita dall'elenco locale
+        setFaqSuggerite(faqSuggerite.filter(faq => faq._id !== idSuggerita));
+        setRispondendoAFaq(null);
+        setRispostaFaq({ categoria: '', titolo: '', testo: '' });
+        setNuovaCategoria('');
+        setUsaNuovaCategoria(false);
+        await caricaDati();
+      } else {
+        const error = await res.json();
+        alert(`Errore: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Errore pubblicazione FAQ:", error);
+      alert("Errore durante la pubblicazione");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
   const toggleFaq = (id) => {
     setOpenFaq(openFaq === id ? null : id);
   };
@@ -269,20 +399,68 @@ export default function FaqPage() {
                 </h1>
               </div>
               
-              {isAdmin && (
+              <div className="flex gap-3">
+                {/* Bottone Suggerisci FAQ - visibile a tutti */}
                 <button
-                  onClick={() => setMostraForm(!mostraForm)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => setMostraFormSuggerimento(!mostraFormSuggerimento)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
-                  {mostraForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                  <span>{mostraForm ? 'Annulla' : 'Aggiungi FAQ'}</span>
+                  {mostraFormSuggerimento ? <X className="w-4 h-4" /> : <Lightbulb className="w-4 h-4" />}
+                  <span>{mostraFormSuggerimento ? 'Annulla' : 'Suggerisci FAQ'}</span>
                 </button>
-              )}
+                
+                {isAdmin && (
+                  <button
+                    onClick={() => setMostraForm(!mostraForm)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    {mostraForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    <span>{mostraForm ? 'Annulla' : 'Aggiungi FAQ'}</span>
+                  </button>
+                )}
+              </div>
             </div>
             <p className="text-gray-600 text-lg">
               Trova risposte alle domande più comuni sulla piattaforma
             </p>
           </div>
+
+          {/* Form Suggerisci FAQ - visibile a tutti */}
+          {mostraFormSuggerimento && (
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl shadow-sm border border-purple-200 p-6 mb-8">
+              <div className="flex items-center space-x-3 mb-4">
+                <Lightbulb className="w-6 h-6 text-purple-600" />
+                <h3 className="text-xl font-semibold text-gray-900">Suggerisci una FAQ</h3>
+              </div>
+              <p className="text-gray-600 mb-4">
+                Hai una domanda a cui vorresti trovare risposta? Suggeriscila qui e il nostro team la valuterà!
+              </p>
+              <form onSubmit={handleSuggerisciFaq} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    La tua domanda
+                  </label>
+                  <textarea
+                    value={domandaSuggerita}
+                    onChange={(e) => setDomandaSuggerita(e.target.value)}
+                    placeholder="es. Come posso modificare il mio profilo?"
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={salvando}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{salvando ? 'Invio in corso...' : 'Invia Suggerimento'}</span>
+                </button>
+              </form>
+            </div>
+          )}
 
           {/* Form Aggiungi FAQ (solo admin) */}
           {isAdmin && mostraForm && (
@@ -365,6 +543,154 @@ export default function FaqPage() {
                   <span>{salvando ? 'Salvataggio...' : 'Salva FAQ'}</span>
                 </button>
               </form>
+            </div>
+          )}
+
+          {/* FAQ Suggerite (solo admin) */}
+          {isAdmin && faqSuggerite.length > 0 && (
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl shadow-sm border border-yellow-200 p-6 mb-8">
+              <div className="flex items-center space-x-3 mb-4">
+                <MessageSquare className="w-6 h-6 text-orange-600" />
+                <h3 className="text-xl font-semibold text-gray-900">
+                  FAQ Suggerite dagli Utenti ({faqSuggerite.length})
+                </h3>
+              </div>
+              
+              <div className="space-y-4">
+                {faqSuggerite.map((suggerita) => (
+                  <div key={suggerita._id} className="bg-white rounded-lg border border-orange-200 p-4">
+                    {rispondendoAFaq === suggerita._id ? (
+                      // Form di risposta
+                      <div className="space-y-4">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                          Rispondi e Pubblica FAQ
+                        </h4>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Categoria
+                          </label>
+                          <div className="space-y-2">
+                            <select
+                              value={usaNuovaCategoria ? '_nuova_' : rispostaFaq.categoria}
+                              onChange={(e) => {
+                                if (e.target.value === '_nuova_') {
+                                  setUsaNuovaCategoria(true);
+                                  setRispostaFaq({...rispostaFaq, categoria: ''});
+                                } else {
+                                  setUsaNuovaCategoria(false);
+                                  setRispostaFaq({...rispostaFaq, categoria: e.target.value});
+                                }
+                              }}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              required
+                            >
+                              <option value="">Seleziona una categoria...</option>
+                              {categorie.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ))}
+                              <option value="_nuova_">➕ Nuova categoria...</option>
+                            </select>
+                            
+                            {usaNuovaCategoria && (
+                              <input
+                                type="text"
+                                value={nuovaCategoria}
+                                onChange={(e) => setNuovaCategoria(e.target.value)}
+                                placeholder="Nome nuova categoria"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
+                              />
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Titolo Domanda (puoi modificarlo)
+                          </label>
+                          <input
+                            type="text"
+                            value={rispostaFaq.titolo}
+                            onChange={(e) => setRispostaFaq({...rispostaFaq, titolo: e.target.value})}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Risposta
+                          </label>
+                          <textarea
+                            value={rispostaFaq.testo}
+                            onChange={(e) => setRispostaFaq({...rispostaFaq, testo: e.target.value})}
+                            placeholder="Scrivi la risposta dettagliata..."
+                            rows={5}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handlePubblicaFaqSuggerita(suggerita._id)}
+                            disabled={salvando}
+                            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                          >
+                            {salvando ? 'Pubblicazione...' : '✓ Pubblica FAQ'}
+                          </button>
+                          <button
+                            onClick={annullaRispostaFaq}
+                            disabled={salvando}
+                            className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                          >
+                            Annulla
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Vista suggerimento
+                      <>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <p className="text-gray-900 font-medium text-lg mb-2">
+                              {suggerita.domanda}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Suggerita da: <span className="font-medium">{suggerita.suggeritaDa.nome}</span>
+                              {' • '}
+                              {new Date(suggerita.createdAt).toLocaleDateString('it-IT', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => iniziaRispostaFaq(suggerita)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            <span>Rispondi a FAQ</span>
+                          </button>
+                          <button
+                            onClick={() => handleEliminaFaqSuggerita(suggerita._id)}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
