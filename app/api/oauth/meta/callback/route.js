@@ -9,8 +9,14 @@ import mongoose from 'mongoose';
 export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
+    
+    // Costruisce base URL corretta (gestisce Railway proxy interno)
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+    const proto = req.headers.get('x-forwarded-proto') || 'https';
+    const baseUrl = host ? `${proto}://${host}` : (process.env.NEXTAUTH_URL || new URL(req.url).origin);
+    
     if (!session) {
-      return NextResponse.redirect(new URL('/Login', req.url));
+      return NextResponse.redirect(`${baseUrl}/Login`);
     }
 
     const { searchParams } = new URL(req.url);
@@ -29,15 +35,11 @@ export async function GET(req) {
         errorDescription
       });
       
-      return NextResponse.redirect(
-        new URL(`/Operations/SocialAutomation?error=${encodeURIComponent(errorDescription || error)}`, req.url)
-      );
+      return NextResponse.redirect(`${baseUrl}/Operations/SocialAutomation?error=${encodeURIComponent(errorDescription || error)}`);
     }
     
     if (!code) {
-      return NextResponse.redirect(
-        new URL('/Operations/SocialAutomation?error=missing_code', req.url)
-      );
+      return NextResponse.redirect(`${baseUrl}/Operations/SocialAutomation?error=missing_code`);
     }
     
     // ── INSTAGRAM BUSINESS LOGIN (state=instagram) ──────────────────────────
@@ -58,9 +60,7 @@ export async function GET(req) {
       console.log('[IG CALLBACK] Token response:', JSON.stringify(igTokenData));
 
       if (igTokenData.error_message || igTokenData.error_type) {
-        return NextResponse.redirect(
-          new URL(`/Operations/SocialAutomation?error=${encodeURIComponent(igTokenData.error_message || 'Instagram auth error')}`, req.url)
-        );
+        return NextResponse.redirect(`${baseUrl}/Operations/SocialAutomation?error=${encodeURIComponent(igTokenData.error_message || 'Instagram auth error')}`);
       }
 
       const shortToken = igTokenData.access_token;
@@ -107,9 +107,7 @@ export async function GET(req) {
         }).save();
       }
 
-      return NextResponse.redirect(
-        new URL('/Operations/SocialAutomation?success=true&accounts=1', req.url)
-      );
+      return NextResponse.redirect(`${baseUrl}/Operations/SocialAutomation?success=true&accounts=1`);
     }
 
     // ── FACEBOOK LOGIN (state=facebook o default) ────────────────────────────
@@ -280,14 +278,10 @@ export async function GET(req) {
     }
     
     // Redirect con successo
-    return NextResponse.redirect(
-      new URL(`/Operations/SocialAutomation?success=true&accounts=${savedCount}`, req.url)
-    );
+    return NextResponse.redirect(`${baseUrl}/Operations/SocialAutomation?success=true&accounts=${savedCount}`);
     
   } catch (error) {
     console.error('OAuth Callback Error:', error);
-    return NextResponse.redirect(
-      new URL(`/Operations/SocialAutomation?error=${encodeURIComponent(error.message)}`, req.url)
-    );
+    return NextResponse.redirect(`${baseUrl}/Operations/SocialAutomation?error=${encodeURIComponent(error.message)}`);
   }
 }

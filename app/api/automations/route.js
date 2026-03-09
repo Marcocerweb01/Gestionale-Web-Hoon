@@ -4,6 +4,7 @@ import { connectToDB } from '@/utils/database';
 import SocialAutomation from '@/models/SocialAutomation';
 import SocialAccount from '@/models/SocialAccount';
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 
 // GET - Lista automazioni (filtrabili per accountId)
 export async function GET(req) {
@@ -18,8 +19,8 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const accountId = searchParams.get('accountId');
 
-    const filter = { userId: session.user.id };
-    if (accountId) filter.accountId = accountId;
+    const filter = { userId: new mongoose.Types.ObjectId(session.user.id) };
+    if (accountId) filter.accountId = new mongoose.Types.ObjectId(accountId);
 
     const automations = await SocialAutomation.find(filter)
       .sort({ createdAt: -1 })
@@ -51,8 +52,8 @@ export async function POST(req) {
 
     // Verifica che l'account appartenga all'utente
     const account = await SocialAccount.findOne({
-      _id: accountId,
-      userId: session.user.id
+      _id: new mongoose.Types.ObjectId(accountId),
+      userId: new mongoose.Types.ObjectId(session.user.id)
     });
 
     if (!account) {
@@ -60,13 +61,18 @@ export async function POST(req) {
     }
 
     const automation = await SocialAutomation.create({
-      userId: session.user.id,
-      accountId,
+      userId: new mongoose.Types.ObjectId(session.user.id),
+      accountId: new mongoose.Types.ObjectId(accountId),
       name,
       platform,
       type,
       trigger: trigger || { keywords: [] },
-      action,
+      action: {
+        actionType: action.type || action.actionType,
+        message: action.message,
+        template: action.template,
+        delay: action.delay
+      },
       status: 'active'
     });
 

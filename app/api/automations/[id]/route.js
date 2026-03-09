@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDB } from '@/utils/database';
 import SocialAutomation from '@/models/SocialAutomation';
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 
 // PATCH - Aggiorna automazione (toggle status, modifica dati)
 export async function PATCH(req, context) {
@@ -17,7 +18,7 @@ export async function PATCH(req, context) {
 
     const automation = await SocialAutomation.findOne({
       _id: params.id,
-      userId: session.user.id
+      userId: new mongoose.Types.ObjectId(session.user.id)
     });
 
     if (!automation) {
@@ -53,7 +54,7 @@ export async function DELETE(req, context) {
 
     const automation = await SocialAutomation.findOneAndDelete({
       _id: params.id,
-      userId: session.user.id
+      userId: new mongoose.Types.ObjectId(session.user.id)
     });
 
     if (!automation) {

@@ -36,7 +36,7 @@ const SocialAutomationSchema = new mongoose.Schema({
   },
   
   action: {
-    type: String, // Tipo di azione
+    actionType: String, // Tipo di azione: reply_comment, send_dm, both
     message: String, // Messaggio da inviare
     template: String, // Template con variabili
     delay: Number // Ritardo in secondi
