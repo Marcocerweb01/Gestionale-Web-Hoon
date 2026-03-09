@@ -40,11 +40,9 @@ export async function POST(req, context) {
     }
 
     if (account.platform === 'instagram') {
-      // Per Instagram Business, la sottoscrizione si fa tramite l'app Meta Dashboard
-      // Oppure tramite la pagina Facebook collegata
-      // Qui registriamo la sottoscrizione sul campo comments
+      // Instagram Business Login: il token è di graph.instagram.com → usare graph.instagram.com per subscribed_apps
       const res = await fetch(
-        `https://graph.facebook.com/v21.0/${account.accountId}/subscribed_apps?subscribed_fields=comments,messages&access_token=${account.accessToken}`,
+        `https://graph.instagram.com/v21.0/${account.accountId}/subscribed_apps?subscribed_fields=comments,messages&access_token=${account.accessToken}`,
         { method: 'POST' }
       );
       const data = await res.json();
