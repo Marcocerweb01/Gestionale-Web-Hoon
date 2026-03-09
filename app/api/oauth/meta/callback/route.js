@@ -41,7 +41,7 @@ export async function GET(req) {
     
     // Scambia code per access token
     const tokenResponse = await fetch(
-      `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${process.env.META_APP_ID}&redirect_uri=${encodeURIComponent(process.env.META_REDIRECT_URI)}&client_secret=${process.env.META_APP_SECRET}&code=${code}`
+      `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${process.env.NEXT_PUBLIC_META_APP_ID}&redirect_uri=${encodeURIComponent(process.env.NEXT_PUBLIC_META_REDIRECT_URI)}&client_secret=${process.env.META_APP_SECRET}&code=${code}`
     );
     
     const tokenData = await tokenResponse.json();
@@ -55,9 +55,9 @@ export async function GET(req) {
     
     const accessToken = tokenData.access_token;
     
-    // Ottieni info utente/pagine
+    // Ottieni info utente/pagine + account Instagram collegati
     const meResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me?fields=id,name,accounts{id,username,name,picture,access_token,instagram_business_account{id,username,name,profile_picture_url}}&access_token=${accessToken}`
+      `https://graph.facebook.com/v21.0/me?fields=id,name,accounts{id,username,name,picture,access_token,connected_instagram_account{id,username,name,profile_picture_url},instagram_business_account{id,username,name,profile_picture_url}}&access_token=${accessToken}`
     );
     
     const meData = await meResponse.json();
@@ -82,24 +82,35 @@ export async function GET(req) {
           username: page.username || page.name,
           displayName: page.name,
           profilePicture: page.picture?.data?.url,
-          accessToken: page.access_token, // Page access token
-          tokenExpiry: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 giorni
-          permissions: ['pages_manage_posts', 'pages_manage_engagement', 'pages_messaging']
+          accessToken: page.access_token,
+          tokenExpiry: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          permissions: ['pages_read_engagement']
         });
         
-        // Instagram Business Account collegato
-        if (page.instagram_business_account) {
-          const ig = page.instagram_business_account;
-          accountsToSave.push({
-            platform: 'instagram',
-            accountId: ig.id,
-            username: ig.username,
-            displayName: ig.name || ig.username,
-            profilePicture: ig.profile_picture_url,
-            accessToken: page.access_token, // Usa page token per Instagram
-            tokenExpiry: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-            permissions: ['instagram_basic', 'instagram_manage_comments', 'instagram_manage_messages']
-          });
+        // Chiamata separata per ottenere l'Instagram Business Account collegato alla Page
+        try {
+          const igRes = await fetch(
+            `https://graph.facebook.com/v21.0/${page.id}?fields=instagram_business_account{id,username,name,profile_picture_url}&access_token=${page.access_token}`
+          );
+          const igData = await igRes.json();
+          
+          console.log(`[META CALLBACK] Page ${page.name} (${page.id}) - IG response:`, JSON.stringify(igData));
+          
+          const igAccount = igData.instagram_business_account;
+          if (igAccount) {
+            accountsToSave.push({
+              platform: 'instagram',
+              accountId: igAccount.id,
+              username: igAccount.username,
+              displayName: igAccount.name || igAccount.username,
+              profilePicture: igAccount.profile_picture_url,
+              accessToken: page.access_token,
+              tokenExpiry: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+              permissions: ['instagram_manage_comments', 'instagram_content_publish']
+            });
+          }
+        } catch (igErr) {
+          console.error(`Errore recupero Instagram per page ${page.id}:`, igErr);
         }
       }
     }

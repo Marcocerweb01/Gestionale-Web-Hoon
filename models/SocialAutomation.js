@@ -6,6 +6,12 @@ const SocialAutomationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+
+  accountId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SocialAccount',
+    required: true
+  },
   
   name: {
     type: String,
@@ -57,5 +63,8 @@ const SocialAutomationSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+SocialAutomationSchema.index({ userId: 1, accountId: 1 });
+SocialAutomationSchema.index({ accountId: 1, status: 1 });
 
 export default mongoose.models.SocialAutomation || mongoose.model('SocialAutomation', SocialAutomationSchema);

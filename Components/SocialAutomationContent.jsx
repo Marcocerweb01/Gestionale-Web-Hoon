@@ -76,11 +76,11 @@ export default function SocialAutomationContent() {
     const redirectUri = encodeURIComponent(process.env.NEXT_PUBLIC_META_REDIRECT_URI);
     
     const scopes = [
-      'instagram_basic',
-      'instagram_manage_comments',
-      'instagram_manage_messages',
+      'public_profile',
       'pages_show_list',
       'pages_read_engagement',
+      'instagram_manage_comments',
+      'instagram_manage_messages',
       'pages_manage_posts'
     ].join(',');
 

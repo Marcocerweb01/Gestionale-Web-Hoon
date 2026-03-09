@@ -65,7 +65,7 @@ export async function GET(req) {
   const challenge = searchParams.get('hub.challenge');
   
   // Token di verifica (deve corrispondere a quello configurato in Meta)
-  const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || 'your_verify_token_here';
+  const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'your_verify_token_here';
   
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     return new NextResponse(challenge, { status: 200 });

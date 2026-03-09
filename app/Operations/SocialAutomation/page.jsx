@@ -76,11 +76,11 @@ export default function SocialAutomationPage() {
   };
 
   const handleConnectMeta = () => {
-    // Redirect a Meta OAuth
+    // Solo scope confermati validi per Facebook Login classico
     const redirectUri = encodeURIComponent(process.env.NEXT_PUBLIC_META_REDIRECT_URI || `${window.location.origin}/api/oauth/meta/callback`);
-    const scope = encodeURIComponent('pages_manage_posts,pages_read_engagement,pages_manage_engagement,pages_messaging,instagram_basic,instagram_manage_comments,instagram_manage_messages,instagram_content_publish');
+    const scope = encodeURIComponent('public_profile,pages_show_list,pages_read_engagement,instagram_manage_comments,instagram_content_publish');
     
-    const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.NEXT_PUBLIC_META_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+    const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${process.env.NEXT_PUBLIC_META_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
     
     window.location.href = oauthUrl;
   };
