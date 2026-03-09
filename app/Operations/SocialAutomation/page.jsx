@@ -26,6 +26,7 @@ function SocialAutomationContent() {
   const searchParams = useSearchParams();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [webhookLoading, setWebhookLoading] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
@@ -91,16 +92,21 @@ function SocialAutomationContent() {
   };
 
   const handleSubscribeWebhook = async (accountId) => {
+    setWebhookLoading(accountId);
     try {
       const res = await fetch(`/api/social-accounts/${accountId}/subscribe-webhook`, { method: 'POST' });
       const data = await res.json();
+      console.log('[WEBHOOK SUBSCRIBE]', data);
       if (res.ok) {
-        setMessage({ type: 'success', text: '✅ Webhook attivato! Le automazioni sono ora operative.' });
+        const details = data.results?.map(r => JSON.stringify(r.result)).join(' | ') || '';
+        setMessage({ type: 'success', text: `✅ Webhook attivato! ${details}` });
       } else {
         setMessage({ type: 'error', text: `Errore webhook: ${data.error}` });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Errore attivazione webhook' });
+      setMessage({ type: 'error', text: `Errore: ${err.message}` });
+    } finally {
+      setWebhookLoading(null);
     }
   };
 
@@ -404,10 +410,13 @@ function SocialAutomationContent() {
                       </button>
                       <button
                         onClick={() => handleSubscribeWebhook(account._id)}
+                        disabled={webhookLoading === account._id}
                         title="Attiva ricezione eventi (commenti/DM)"
-                        className="flex items-center justify-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                        className="flex items-center justify-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium disabled:opacity-50"
                       >
-                        <Zap className="w-4 h-4" />
+                        {webhookLoading === account._id
+                          ? <span className="animate-spin">⏳</span>
+                          : <Zap className="w-4 h-4" />}
                         Webhook
                       </button>
                       <button
