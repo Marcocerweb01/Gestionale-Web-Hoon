@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDB } from '@/utils/database';
 import SocialAccount from '@/models/SocialAccount';
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 
 // GET - Lista account social dell'utente
 export async function GET(req) {
@@ -18,7 +19,7 @@ export async function GET(req) {
     const platform = searchParams.get('platform');
     const status = searchParams.get('status');
     
-    const filter = { userId: session.user.id };
+    const filter = { userId: new mongoose.Types.ObjectId(session.user.id) };
     if (platform) filter.platform = platform;
     if (status) filter.status = status;
     

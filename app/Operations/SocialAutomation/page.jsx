@@ -76,12 +76,16 @@ function SocialAutomationContent() {
   };
 
   const handleConnectMeta = () => {
-    // Solo scope confermati validi per Facebook Login classico
     const redirectUri = encodeURIComponent(process.env.NEXT_PUBLIC_META_REDIRECT_URI || `${window.location.origin}/api/oauth/meta/callback`);
-    const scope = encodeURIComponent('public_profile,pages_show_list,pages_read_engagement,instagram_manage_comments,instagram_content_publish');
-    
-    const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${process.env.NEXT_PUBLIC_META_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
-    
+    const scope = encodeURIComponent('public_profile,pages_show_list,pages_read_engagement,business_management,instagram_manage_comments,instagram_content_publish');
+    const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${process.env.NEXT_PUBLIC_META_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=facebook&auth_type=rerequest`;
+    window.location.href = oauthUrl;
+  };
+
+  const handleConnectInstagram = () => {
+    const redirectUri = encodeURIComponent(process.env.NEXT_PUBLIC_META_REDIRECT_URI || `${window.location.origin}/api/oauth/meta/callback`);
+    const scope = encodeURIComponent('instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish');
+    const oauthUrl = `https://www.instagram.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=instagram`;
     window.location.href = oauthUrl;
   };
 
@@ -149,13 +153,22 @@ function SocialAutomationContent() {
                 Gestisci account social e automazioni
               </p>
             </div>
-            <button
-              onClick={handleConnectMeta}
-              className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
-            >
-              <Plus className="w-5 h-5" />
-              Connetti Account
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleConnectMeta}
+                className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 transition-all shadow-md"
+              >
+                <Facebook className="w-5 h-5" />
+                Facebook
+              </button>
+              <button
+                onClick={handleConnectInstagram}
+                className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-5 py-3 rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all shadow-md"
+              >
+                <Instagram className="w-5 h-5" />
+                Instagram
+              </button>
+            </div>
           </div>
         </div>
 
