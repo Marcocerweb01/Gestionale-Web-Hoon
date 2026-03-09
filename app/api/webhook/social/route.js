@@ -25,13 +25,16 @@ async function replyToComment(platform, commentId, message, accessToken) {
 }
 
 // Invia DM a un utente
-async function sendDM(platform, recipientId, message, accessToken, igUserId) {
+// Per Instagram: se presente commentId, usa recipient.comment_id (risposta DM a commentatore)
+async function sendDM(platform, recipientId, message, accessToken, igUserId, commentId) {
   let url, body;
   if (platform === 'instagram') {
     // Instagram Business Login token → usa graph.instagram.com
     url = `https://graph.instagram.com/v21.0/${igUserId}/messages`;
+    // Usa comment_id se disponibile (più affidabile per commentatori)
+    const recipient = commentId ? { comment_id: commentId } : { id: recipientId };
     body = {
-      recipient: { id: recipientId },
+      recipient,
       message: { text: message },
     };
   } else {
@@ -126,10 +129,12 @@ export async function POST(req) {
             if (actionType === 'reply_comment' || actionType === 'both') {
               await replyToComment('instagram', commentId, message, account.accessToken);
             }
-            if ((actionType === 'send_dm' || actionType === 'both') && fromId) {
-              await sendDM('instagram', fromId, message, account.accessToken, pageId);
-            } else if (actionType === 'send_dm' && !fromId) {
-              console.log('[WEBHOOK] ⚠️ sendDM skip: fromId mancante nel payload');
+            if (actionType === 'send_dm' || actionType === 'both') {
+              if (commentId || fromId) {
+                await sendDM('instagram', fromId, message, account.accessToken, pageId, commentId);
+              } else {
+                console.log('[WEBHOOK] ⚠️ sendDM skip: commentId e fromId entrambi mancanti');
+              }
             }
 
             await SocialAutomation.findByIdAndUpdate(auto._id, {
