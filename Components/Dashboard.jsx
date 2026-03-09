@@ -890,8 +890,14 @@ const Dashboard = () => {
                 </Link>
               </div>
               
-              {/* Gestione Domini Web Design */}
-              <div className="grid grid-cols-1">
+              {/* Gestione Collaborazioni Utente + Gestione Domini */}
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
+                <Link href="/Gestione-Collaborazioni-Utente">
+                  <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
+                    <Users className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium text-sm md:text-base">🗂️ Gestione Collaborazioni</span>
+                  </button>
+                </Link>
                 <Link href="/Gestione-Domini">
                   <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
                     <Monitor className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
