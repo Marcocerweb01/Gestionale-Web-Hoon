@@ -50,7 +50,7 @@ export async function GET(req) {
           client_id: process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID,
           client_secret: process.env.INSTAGRAM_APP_SECRET,
           grant_type: 'authorization_code',
-          redirect_uri: process.env.NEXT_PUBLIC_META_REDIRECT_URI,
+          redirect_uri: process.env.NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI || process.env.NEXT_PUBLIC_META_REDIRECT_URI,
           code: code.replace('#_', ''), // Instagram aggiunge #_ alla fine
         }),
       });

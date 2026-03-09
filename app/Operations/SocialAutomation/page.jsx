@@ -83,7 +83,7 @@ function SocialAutomationContent() {
   };
 
   const handleConnectInstagram = () => {
-    const redirectUri = encodeURIComponent(process.env.NEXT_PUBLIC_META_REDIRECT_URI || `${window.location.origin}/api/oauth/meta/callback`);
+    const redirectUri = encodeURIComponent(process.env.NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI || process.env.NEXT_PUBLIC_META_REDIRECT_URI || `${window.location.origin}/api/oauth/meta/callback`);
     const scope = encodeURIComponent('instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish');
     const oauthUrl = `https://www.instagram.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=instagram`;
     window.location.href = oauthUrl;
