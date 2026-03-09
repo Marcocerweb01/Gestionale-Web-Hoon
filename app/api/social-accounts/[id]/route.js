@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDB } from '@/utils/database';
 import SocialAccount from '@/models/SocialAccount';
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 
 // GET - Dettagli account specifico
 export async function GET(req, context) {
@@ -19,7 +20,7 @@ export async function GET(req, context) {
     
     const account = await SocialAccount.findOne({
       _id: accountId,
-      userId: session.user.id
+      userId: new mongoose.Types.ObjectId(session.user.id)
     }).lean();
     
     if (!account) {

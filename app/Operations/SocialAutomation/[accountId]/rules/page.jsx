@@ -67,7 +67,7 @@ function NuovaRegolaModal({ account, onClose, onSave }) {
       });
       onClose();
     } catch (err) {
-      setError('Errore nel salvataggio');
+      setError(err.message || 'Errore nel salvataggio');
     } finally {
       setSaving(false);
     }
@@ -265,7 +265,10 @@ export default function RulesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error('Errore salvataggio');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.details || 'Errore salvataggio');
+    }
     const created = await res.json();
     setAutomations(prev => [created, ...prev]);
     setMessage({ type: 'success', text: 'Automazione creata!' });

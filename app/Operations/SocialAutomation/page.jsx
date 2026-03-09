@@ -14,7 +14,8 @@ import {
   Settings,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Zap
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -87,6 +88,20 @@ function SocialAutomationContent() {
     const scope = encodeURIComponent('instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish');
     const oauthUrl = `https://www.instagram.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=instagram`;
     window.location.href = oauthUrl;
+  };
+
+  const handleSubscribeWebhook = async (accountId) => {
+    try {
+      const res = await fetch(`/api/social-accounts/${accountId}/subscribe-webhook`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({ type: 'success', text: '✅ Webhook attivato! Le automazioni sono ora operative.' });
+      } else {
+        setMessage({ type: 'error', text: `Errore webhook: ${data.error}` });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Errore attivazione webhook' });
+    }
   };
 
   const handleDeleteAccount = async (accountId) => {
@@ -379,13 +394,21 @@ function SocialAutomationContent() {
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <button
                         onClick={() => router.push(`/Operations/SocialAutomation/${account._id}/rules`)}
                         className="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
                       >
                         <Settings className="w-4 h-4" />
                         Regole
+                      </button>
+                      <button
+                        onClick={() => handleSubscribeWebhook(account._id)}
+                        title="Attiva ricezione eventi (commenti/DM)"
+                        className="flex items-center justify-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                      >
+                        <Zap className="w-4 h-4" />
+                        Webhook
                       </button>
                       <button
                         onClick={() => loadAccounts()}
