@@ -157,6 +157,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
                 id={collab.id} 
                 nome={collab.nome + " " + collab.cognome} 
                 ruolo={getRuoliDisplay(collab)}
+                tipoLista="web designer"
                 status={collab.status}
                 noteAmministratore={collab.noteAmministratore}
                 isOpen={isListOpen(collab.id)}
@@ -195,6 +196,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
                 id={collab.id} 
                 nome={collab.nome + " " + collab.cognome} 
                 ruolo={getRuoliDisplay(collab)}
+                tipoLista="smm"
                 status={collab.status}
                 noteAmministratore={collab.noteAmministratore}
                 isOpen={isListOpen(collab.id)}
@@ -247,6 +249,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
                           id={collab.id} 
                           nome={collab.nome + " " + collab.cognome} 
                           ruolo={getRuoliDisplay(collab)}
+                          tipoLista="google ads"
                           status={collab.status}
                           noteAmministratore={collab.noteAmministratore}
                           isOpen={isListOpen(collab.id)}
@@ -281,6 +284,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
                           id={collab.id} 
                           nome={collab.nome + " " + collab.cognome} 
                           ruolo={getRuoliDisplay(collab)}
+                          tipoLista="meta ads"
                           status={collab.status}
                           noteAmministratore={collab.noteAmministratore}
                           isOpen={isListOpen(collab.id)}
@@ -315,6 +319,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
                           id={collab.id} 
                           nome={collab.nome + " " + collab.cognome} 
                           ruolo={getRuoliDisplay(collab)}
+                          tipoLista="seo"
                           status={collab.status}
                           noteAmministratore={collab.noteAmministratore}
                           isOpen={isListOpen(collab.id)}
@@ -355,6 +360,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
                 id={collab.id} 
                 nome={collab.nome + " " + collab.cognome} 
                 ruolo={getRuoliDisplay(collab)}
+                tipoLista="commerciale"
                 status={collab.status}
                 noteAmministratore={collab.noteAmministratore}
                 isOpen={isListOpen(collab.id)}
@@ -377,7 +383,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
  * Singolo collaboratore. Riprende la logica di feed o toggle.
  * Al posto di "Lista_clienti", se serve, potresti passare "id".
  */
-const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo", noteAmministratore = "", isOpen = false, onToggle }) => {
+const CollaboratoreItem = ({ id, nome, ruolo, tipoLista, status = "attivo", noteAmministratore = "", isOpen = false, onToggle }) => {
   // Mappa ruoli
   const displayRole =
     roleMap[ruolo] || ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
@@ -465,21 +471,23 @@ const CollaboratoreItem = ({ id, nome, ruolo, status = "attivo", noteAmministrat
         <div className="border-t border-gray-200 bg-gray-50">
           <div className="p-4">
             <h4 className="text-sm font-medium text-gray-700 mb-3">
-              {ruolo.toLowerCase().includes("google ads") 
+              {tipoLista === "web designer"
+                ? "Progetti Web Design"
+                : tipoLista === "google ads"
                 ? "Collaborazioni Google ADS"
-                : ruolo.toLowerCase().includes("seo")
+                : tipoLista === "seo"
                 ? "Collaborazioni SEO"
-                : ruolo.toLowerCase().includes("meta ads")
+                : tipoLista === "meta ads"
                 ? "Collaborazioni Meta ADS"
                 : "Lista Clienti"}
             </h4>
-            {ruolo === "web designer" ? (
+            {tipoLista === "web designer" ? (
               <ListaClientiWebDesigner userId={id} showWebDesignerLink={true} />
-            ) : ruolo.toLowerCase().includes("google ads") ? (
+            ) : tipoLista === "google ads" ? (
               <ListaGoogleAdsCollaboratore collaboratoreId={id} />
-            ) : ruolo.toLowerCase().includes("seo") ? (
+            ) : tipoLista === "seo" ? (
               <p className="text-gray-500 text-sm italic">Componente SEO in arrivo...</p>
-            ) : ruolo.toLowerCase().includes("meta ads") ? (
+            ) : tipoLista === "meta ads" ? (
               <p className="text-gray-500 text-sm italic">Componente Meta ADS in arrivo...</p>
             ) : (
               <Lista_clienti id={id} amministratore={true} />
