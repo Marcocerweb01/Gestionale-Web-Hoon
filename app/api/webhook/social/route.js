@@ -187,12 +187,15 @@ export async function GET(req) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
   
-  // Token di verifica (deve corrispondere a quello configurato in Meta)
+  console.log(`[WEBHOOK GET] mode=${mode} token=${token} challenge=${challenge}`);
+  
   const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'your_verify_token_here';
   
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('[WEBHOOK GET] ✅ Verifica Meta riuscita');
     return new NextResponse(challenge, { status: 200 });
   }
   
+  console.log(`[WEBHOOK GET] ❌ Verifica fallita — token ricevuto: "${token}", atteso: "${VERIFY_TOKEN}"`);
   return NextResponse.json({ error: 'Verification failed' }, { status: 403 });
 }
