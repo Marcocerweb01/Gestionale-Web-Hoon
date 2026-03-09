@@ -66,9 +66,8 @@ const SocialAccountSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index per ricerca veloce
+// Index per ricerca veloce (accountId già ha unique:true nello schema)
 SocialAccountSchema.index({ userId: 1, platform: 1 });
-SocialAccountSchema.index({ accountId: 1 });
 SocialAccountSchema.index({ status: 1 });
 
 export default mongoose.models.SocialAccount || mongoose.model('SocialAccount', SocialAccountSchema);
