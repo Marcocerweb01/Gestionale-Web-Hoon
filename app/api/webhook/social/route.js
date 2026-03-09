@@ -5,44 +5,52 @@ import SocialAccount from '@/models/SocialAccount';
 
 // Risponde a un commento Instagram/Facebook
 async function replyToComment(platform, commentId, message, accessToken) {
+  let url, body;
   if (platform === 'instagram') {
-    await fetch(`https://graph.facebook.com/v21.0/${commentId}/replies`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, access_token: accessToken }),
-    });
-  } else if (platform === 'facebook') {
-    await fetch(`https://graph.facebook.com/v21.0/${commentId}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, access_token: accessToken }),
-    });
+    // Instagram Business Login token → usa graph.instagram.com
+    url = `https://graph.instagram.com/v21.0/${commentId}/replies`;
+    body = { message, access_token: accessToken };
+  } else {
+    url = `https://graph.facebook.com/v21.0/${commentId}/comments`;
+    body = { message, access_token: accessToken };
   }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  console.log(`[WEBHOOK] replyToComment (${platform}):`, JSON.stringify(data));
+  return data;
 }
 
 // Invia DM a un utente
-async function sendDM(platform, recipientId, message, accessToken, pageId) {
+async function sendDM(platform, recipientId, message, accessToken, igUserId) {
+  let url, body;
   if (platform === 'instagram') {
-    await fetch(`https://graph.facebook.com/v21.0/${pageId}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipient: { id: recipientId },
-        message: { text: message },
-        access_token: accessToken,
-      }),
-    });
-  } else if (platform === 'facebook') {
-    await fetch(`https://graph.facebook.com/v21.0/${pageId}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipient: { id: recipientId },
-        message: { text: message },
-        access_token: accessToken,
-      }),
-    });
+    // Instagram Business Login token → usa graph.instagram.com
+    url = `https://graph.instagram.com/v21.0/${igUserId}/messages`;
+    body = {
+      recipient: { id: recipientId },
+      message: { text: message },
+    };
+  } else {
+    url = `https://graph.facebook.com/v21.0/${igUserId}/messages`;
+    body = {
+      recipient: { id: recipientId },
+      message: { text: message },
+      access_token: accessToken,
+    };
   }
+  const headers = { 'Content-Type': 'application/json' };
+  // Instagram Business Login usa Authorization header, non query param
+  if (platform === 'instagram') {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  const data = await res.json();
+  console.log(`[WEBHOOK] sendDM (${platform}) to ${recipientId}:`, JSON.stringify(data));
+  return data;
 }
 
 // Controlla se il testo matcha le keyword dell'automazione
@@ -68,19 +76,24 @@ export async function POST(req) {
 
     for (const entry of body.entry) {
       const pageId = entry.id;
+      console.log(`[WEBHOOK] Processing entry pageId: ${pageId}, object: ${object}`);
 
       // Trova l'account corrispondente nel DB
       const account = await SocialAccount.findOne({ accountId: pageId, status: 'active' });
       if (!account) {
-        console.log(`[WEBHOOK] Account non trovato per pageId: ${pageId}`);
+        console.log(`[WEBHOOK] ⚠️ Account non trovato per pageId: ${pageId}. Cerco tutti gli account attivi...`);
+        const allAccounts = await SocialAccount.find({ status: 'active' }, { accountId: 1, platform: 1, username: 1 });
+        console.log(`[WEBHOOK] Account attivi nel DB:`, JSON.stringify(allAccounts));
         continue;
       }
+      console.log(`[WEBHOOK] ✅ Account trovato: ${account.username} (${account.platform})`);
 
       // Trova automazioni attive per questo account
       const automations = await SocialAutomation.find({
         accountId: account._id,
         status: 'active',
       });
+      console.log(`[WEBHOOK] Automazioni attive per account: ${automations.length}`);
 
       const changes = entry.changes || [];
       for (const change of changes) {
@@ -92,20 +105,31 @@ export async function POST(req) {
           const commentText = value.text || '';
           const commentId = value.id;
           const fromId = value.from?.id;
+          console.log(`[WEBHOOK] Instagram comment — text: "${commentText}", commentId: ${commentId}, fromId: ${fromId}`);
 
           for (const auto of automations) {
-            if (!['comment_reply', 'dm_auto'].includes(auto.type)) continue;
-            if (!matchesKeywords(commentText, auto.trigger?.keywords)) continue;
+            console.log(`[WEBHOOK] Check auto "${auto.name}" type:${auto.type} status:${auto.status}`);
+            if (!['comment_reply', 'dm_auto'].includes(auto.type)) {
+              console.log(`[WEBHOOK] Skip: tipo non supportato (${auto.type})`);
+              continue;
+            }
+            if (!matchesKeywords(commentText, auto.trigger?.keywords)) {
+              console.log(`[WEBHOOK] Skip: keyword non trovata in "${commentText}", keywords:`, auto.trigger?.keywords);
+              continue;
+            }
 
             const actionType = auto.action?.actionType || 'send_dm';
             const message = auto.action?.message;
-            if (!message) continue;
+            console.log(`[WEBHOOK] ✅ Match! actionType: ${actionType}, message: "${message}"`);
+            if (!message) { console.log('[WEBHOOK] Skip: message vuoto'); continue; }
 
             if (actionType === 'reply_comment' || actionType === 'both') {
               await replyToComment('instagram', commentId, message, account.accessToken);
             }
             if ((actionType === 'send_dm' || actionType === 'both') && fromId) {
               await sendDM('instagram', fromId, message, account.accessToken, pageId);
+            } else if (actionType === 'send_dm' && !fromId) {
+              console.log('[WEBHOOK] ⚠️ sendDM skip: fromId mancante nel payload');
             }
 
             await SocialAutomation.findByIdAndUpdate(auto._id, {
