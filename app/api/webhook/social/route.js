@@ -83,14 +83,30 @@ export async function POST(req) {
 
       // Trova l'account corrispondente nel DB
       console.log(`🔍 [WEBHOOK] Cerco account con accountId: "${pageId}"`);
-      const account = await SocialAccount.findOne({ accountId: pageId, status: 'active' });
+      let account = await SocialAccount.findOne({ accountId: pageId, status: 'active' });
+      
+      // Fallback: cerca per platform Instagram se non trovato
+      if (!account && object === 'instagram') {
+        console.log(`⚠️ [WEBHOOK] Account non trovato con accountId ${pageId}, provo a cercare per platform Instagram...`);
+        const igAccounts = await SocialAccount.find({ platform: 'instagram', status: 'active' });
+        console.log(`📋 [WEBHOOK] Account Instagram nel DB: ${igAccounts.length}`);
+        if (igAccounts.length === 1) {
+          account = igAccounts[0];
+          console.log(`🔄 [WEBHOOK] Uso l'unico account Instagram trovato: @${account.username} (${account.accountId})`);
+        } else if (igAccounts.length > 1) {
+          console.log(`⚠️ [WEBHOOK] Trovati ${igAccounts.length} account Instagram, non so quale usare:`);
+          igAccounts.forEach(a => console.log(`   - @${a.username} (${a.accountId})`));
+        }
+      }
+      
       if (!account) {
         console.log(`❌ [WEBHOOK] Account non trovato per pageId: ${pageId}. Cerco tutti gli account attivi...`);
         const allAccounts = await SocialAccount.find({ status: 'active' }, { accountId: 1, platform: 1, username: 1 });
         console.log(`📋 [WEBHOOK] Account attivi nel DB:`, JSON.stringify(allAccounts));
+        console.log(`⚠️ [WEBHOOK] Salto questo entry perché non ho trovato l'account corrispondente.`);
         continue;
       }
-      console.log(`✅ [WEBHOOK] Account trovato: ${account.username} (${account.platform}), ID: ${account._id}`);
+      console.log(`✅ [WEBHOOK] Account trovato: ${account.username} (${account.platform}), ID DB: ${account._id}, accountId: ${account.accountId}`);
 
       // Trova automazioni attive per questo account
       console.log(`🔍 [WEBHOOK] Cerco automazioni per accountId: ${account._id}`);
