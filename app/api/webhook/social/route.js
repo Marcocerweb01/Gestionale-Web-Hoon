@@ -67,7 +67,7 @@ function matchesKeywords(text, keywords) {
 export async function POST(req) {
   try {
     const body = await req.json();
-    console.log('[WEBHOOK] Ricevuto:', JSON.stringify(body).substring(0, 500));
+    console.log('🔔 [WEBHOOK] Ricevuto evento COMPLETO:', JSON.stringify(body, null, 2));
 
     // Verifica firma Meta (opzionale ma consigliato)
     const object = body.object; // 'instagram' o 'page'
@@ -82,21 +82,28 @@ export async function POST(req) {
       console.log(`[WEBHOOK] Processing entry pageId: ${pageId}, object: ${object}`);
 
       // Trova l'account corrispondente nel DB
+      console.log(`🔍 [WEBHOOK] Cerco account con accountId: "${pageId}"`);
       const account = await SocialAccount.findOne({ accountId: pageId, status: 'active' });
       if (!account) {
-        console.log(`[WEBHOOK] ⚠️ Account non trovato per pageId: ${pageId}. Cerco tutti gli account attivi...`);
+        console.log(`❌ [WEBHOOK] Account non trovato per pageId: ${pageId}. Cerco tutti gli account attivi...`);
         const allAccounts = await SocialAccount.find({ status: 'active' }, { accountId: 1, platform: 1, username: 1 });
-        console.log(`[WEBHOOK] Account attivi nel DB:`, JSON.stringify(allAccounts));
+        console.log(`📋 [WEBHOOK] Account attivi nel DB:`, JSON.stringify(allAccounts));
         continue;
       }
-      console.log(`[WEBHOOK] ✅ Account trovato: ${account.username} (${account.platform})`);
+      console.log(`✅ [WEBHOOK] Account trovato: ${account.username} (${account.platform}), ID: ${account._id}`);
 
       // Trova automazioni attive per questo account
+      console.log(`🔍 [WEBHOOK] Cerco automazioni per accountId: ${account._id}`);
       const automations = await SocialAutomation.find({
         accountId: account._id,
         status: 'active',
       });
-      console.log(`[WEBHOOK] Automazioni attive per account: ${automations.length}`);
+      console.log(`📊 [WEBHOOK] Automazioni attive trovate: ${automations.length}`);
+      if (automations.length > 0) {
+        automations.forEach(a => {
+          console.log(`  - "${a.name}" | type: ${a.type} | keywords: ${JSON.stringify(a.trigger?.keywords)} | action: ${a.action?.actionType}`);
+        });
+      }
 
       const changes = entry.changes || [];
       for (const change of changes) {
