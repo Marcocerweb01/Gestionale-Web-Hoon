@@ -210,6 +210,9 @@ export async function POST(req) {
 
 // GET /api/webhook/social - Verifica webhook (per Meta)
 export async function GET(req) {
+  console.log(`[WEBHOOK GET] Full URL: ${req.url}`);
+  console.log(`[WEBHOOK GET] Headers: ${JSON.stringify(Object.fromEntries(req.headers))}`);
+  
   const { searchParams } = new URL(req.url);
   const mode = searchParams.get('hub.mode');
   const token = searchParams.get('hub.verify_token');
