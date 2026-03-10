@@ -265,11 +265,16 @@ export default function RulesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || err.details || 'Errore salvataggio');
+      console.error('❌ Errore creazione automazione:', err);
+      const errorMsg = err.details || err.error || 'Errore salvataggio';
+      throw new Error(errorMsg);
     }
+    
     const created = await res.json();
+    console.log('✅ Automazione creata:', created);
     setAutomations(prev => [created, ...prev]);
     setMessage({ type: 'success', text: 'Automazione creata!' });
   };

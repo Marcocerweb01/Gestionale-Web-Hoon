@@ -60,6 +60,13 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Account non trovato' }, { status: 404 });
     }
 
+    console.log('📝 Creazione automazione con dati:', {
+      accountId, name, platform, type,
+      trigger: trigger || { keywords: [] },
+      actionType: action.type || action.actionType,
+      hasMessage: !!action.message
+    });
+
     const automation = await SocialAutomation.create({
       userId: new mongoose.Types.ObjectId(session.user.id),
       accountId: new mongoose.Types.ObjectId(accountId),
@@ -76,9 +83,23 @@ export async function POST(req) {
       status: 'active'
     });
 
+    console.log('✅ Automazione creata con successo:', automation._id);
     return NextResponse.json(automation, { status: 201 });
   } catch (error) {
-    console.error('Errore creazione automazione:', error);
-    return NextResponse.json({ error: 'Errore server' }, { status: 500 });
+    console.error('❌ Errore creazione automazione:', error);
+    
+    // Errori di validazione Mongoose
+    if (error.name === 'ValidationError') {
+      const details = Object.values(error.errors).map(e => e.message).join(', ');
+      return NextResponse.json({ 
+        error: 'Errore validazione', 
+        details 
+      }, { status: 400 });
+    }
+    
+    return NextResponse.json({ 
+      error: 'Errore server',
+      details: error.message 
+    }, { status: 500 });
   }
 }
