@@ -48,45 +48,75 @@ export async function POST(req) {
         permissions = { error: e.message };
       }
 
-      // Prendi ultimi 3 post CON comments_count
-      const mediaRes = await fetch(`${apiBase}/${account.accountId}/media?fields=id,caption,timestamp,comments_count,like_count&limit=3&access_token=${account.accessToken}`);
+      // 0b. Verifica lo stato dell'app (development vs live)
+      let appModeInfo = null;
+      try {
+        // user_id dalla risposta di /me è l'IGID classico
+        const igUserId = permissions.user_id || permissions.id;
+        const appRes = await fetch(`${apiBase}/${igUserId}?fields=id,username,followers_count,media_count&access_token=${account.accessToken}`);
+        appModeInfo = await appRes.json();
+      } catch (e) {
+        appModeInfo = { error: e.message };
+      }
+
+      // Prendi il primo post con commenti
+      const mediaRes = await fetch(`${apiBase}/${account.accountId}/media?fields=id,caption,timestamp,comments_count,like_count&limit=5&access_token=${account.accessToken}`);
       const mediaData = await mediaRes.json();
       
       if (mediaData.error) {
         return NextResponse.json({ error: 'Errore media', details: mediaData.error });
       }
 
-      const postsWithComments = [];
-      for (const post of (mediaData.data || [])) {
-        // Test: commenti con vari fields
-        const commRes = await fetch(`${apiBase}/${post.id}/comments?fields=id,text,username,timestamp&limit=20&access_token=${account.accessToken}`);
-        const commData = await commRes.json();
+      // Trova il post con più commenti
+      const postWithComments = (mediaData.data || []).sort((a, b) => (b.comments_count || 0) - (a.comments_count || 0))[0];
+      
+      const testResults = {};
+      
+      if (postWithComments && postWithComments.comments_count > 0) {
+        // Test A: commenti standard
+        const commResA = await fetch(`${apiBase}/${postWithComments.id}/comments?fields=id,text,username,timestamp&limit=50&access_token=${account.accessToken}`);
+        testResults.standardQuery = await commResA.json();
 
-        // Test: replies (subcomments) — alcuni commenti possono essere replies
-        let repliesTest = null;
-        if (commData.data && commData.data.length > 0) {
-          const firstComment = commData.data[0];
-          const repRes = await fetch(`${apiBase}/${firstComment.id}/replies?fields=id,text,username,timestamp&access_token=${account.accessToken}`);
-          repliesTest = await repRes.json();
+        // Test B: con paginazione after cursor
+        if (testResults.standardQuery.paging?.cursors?.after) {
+          const cursor = testResults.standardQuery.paging.cursors.after;
+          const commResB = await fetch(`${apiBase}/${postWithComments.id}/comments?fields=id,text,username,timestamp&limit=50&after=${cursor}&access_token=${account.accessToken}`);
+          testResults.afterCursor = await commResB.json();
         }
 
-        postsWithComments.push({
-          postId: post.id,
-          caption: (post.caption || '').substring(0, 80),
-          timestamp: post.timestamp,
-          comments_count: post.comments_count,
-          like_count: post.like_count,
-          comments: commData.data || [],
-          commentsError: commData.error || null,
-          commentsRawResponse: commData,
-          repliesTest,
-        });
+        // Test C: con paginazione before cursor
+        if (testResults.standardQuery.paging?.cursors?.before) {
+          const cursor = testResults.standardQuery.paging.cursors.before;
+          const commResC = await fetch(`${apiBase}/${postWithComments.id}/comments?fields=id,text,username,timestamp&limit=50&before=${cursor}&access_token=${account.accessToken}`);
+          testResults.beforeCursor = await commResC.json();
+        }
+
+        // Test D: Prova con il vecchio user_id (IGID) come endpoint base
+        if (permissions.user_id) {
+          try {
+            const commResD = await fetch(`https://graph.facebook.com/v21.0/${postWithComments.id}/comments?fields=id,text,from,message&limit=50&access_token=${account.accessToken}`);
+            testResults.viaFBGraph = await commResD.json();
+          } catch (e) {
+            testResults.viaFBGraph = { error: e.message };
+          }
+        }
       }
 
       return NextResponse.json({
         account: { username: account.username, accountId: account.accountId, platform: account.platform },
         tokenInfo: permissions,
-        posts: postsWithComments,
+        appModeInfo,
+        postAnalyzed: postWithComments ? {
+          postId: postWithComments.id,
+          comments_count: postWithComments.comments_count,
+          like_count: postWithComments.like_count,
+          timestamp: postWithComments.timestamp,
+        } : null,
+        allPosts: (mediaData.data || []).map(p => ({ id: p.id, comments_count: p.comments_count, timestamp: p.timestamp })),
+        testResults,
+        diagnosis: postWithComments?.comments_count > 0 && (!testResults.standardQuery?.data?.length)
+          ? '⚠️ Il post ha commenti ma l\'API li filtra. Causa probabile: App in Development Mode. Soluzione: passare a Live Mode o usare webhook (che ricevono TUTTI i commenti in dev mode).'
+          : null,
       });
     }
 
