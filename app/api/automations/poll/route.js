@@ -116,7 +116,7 @@ export async function GET(req) {
       for (const media of mediaData.data) {
         let commentsUrl;
         if (account.platform === 'instagram') {
-          commentsUrl = `https://graph.instagram.com/v21.0/${media.id}/comments?fields=id,text,username,from,timestamp&access_token=${account.accessToken}`;
+          commentsUrl = `https://graph.instagram.com/v21.0/${media.id}/comments?fields=id,text,username,timestamp&access_token=${account.accessToken}`;
         } else {
           commentsUrl = `https://graph.facebook.com/v21.0/${media.id}/comments?fields=id,message,from,created_time&access_token=${account.accessToken}`;
         }

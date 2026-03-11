@@ -49,14 +49,33 @@ export async function POST(req) {
 
       const postsWithComments = [];
       for (const post of (mediaData.data || [])) {
-        const commRes = await fetch(`${apiBase}/${post.id}/comments?fields=id,text,username,from,timestamp&limit=10&access_token=${account.accessToken}`);
-        const commData = await commRes.json();
+        // Test 1: Senza campo "from" (Instagram Business Login potrebbe non supportarlo)
+        const commRes1 = await fetch(`${apiBase}/${post.id}/comments?fields=id,text,username,timestamp&limit=10&access_token=${account.accessToken}`);
+        const commData1 = await commRes1.json();
+        
+        // Test 2: Con campo "from" per confronto
+        const commRes2 = await fetch(`${apiBase}/${post.id}/comments?fields=id,text,username,from,timestamp&limit=10&access_token=${account.accessToken}`);
+        const commData2 = await commRes2.json();
+
+        // Test 3: Prova anche via graph.facebook.com (il token di Instagram Business Login
+        // potrebbe funzionare anche lì se l'account è collegato a una Page)
+        let commData3 = null;
+        if (account.platform === 'instagram') {
+          try {
+            const commRes3 = await fetch(`https://graph.facebook.com/v21.0/${post.id}/comments?fields=id,text,username,from,timestamp&access_token=${account.accessToken}`);
+            commData3 = await commRes3.json();
+          } catch (e) {
+            commData3 = { error: e.message };
+          }
+        }
+
         postsWithComments.push({
           postId: post.id,
           caption: (post.caption || '').substring(0, 80),
           timestamp: post.timestamp,
-          comments: commData.data || [],
-          commentsError: commData.error || null,
+          commentsWithoutFrom: { data: commData1.data || [], error: commData1.error || null },
+          commentsWithFrom: { data: commData2.data || [], error: commData2.error || null },
+          commentsViaFBGraph: commData3,
         });
       }
 
