@@ -6,7 +6,8 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 
 // POST /api/test-dm — Testa invio DM da un account Instagram
-// Body: { senderAccountId: "DB _id", recipientIgId: "IG user id", message: "testo" }
+// Body: { senderAccountId: "DB _id", recipientIgId: "IG user id", message: "testo", useCommentId: bool }
+// oppure: { senderAccountId: "DB _id", action: "list-comments" } per vedere commenti recenti
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,10 +17,11 @@ export async function POST(req) {
 
     await connectToDB();
 
-    const { senderAccountId, recipientIgId, message, useCommentId } = await req.json();
+    const reqBody = await req.json();
+    const { senderAccountId, action } = reqBody;
 
-    if (!senderAccountId || !recipientIgId || !message) {
-      return NextResponse.json({ error: 'Parametri mancanti: senderAccountId, recipientIgId, message' }, { status: 400 });
+    if (!senderAccountId) {
+      return NextResponse.json({ error: 'senderAccountId richiesto' }, { status: 400 });
     }
 
     const account = await SocialAccount.findOne({
@@ -29,6 +31,46 @@ export async function POST(req) {
 
     if (!account) {
       return NextResponse.json({ error: 'Account non trovato o non tuo' }, { status: 404 });
+    }
+
+    // ── AZIONE: Lista commenti recenti ──────────────────────────────
+    if (action === 'list-comments') {
+      const apiBase = account.platform === 'instagram'
+        ? 'https://graph.instagram.com/v21.0'
+        : 'https://graph.facebook.com/v21.0';
+
+      // Prendi ultimi 3 post
+      const mediaRes = await fetch(`${apiBase}/${account.accountId}/media?fields=id,caption,timestamp&limit=3&access_token=${account.accessToken}`);
+      const mediaData = await mediaRes.json();
+      
+      if (mediaData.error) {
+        return NextResponse.json({ error: 'Errore media', details: mediaData.error });
+      }
+
+      const postsWithComments = [];
+      for (const post of (mediaData.data || [])) {
+        const commRes = await fetch(`${apiBase}/${post.id}/comments?fields=id,text,username,from,timestamp&limit=10&access_token=${account.accessToken}`);
+        const commData = await commRes.json();
+        postsWithComments.push({
+          postId: post.id,
+          caption: (post.caption || '').substring(0, 80),
+          timestamp: post.timestamp,
+          comments: commData.data || [],
+          commentsError: commData.error || null,
+        });
+      }
+
+      return NextResponse.json({
+        account: { username: account.username, accountId: account.accountId, platform: account.platform },
+        posts: postsWithComments,
+      });
+    }
+
+    // ── AZIONE: Invio DM ─────────────────────────────────────────────
+    const { recipientIgId, message, useCommentId } = reqBody;
+
+    if (!recipientIgId || !message) {
+      return NextResponse.json({ error: 'Parametri mancanti: recipientIgId, message' }, { status: 400 });
     }
 
     console.log(`🧪 [TEST-DM] Invio DM da @${account.username} (${account.accountId}) a IG user ${recipientIgId}`);
