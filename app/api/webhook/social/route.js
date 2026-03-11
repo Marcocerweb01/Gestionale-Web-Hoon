@@ -90,26 +90,39 @@ export async function POST(req) {
       console.log(`[WEBHOOK] Processing entry pageId: ${pageId}, object: ${object}`);
 
       // Trova l'account corrispondente nel DB
-      console.log(`🔍 [WEBHOOK] Cerco account con accountId: "${pageId}"`);
-      let account = await SocialAccount.findOne({ accountId: pageId, status: 'active' });
+      // Meta webhook usa IGID (17841...) per Instagram, ma noi salviamo IGSID (26568...)
+      // Quindi cerchiamo sia per accountId che per metadata.igUserId
+      console.log(`🔍 [WEBHOOK] Cerco account con accountId O igUserId: "${pageId}"`);
+      let account = await SocialAccount.findOne({
+        $or: [
+          { accountId: pageId, status: 'active' },
+          { 'metadata.igUserId': pageId, status: 'active' },
+        ],
+      });
       
       // Fallback: cerca per platform Instagram se non trovato
       if (!account && object === 'instagram') {
-        console.log(`⚠️ [WEBHOOK] Account non trovato con accountId ${pageId}, provo a cercare per platform Instagram...`);
+        console.log(`⚠️ [WEBHOOK] Account non trovato con accountId/igUserId ${pageId}, provo ricerca generica...`);
         const igAccounts = await SocialAccount.find({ platform: 'instagram', status: 'active' });
         console.log(`📋 [WEBHOOK] Account Instagram nel DB: ${igAccounts.length}`);
         if (igAccounts.length === 1) {
           account = igAccounts[0];
           console.log(`🔄 [WEBHOOK] Uso l'unico account Instagram trovato: @${account.username} (${account.accountId})`);
+          // Salva l'IGID per le prossime volte
+          if (!account.metadata?.igUserId) {
+            account.metadata = { ...account.metadata, igUserId: pageId };
+            await account.save();
+            console.log(`💾 [WEBHOOK] Salvato igUserId ${pageId} per @${account.username}`);
+          }
         } else if (igAccounts.length > 1) {
           console.log(`⚠️ [WEBHOOK] Trovati ${igAccounts.length} account Instagram, non so quale usare:`);
-          igAccounts.forEach(a => console.log(`   - @${a.username} (${a.accountId})`));
+          igAccounts.forEach(a => console.log(`   - @${a.username} (${a.accountId}) igUserId: ${a.metadata?.igUserId}`));
         }
       }
       
       if (!account) {
         console.log(`❌ [WEBHOOK] Account non trovato per pageId: ${pageId}. Cerco tutti gli account attivi...`);
-        const allAccounts = await SocialAccount.find({ status: 'active' }, { accountId: 1, platform: 1, username: 1 });
+        const allAccounts = await SocialAccount.find({ status: 'active' }, { accountId: 1, platform: 1, username: 1, 'metadata.igUserId': 1 });
         console.log(`📋 [WEBHOOK] Account attivi nel DB:`, JSON.stringify(allAccounts));
         console.log(`⚠️ [WEBHOOK] Salto questo entry perché non ho trovato l'account corrispondente.`);
         continue;

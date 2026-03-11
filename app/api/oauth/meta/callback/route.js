@@ -75,28 +75,40 @@ export async function GET(req) {
       const longToken = llData.access_token || shortToken;
 
       // Info account Instagram
+      // Ottieni IGSID (nuovo) e IGID (vecchio) — servono entrambi
       const igMeRes = await fetch(
-        `https://graph.instagram.com/me?fields=id,username,name,profile_picture_url&access_token=${longToken}`
+        `https://graph.instagram.com/me?fields=id,username,name,profile_picture_url,user_id&access_token=${longToken}`
       );
       const igMe = await igMeRes.json();
       console.log('[IG CALLBACK] /me response:', JSON.stringify(igMe));
+      
+      // igMe.id = IGSID (26568...), igMe.user_id = IGID (17841...)
+      // Meta webhook usa IGID in entry.id, quindi salviamo entrambi
+      const igScopedId = igMe.id;       // IGSID - nuovo formato
+      const igUserId = igMe.user_id;     // IGID - vecchio formato (usato nei webhook)
+      console.log(`[IG CALLBACK] IGSID: ${igScopedId}, IGID: ${igUserId}`);
 
       await connectToDB();
       const userId = new mongoose.Types.ObjectId(session.user.id);
-      const existing = await SocialAccount.findOne({ accountId: igMe.id });
+      // Cerca per IGSID o per IGID (potrebbe esistere con l'uno o l'altro)
+      const existing = await SocialAccount.findOne({ 
+        $or: [{ accountId: igScopedId }, ...(igUserId ? [{ accountId: igUserId }, { 'metadata.igUserId': igUserId }] : [])]
+      });
       if (existing) {
         existing.accessToken = longToken;
         existing.tokenExpiry = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
         existing.status = 'active';
         existing.userId = userId;
+        existing.accountId = igScopedId; // Normalizza a IGSID
         existing.displayName = igMe.name || igMe.username;
         existing.profilePicture = igMe.profile_picture_url || existing.profilePicture;
+        existing.metadata = { ...existing.metadata, igUserId };
         await existing.save();
       } else {
         await new SocialAccount({
           userId,
           platform: 'instagram',
-          accountId: igMe.id,
+          accountId: igScopedId,
           username: igMe.username,
           displayName: igMe.name || igMe.username,
           profilePicture: igMe.profile_picture_url,
@@ -104,6 +116,7 @@ export async function GET(req) {
           tokenExpiry: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
           status: 'active',
           permissions: ['instagram_business_basic', 'instagram_business_manage_comments'],
+          metadata: { igUserId },
         }).save();
       }
 

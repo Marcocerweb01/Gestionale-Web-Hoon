@@ -33,6 +33,32 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Account non trovato o non tuo' }, { status: 404 });
     }
 
+    // ── AZIONE: Fix IGID (salva il vecchio user_id per matching webhook) ────
+    if (action === 'fix-igid') {
+      if (account.platform !== 'instagram') {
+        return NextResponse.json({ error: 'Solo per account Instagram' }, { status: 400 });
+      }
+
+      const apiBase = 'https://graph.instagram.com/v21.0';
+      const meRes = await fetch(`${apiBase}/me?fields=id,username,user_id&access_token=${account.accessToken}`);
+      const meData = await meRes.json();
+
+      if (meData.error) {
+        return NextResponse.json({ error: 'Token non valido', details: meData.error });
+      }
+
+      const igUserId = meData.user_id; // IGID vecchio formato (17841...)
+      account.metadata = { ...account.metadata, igUserId };
+      await account.save();
+
+      return NextResponse.json({
+        success: true,
+        accountId_IGSID: meData.id,
+        igUserId_IGID: igUserId,
+        message: `Salvato IGID ${igUserId} per @${account.username}. Ora i webhook funzioneranno!`,
+      });
+    }
+
     // ── AZIONE: Lista commenti recenti ──────────────────────────────
     if (action === 'list-comments') {
       const apiBase = account.platform === 'instagram'
