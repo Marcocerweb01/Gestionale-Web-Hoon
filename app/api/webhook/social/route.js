@@ -5,22 +5,30 @@ import SocialAccount from '@/models/SocialAccount';
 
 // Risponde a un commento Instagram/Facebook
 async function replyToComment(platform, commentId, message, accessToken) {
-  let url, body;
+  let url, body, headers;
   if (platform === 'instagram') {
-    // Instagram Business Login token → usa graph.instagram.com
+    // Instagram Business Login token → usa graph.instagram.com con Bearer auth
     url = `https://graph.instagram.com/v21.0/${commentId}/replies`;
-    body = { message, access_token: accessToken };
+    body = { message };
+    headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    };
   } else {
     url = `https://graph.facebook.com/v21.0/${commentId}/comments`;
     body = { message, access_token: accessToken };
+    headers = { 'Content-Type': 'application/json' };
   }
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   });
   const data = await res.json();
   console.log(`[WEBHOOK] replyToComment (${platform}):`, JSON.stringify(data));
+  if (data.error) {
+    console.error(`[WEBHOOK] ❌ replyToComment ERRORE:`, data.error.message || JSON.stringify(data.error));
+  }
   return data;
 }
 
@@ -149,22 +157,30 @@ export async function POST(req) {
             console.log(`[WEBHOOK] ✅ Match! actionType: ${actionType}, message: "${message}"`);
             if (!message) { console.log('[WEBHOOK] Skip: message vuoto'); continue; }
 
+            let actionSuccess = true;
+
             if (actionType === 'reply_comment' || actionType === 'both') {
-              await replyToComment('instagram', commentId, message, account.accessToken);
+              const replyResult = await replyToComment('instagram', commentId, message, account.accessToken);
+              if (replyResult.error) actionSuccess = false;
             }
             if (actionType === 'send_dm' || actionType === 'both') {
               if (commentId || fromId) {
-                await sendDM('instagram', fromId, message, account.accessToken, pageId, commentId);
+                const dmResult = await sendDM('instagram', fromId, message, account.accessToken, account.accountId, commentId);
+                if (dmResult.error) actionSuccess = false;
               } else {
                 console.log('[WEBHOOK] ⚠️ sendDM skip: commentId e fromId entrambi mancanti');
+                actionSuccess = false;
               }
             }
 
             await SocialAutomation.findByIdAndUpdate(auto._id, {
-              $inc: { 'stats.triggered': 1, 'stats.successful': 1 },
+              $inc: {
+                'stats.triggered': 1,
+                ...(actionSuccess ? { 'stats.successful': 1 } : { 'stats.failed': 1 }),
+              },
               lastTriggered: new Date(),
             });
-            console.log(`[WEBHOOK] Automazione eseguita: ${auto.name}`);
+            console.log(`[WEBHOOK] Automazione ${actionSuccess ? '✅ eseguita' : '❌ fallita'}: ${auto.name}`);
           }
         }
 
@@ -184,18 +200,25 @@ export async function POST(req) {
             const message = auto.action?.message;
             if (!message) continue;
 
+            let fbActionSuccess = true;
+
             if (actionType === 'reply_comment' || actionType === 'both') {
-              await replyToComment('facebook', commentId, message, account.accessToken);
+              const replyResult = await replyToComment('facebook', commentId, message, account.accessToken);
+              if (replyResult.error) fbActionSuccess = false;
             }
             if ((actionType === 'send_dm' || actionType === 'both') && fromId) {
-              await sendDM('facebook', fromId, message, account.accessToken, pageId);
+              const dmResult = await sendDM('facebook', fromId, message, account.accessToken, account.accountId);
+              if (dmResult.error) fbActionSuccess = false;
             }
 
             await SocialAutomation.findByIdAndUpdate(auto._id, {
-              $inc: { 'stats.triggered': 1, 'stats.successful': 1 },
+              $inc: {
+                'stats.triggered': 1,
+                ...(fbActionSuccess ? { 'stats.successful': 1 } : { 'stats.failed': 1 }),
+              },
               lastTriggered: new Date(),
             });
-            console.log(`[WEBHOOK] Automazione eseguita: ${auto.name}`);
+            console.log(`[WEBHOOK] Automazione ${fbActionSuccess ? '✅ eseguita' : '❌ fallita'}: ${auto.name}`);
           }
         }
       }

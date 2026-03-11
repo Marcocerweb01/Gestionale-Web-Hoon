@@ -107,6 +107,18 @@ export async function GET(req) {
         }).save();
       }
 
+      // Auto-subscribe ai webhook Instagram dopo connessione
+      try {
+        const subRes = await fetch(
+          `https://graph.instagram.com/v21.0/${igMe.id}/subscribed_apps?subscribed_fields=comments,messages&access_token=${longToken}`,
+          { method: 'POST' }
+        );
+        const subData = await subRes.json();
+        console.log('[IG CALLBACK] Auto-subscribe webhook:', JSON.stringify(subData));
+      } catch (subErr) {
+        console.log('[IG CALLBACK] Auto-subscribe webhook fallito:', subErr.message);
+      }
+
       return NextResponse.redirect(`${baseUrl}/Operations/SocialAutomation?success=true&accounts=1`);
     }
 
@@ -275,6 +287,22 @@ export async function GET(req) {
       }
       
       savedCount++;
+    }
+
+    // Auto-subscribe tutte le pagine Facebook ai webhook
+    for (const accountData of accountsToSave) {
+      try {
+        if (accountData.platform === 'facebook') {
+          const subRes = await fetch(
+            `https://graph.facebook.com/v21.0/${accountData.accountId}/subscribed_apps?subscribed_fields=feed,messages&access_token=${accountData.accessToken}`,
+            { method: 'POST' }
+          );
+          const subData = await subRes.json();
+          console.log(`[META CALLBACK] Auto-subscribe webhook page ${accountData.accountId}:`, JSON.stringify(subData));
+        }
+      } catch (subErr) {
+        console.log(`[META CALLBACK] Auto-subscribe fallito per ${accountData.accountId}:`, subErr.message);
+      }
     }
     
     // Redirect con successo

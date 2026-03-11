@@ -6,21 +6,54 @@ import mongoose from 'mongoose';
 // Salva gli ultimi commenti processati per evitare duplicati
 const processedComments = new Set();
 
-async function sendDM(igUserId, recipientId, message, accessToken, commentId) {
-  const url = `https://graph.instagram.com/v21.0/${igUserId}/messages`;
-  const body = commentId 
-    ? { recipient: { comment_id: commentId }, message: { text: message } }
-    : { recipient: { id: recipientId }, message: { text: message } };
+async function sendDM(platform, igUserId, recipientId, message, accessToken, commentId) {
+  if (platform === 'instagram') {
+    const url = `https://graph.instagram.com/v21.0/${igUserId}/messages`;
+    const body = commentId 
+      ? { recipient: { comment_id: commentId }, message: { text: message } }
+      : { recipient: { id: recipientId }, message: { text: message } };
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    return await res.json();
+  } else {
+    // Facebook page
+    const url = `https://graph.facebook.com/v21.0/${igUserId}/messages`;
+    const body = {
+      recipient: { id: recipientId },
+      message: { text: message },
+      access_token: accessToken,
+    };
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return await res.json();
+  }
+}
+
+async function replyToComment(platform, commentId, message, accessToken) {
+  let url, headers, body;
+  if (platform === 'instagram') {
+    url = `https://graph.instagram.com/v21.0/${commentId}/replies`;
+    body = { message };
+    headers = {
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-  });
-
+    };
+  } else {
+    url = `https://graph.facebook.com/v21.0/${commentId}/comments`;
+    body = { message, access_token: accessToken };
+    headers = { 'Content-Type': 'application/json' };
+  }
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
   return await res.json();
 }
 
@@ -36,9 +69,8 @@ export async function GET(req) {
     
     await connectToDB();
     
-    // Trova tutti gli account Instagram attivi
+    // Trova tutti gli account attivi (Instagram e Facebook)
     const accounts = await SocialAccount.find({ 
-      platform: 'instagram', 
       status: 'active' 
     });
     
@@ -61,7 +93,12 @@ export async function GET(req) {
       if (automations.length === 0) continue;
       
       // Ottieni ultimi 10 post
-      const mediaUrl = `https://graph.instagram.com/v21.0/${account.accountId}/media?fields=id&limit=10&access_token=${account.accessToken}`;
+      let mediaUrl;
+      if (account.platform === 'instagram') {
+        mediaUrl = `https://graph.instagram.com/v21.0/${account.accountId}/media?fields=id&limit=10&access_token=${account.accessToken}`;
+      } else {
+        mediaUrl = `https://graph.facebook.com/v21.0/${account.accountId}/feed?fields=id&limit=10&access_token=${account.accessToken}`;
+      }
       const mediaRes = await fetch(mediaUrl);
       const mediaData = await mediaRes.json();
       
@@ -69,7 +106,12 @@ export async function GET(req) {
       
       // Per ogni post, controlla i commenti
       for (const media of mediaData.data) {
-        const commentsUrl = `https://graph.instagram.com/v21.0/${media.id}/comments?fields=id,text,username,from,timestamp&access_token=${account.accessToken}`;
+        let commentsUrl;
+        if (account.platform === 'instagram') {
+          commentsUrl = `https://graph.instagram.com/v21.0/${media.id}/comments?fields=id,text,username,from,timestamp&access_token=${account.accessToken}`;
+        } else {
+          commentsUrl = `https://graph.facebook.com/v21.0/${media.id}/comments?fields=id,message,from,created_time&access_token=${account.accessToken}`;
+        }
         const commentsRes = await fetch(commentsUrl);
         const commentsData = await commentsRes.json();
         
@@ -82,11 +124,15 @@ export async function GET(req) {
           // Skip se già processato
           if (processedComments.has(commentKey)) continue;
           
-          console.log(`💬 [POLLING] Nuovo commento da @${comment.username}: "${comment.text}"`);
+          // Facebook usa "message" invece di "text"
+          const commentText = comment.text || comment.message || '';
+          const commentUsername = comment.username || comment.from?.name || 'unknown';
+          
+          console.log(`💬 [POLLING] Nuovo commento da @${commentUsername}: "${commentText}"`);
           
           // Check automazioni
           for (const auto of automations) {
-            if (!matchesKeywords(comment.text, auto.trigger?.keywords)) continue;
+            if (!matchesKeywords(commentText, auto.trigger?.keywords)) continue;
             
             console.log(`✅ [POLLING] Match automazione: ${auto.name}`);
             
@@ -95,8 +141,22 @@ export async function GET(req) {
             
             if (!message) continue;
             
+            let actionSuccess = false;
+
+            if (actionType === 'reply_comment' || actionType === 'both') {
+              const replyResult = await replyToComment(
+                account.platform,
+                comment.id,
+                message,
+                account.accessToken
+              );
+              console.log(`📝 [POLLING] Reply commento:`, replyResult);
+              if (!replyResult.error) actionSuccess = true;
+            }
+            
             if (actionType === 'send_dm' || actionType === 'both') {
               const result = await sendDM(
+                account.platform,
                 account.accountId,
                 comment.from?.id,
                 message,
@@ -106,16 +166,21 @@ export async function GET(req) {
               
               console.log(`📤 [POLLING] DM inviato:`, result);
               
-              if (result.recipient_id || result.message_id) {
-                // Aggiorna stats
-                await SocialAutomation.findByIdAndUpdate(auto._id, {
-                  $inc: { 'stats.triggered': 1, 'stats.successful': 1 },
-                  lastTriggered: new Date()
-                });
-                
-                totalProcessed++;
+              if (result.recipient_id || result.message_id || !result.error) {
+                actionSuccess = true;
               }
             }
+
+            // Aggiorna stats
+            await SocialAutomation.findByIdAndUpdate(auto._id, {
+              $inc: {
+                'stats.triggered': 1,
+                ...(actionSuccess ? { 'stats.successful': 1 } : { 'stats.failed': 1 }),
+              },
+              lastTriggered: new Date()
+            });
+            
+            if (actionSuccess) totalProcessed++;
             
             // Segna come processato
             processedComments.add(commentKey);
