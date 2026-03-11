@@ -81,7 +81,7 @@ export async function GET(req) {
     let totalProcessed = 0;
     
     for (const account of accounts) {
-      console.log(`📱 [POLLING] Check account: @${account.username}`);
+      console.log(`📱 [POLLING] Check account: @${account.username} (${account.platform}, accountId: ${account.accountId})`);
       
       // Trova automazioni attive
       const automations = await SocialAutomation.find({
@@ -90,7 +90,11 @@ export async function GET(req) {
         type: { $in: ['comment_reply', 'dm_auto'] }
       });
       
-      if (automations.length === 0) continue;
+      if (automations.length === 0) {
+        console.log(`⏭️ [POLLING] Nessuna automazione attiva per @${account.username}, skip`);
+        continue;
+      }
+      console.log(`📊 [POLLING] ${automations.length} automazioni attive per @${account.username}`);
       
       // Ottieni ultimi 10 post
       let mediaUrl;
@@ -102,7 +106,11 @@ export async function GET(req) {
       const mediaRes = await fetch(mediaUrl);
       const mediaData = await mediaRes.json();
       
-      if (!mediaData.data) continue;
+      if (!mediaData.data) {
+        console.log(`⚠️ [POLLING] Nessun media per @${account.username}:`, JSON.stringify(mediaData).substring(0, 300));
+        continue;
+      }
+      console.log(`📸 [POLLING] Trovati ${mediaData.data.length} post per @${account.username}`);
       
       // Per ogni post, controlla i commenti
       for (const media of mediaData.data) {
@@ -115,7 +123,16 @@ export async function GET(req) {
         const commentsRes = await fetch(commentsUrl);
         const commentsData = await commentsRes.json();
         
-        if (!commentsData.data) continue;
+        if (!commentsData.data) {
+          if (commentsData.error) {
+            console.log(`❌ [POLLING] Errore commenti per media ${media.id}:`, commentsData.error.message);
+          }
+          continue;
+        }
+        
+        if (commentsData.data.length > 0) {
+          console.log(`💬 [POLLING] ${commentsData.data.length} commenti su media ${media.id}`);
+        }
         
         // Processa i commenti
         for (const comment of commentsData.data) {
