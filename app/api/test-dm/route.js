@@ -39,8 +39,17 @@ export async function POST(req) {
         ? 'https://graph.instagram.com/v21.0'
         : 'https://graph.facebook.com/v21.0';
 
-      // Prendi ultimi 3 post
-      const mediaRes = await fetch(`${apiBase}/${account.accountId}/media?fields=id,caption,timestamp&limit=3&access_token=${account.accessToken}`);
+      // 0. Verifica permessi effettivi del token
+      let permissions = null;
+      try {
+        const permRes = await fetch(`${apiBase}/me?fields=id,username,user_id&access_token=${account.accessToken}`);
+        permissions = await permRes.json();
+      } catch (e) {
+        permissions = { error: e.message };
+      }
+
+      // Prendi ultimi 3 post CON comments_count
+      const mediaRes = await fetch(`${apiBase}/${account.accountId}/media?fields=id,caption,timestamp,comments_count,like_count&limit=3&access_token=${account.accessToken}`);
       const mediaData = await mediaRes.json();
       
       if (mediaData.error) {
@@ -49,38 +58,34 @@ export async function POST(req) {
 
       const postsWithComments = [];
       for (const post of (mediaData.data || [])) {
-        // Test 1: Senza campo "from" (Instagram Business Login potrebbe non supportarlo)
-        const commRes1 = await fetch(`${apiBase}/${post.id}/comments?fields=id,text,username,timestamp&limit=10&access_token=${account.accessToken}`);
-        const commData1 = await commRes1.json();
-        
-        // Test 2: Con campo "from" per confronto
-        const commRes2 = await fetch(`${apiBase}/${post.id}/comments?fields=id,text,username,from,timestamp&limit=10&access_token=${account.accessToken}`);
-        const commData2 = await commRes2.json();
+        // Test: commenti con vari fields
+        const commRes = await fetch(`${apiBase}/${post.id}/comments?fields=id,text,username,timestamp&limit=20&access_token=${account.accessToken}`);
+        const commData = await commRes.json();
 
-        // Test 3: Prova anche via graph.facebook.com (il token di Instagram Business Login
-        // potrebbe funzionare anche lì se l'account è collegato a una Page)
-        let commData3 = null;
-        if (account.platform === 'instagram') {
-          try {
-            const commRes3 = await fetch(`https://graph.facebook.com/v21.0/${post.id}/comments?fields=id,text,username,from,timestamp&access_token=${account.accessToken}`);
-            commData3 = await commRes3.json();
-          } catch (e) {
-            commData3 = { error: e.message };
-          }
+        // Test: replies (subcomments) — alcuni commenti possono essere replies
+        let repliesTest = null;
+        if (commData.data && commData.data.length > 0) {
+          const firstComment = commData.data[0];
+          const repRes = await fetch(`${apiBase}/${firstComment.id}/replies?fields=id,text,username,timestamp&access_token=${account.accessToken}`);
+          repliesTest = await repRes.json();
         }
 
         postsWithComments.push({
           postId: post.id,
           caption: (post.caption || '').substring(0, 80),
           timestamp: post.timestamp,
-          commentsWithoutFrom: { data: commData1.data || [], error: commData1.error || null },
-          commentsWithFrom: { data: commData2.data || [], error: commData2.error || null },
-          commentsViaFBGraph: commData3,
+          comments_count: post.comments_count,
+          like_count: post.like_count,
+          comments: commData.data || [],
+          commentsError: commData.error || null,
+          commentsRawResponse: commData,
+          repliesTest,
         });
       }
 
       return NextResponse.json({
         account: { username: account.username, accountId: account.accountId, platform: account.platform },
+        tokenInfo: permissions,
         posts: postsWithComments,
       });
     }
