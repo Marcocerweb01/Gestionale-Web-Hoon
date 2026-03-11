@@ -64,7 +64,7 @@ export async function GET(req) {
       }
 
       const shortToken = igTokenData.access_token;
-      const igUserId = igTokenData.user_id;
+      const igTokenUserId = igTokenData.user_id;
 
       // Scambio short → long-lived token
       const llRes = await fetch(
