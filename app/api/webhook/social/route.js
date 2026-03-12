@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDB } from '@/utils/database';
 import SocialAutomation from '@/models/SocialAutomation';
 import SocialAccount from '@/models/SocialAccount';
+import crypto from 'crypto';
 
 // Risponde a un commento Instagram/Facebook
 async function replyToComment(platform, commentId, message, accessToken) {
@@ -74,7 +75,23 @@ function matchesKeywords(text, keywords) {
 // POST /api/webhook/social - Riceve eventi da Meta
 export async function POST(req) {
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    
+    // Verifica firma Meta (X-Hub-Signature-256)
+    const signature = req.headers.get('x-hub-signature-256');
+    const appSecret = process.env.META_APP_SECRET;
+    if (appSecret && signature) {
+      const expectedSig = 'sha256=' + crypto
+        .createHmac('sha256', appSecret)
+        .update(rawBody)
+        .digest('hex');
+      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+        console.error('[WEBHOOK] ❌ Firma non valida');
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
+      }
+    }
+
+    const body = JSON.parse(rawBody);
     console.log('🔔 [WEBHOOK] Ricevuto evento COMPLETO:', JSON.stringify(body, null, 2));
 
     // Verifica firma Meta (opzionale ma consigliato)
@@ -102,22 +119,7 @@ export async function POST(req) {
       
       // Fallback: cerca per platform Instagram se non trovato
       if (!account && object === 'instagram') {
-        console.log(`⚠️ [WEBHOOK] Account non trovato con accountId/igUserId ${pageId}, provo ricerca generica...`);
-        const igAccounts = await SocialAccount.find({ platform: 'instagram', status: 'active' });
-        console.log(`📋 [WEBHOOK] Account Instagram nel DB: ${igAccounts.length}`);
-        if (igAccounts.length === 1) {
-          account = igAccounts[0];
-          console.log(`🔄 [WEBHOOK] Uso l'unico account Instagram trovato: @${account.username} (${account.accountId})`);
-          // Salva l'IGID per le prossime volte
-          if (!account.metadata?.igUserId) {
-            account.metadata = { ...account.metadata, igUserId: pageId };
-            await account.save();
-            console.log(`💾 [WEBHOOK] Salvato igUserId ${pageId} per @${account.username}`);
-          }
-        } else if (igAccounts.length > 1) {
-          console.log(`⚠️ [WEBHOOK] Trovati ${igAccounts.length} account Instagram, non so quale usare:`);
-          igAccounts.forEach(a => console.log(`   - @${a.username} (${a.accountId}) igUserId: ${a.metadata?.igUserId}`));
-        }
+        console.log(`⚠️ [WEBHOOK] Account non trovato con accountId/igUserId ${pageId}. Nessun fallback automatico per evitare match errati.`);
       }
       
       if (!account) {
@@ -178,6 +180,7 @@ export async function POST(req) {
             }
             if (actionType === 'send_dm' || actionType === 'both') {
               if (commentId || fromId) {
+                // sendDM(platform, recipientId, message, accessToken, igUserId, commentId)
                 const dmResult = await sendDM('instagram', fromId, message, account.accessToken, account.accountId, commentId);
                 if (dmResult.error) actionSuccess = false;
               } else {
@@ -256,7 +259,12 @@ export async function GET(req) {
   
   console.log(`[WEBHOOK GET] mode=${mode} token=${token} challenge=${challenge}`);
   
-  const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'your_verify_token_here';
+  const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN;
+  
+  if (!VERIFY_TOKEN) {
+    console.error('[WEBHOOK GET] ❌ META_WEBHOOK_VERIFY_TOKEN non configurato');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
   
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     console.log('[WEBHOOK GET] ✅ Verifica Meta riuscita');

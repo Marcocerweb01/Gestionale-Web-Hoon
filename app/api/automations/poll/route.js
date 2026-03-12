@@ -1,17 +1,15 @@
 import { connectToDB } from '@/utils/database';
 import SocialAccount from '@/models/SocialAccount';
 import SocialAutomation from '@/models/SocialAutomation';
+import SocialInteraction from '@/models/SocialInteraction';
 import mongoose from 'mongoose';
 
-// Salva gli ultimi commenti processati per evitare duplicati
-const processedComments = new Set();
-
-async function sendDM(platform, igUserId, recipientId, message, accessToken, commentId) {
+// Invia DM a un utente — parametri allineati col webhook handler
+async function sendDM(platform, recipientId, message, accessToken, igUserId, commentId) {
   if (platform === 'instagram') {
     const url = `https://graph.instagram.com/v21.0/${igUserId}/messages`;
-    const body = commentId 
-      ? { recipient: { comment_id: commentId }, message: { text: message } }
-      : { recipient: { id: recipientId }, message: { text: message } };
+    const recipient = commentId ? { comment_id: commentId } : { id: recipientId };
+    const body = { recipient, message: { text: message } };
 
     const res = await fetch(url, {
       method: 'POST',
@@ -65,12 +63,20 @@ function matchesKeywords(text, keywords) {
 
 export async function GET(req) {
   try {
+    // Autenticazione: accetta CRON_SECRET dall'header o query param
+    const { searchParams } = new URL(req.url);
+    const cronSecret = req.headers.get('x-cron-secret') || searchParams.get('secret');
+    const isVercel = req.headers.get('x-vercel-cron'); // Vercel cron injects this
+    
+    if (!isVercel && cronSecret !== process.env.CRON_SECRET) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     console.log('🔄 [POLLING] Controllo nuovi commenti...');
     
     await connectToDB();
 
-    const { searchParams } = new URL(req.url);
-    const debugMode = searchParams.get('debug') === '1';
+    const debugMode = searchParams.get('debug') === '1' && cronSecret === process.env.CRON_SECRET;
     const onlyAccount = searchParams.get('account'); // username filter for debug
     
     // Trova tutti gli account attivi (Instagram e Facebook)
@@ -160,8 +166,9 @@ export async function GET(req) {
         for (const comment of commentsData.data) {
           const commentKey = `${comment.id}`;
           
-          // Skip se già processato
-          if (processedComments.has(commentKey)) continue;
+          // Skip se già processato (persiste in DB per sopravvivere ai restart)
+          const alreadyProcessed = await SocialInteraction.findOne({ commentId: commentKey });
+          if (alreadyProcessed) continue;
           
           // Facebook usa "message" invece di "text"
           const commentText = comment.text || comment.message || '';
@@ -194,12 +201,13 @@ export async function GET(req) {
             }
             
             if (actionType === 'send_dm' || actionType === 'both') {
+              // sendDM(platform, recipientId, message, accessToken, igUserId, commentId)
               const result = await sendDM(
                 account.platform,
-                account.accountId,
                 comment.from?.id,
                 message,
                 account.accessToken,
+                account.accountId,
                 comment.id
               );
               
@@ -221,14 +229,16 @@ export async function GET(req) {
             
             if (actionSuccess) totalProcessed++;
             
-            // Segna come processato
-            processedComments.add(commentKey);
-            
-            // Mantieni solo ultimi 1000 commenti in memoria
-            if (processedComments.size > 1000) {
-              const first = processedComments.values().next().value;
-              processedComments.delete(first);
-            }
+            // Salva nel DB per non riprocessare su restart
+            await SocialInteraction.create({
+              commentId: commentKey,
+              accountId: account._id,
+              automationId: auto._id,
+              platform: account.platform,
+              type: 'comment',
+              data: { text: commentText, username: commentUsername },
+              processedAt: new Date()
+            }).catch(() => {}); // ignora duplicati
           }
         }
       }
@@ -244,11 +254,8 @@ export async function GET(req) {
         accountDetails: accounts.map(a => ({
           username: a.username,
           platform: a.platform,
-          accountId: a.accountId,
-          igUserId: a.metadata?.igUserId,
-          hasToken: !!a.accessToken,
+          status: a.status,
         })),
-        processedCommentsInMemory: processedComments.size,
       });
     }
     

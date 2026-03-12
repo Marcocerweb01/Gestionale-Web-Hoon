@@ -268,7 +268,10 @@ export async function GET(req) {
               profilePicture: igAccount.profile_picture_url,
               accessToken: pageToken,
               tokenExpiry: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-              permissions: ['instagram_manage_comments', 'instagram_content_publish']
+              permissions: ['instagram_manage_comments', 'instagram_content_publish'],
+              // IGID è lo stesso dell'accountId nel flusso Facebook
+              // Lo salviamo anche in metadata per coerenza col flusso Instagram Business Login
+              metadata: { igUserId: igAccount.id }
             });
           }
         } catch (igErr) {
@@ -288,7 +291,10 @@ export async function GET(req) {
         existing.status = 'active';
         existing.displayName = accountData.displayName || existing.displayName;
         existing.profilePicture = accountData.profilePicture || existing.profilePicture;
-        existing.userId = new mongoose.Types.ObjectId(session.user.id); // fix userId type
+        existing.userId = new mongoose.Types.ObjectId(session.user.id);
+        if (accountData.metadata) {
+          existing.metadata = { ...existing.metadata, ...accountData.metadata };
+        }
         await existing.save();
       } else {
         // Crea nuovo
@@ -303,6 +309,7 @@ export async function GET(req) {
     }
 
     // Auto-subscribe tutte le pagine Facebook ai webhook
+    // E gli account Instagram scoperti via pagine
     for (const accountData of accountsToSave) {
       try {
         if (accountData.platform === 'facebook') {
@@ -312,6 +319,16 @@ export async function GET(req) {
           );
           const subData = await subRes.json();
           console.log(`[META CALLBACK] Auto-subscribe webhook page ${accountData.accountId}:`, JSON.stringify(subData));
+        }
+        // Instagram scoperti via Facebook flow: subscribe ai webhook Instagram
+        // Usiamo il Page token - la Page è admin dell'account IG
+        if (accountData.platform === 'instagram') {
+          const subRes = await fetch(
+            `https://graph.facebook.com/v21.0/${accountData.accountId}/subscribed_apps?subscribed_fields=comments,messages&access_token=${accountData.accessToken}`,
+            { method: 'POST' }
+          );
+          const subData = await subRes.json();
+          console.log(`[META CALLBACK] Auto-subscribe webhook Instagram ${accountData.accountId}:`, JSON.stringify(subData));
         }
       } catch (subErr) {
         console.log(`[META CALLBACK] Auto-subscribe fallito per ${accountData.accountId}:`, subErr.message);

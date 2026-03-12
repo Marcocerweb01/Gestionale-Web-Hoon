@@ -3,32 +3,32 @@ import { authOptions } from '@/lib/auth';
 import { connectToDB } from '@/utils/database';
 import SocialAccount from '@/models/SocialAccount';
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 
-// Funzione helper per refresh token Meta
-async function refreshMetaToken(accountId, currentToken) {
-  try {
-    const response = await fetch(
-      `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.NEXT_PUBLIC_META_APP_ID}&client_secret=${process.env.META_APP_SECRET}&fb_exchange_token=${currentToken}`
-    );
-    
-    const data = await response.json();
-    
-    if (data.access_token) {
-      // Token esteso dura ~60 giorni
-      const expiresIn = data.expires_in || 5184000; // 60 giorni default
-      const tokenExpiry = new Date(Date.now() + expiresIn * 1000);
-      
-      return {
-        accessToken: data.access_token,
-        tokenExpiry
-      };
-    }
-    
-    throw new Error(data.error?.message || 'Refresh token fallito');
-  } catch (error) {
-    console.error('Errore refresh token:', error);
-    throw error;
+// Refresh token per Facebook (fb_exchange_token)
+async function refreshFacebookToken(currentToken) {
+  const response = await fetch(
+    `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.NEXT_PUBLIC_META_APP_ID}&client_secret=${process.env.META_APP_SECRET}&fb_exchange_token=${currentToken}`
+  );
+  const data = await response.json();
+  if (data.access_token) {
+    const expiresIn = data.expires_in || 5184000;
+    return { accessToken: data.access_token, tokenExpiry: new Date(Date.now() + expiresIn * 1000) };
   }
+  throw new Error(data.error?.message || 'Refresh token Facebook fallito');
+}
+
+// Refresh token per Instagram Business Login (ig_refresh_token)
+async function refreshInstagramToken(currentToken) {
+  const response = await fetch(
+    `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${currentToken}`
+  );
+  const data = await response.json();
+  if (data.access_token) {
+    const expiresIn = data.expires_in || 5184000;
+    return { accessToken: data.access_token, tokenExpiry: new Date(Date.now() + expiresIn * 1000) };
+  }
+  throw new Error(data.error?.message || 'Refresh token Instagram fallito');
 }
 
 // POST - Refresh token di un account
@@ -46,35 +46,39 @@ export async function POST(req, context) {
     
     const account = await SocialAccount.findOne({
       _id: accountId,
-      userId: session.user.id
+      userId: new mongoose.Types.ObjectId(session.user.id)
     });
     
     if (!account) {
       return NextResponse.json({ error: 'Account non trovato' }, { status: 404 });
     }
     
-    // Refresh token
-    const { accessToken, tokenExpiry } = await refreshMetaToken(
-      account.accountId,
-      account.accessToken
-    );
+    // Scegli il meccanismo di refresh in base alla piattaforma e al tipo di permessi
+    const isInstagramBusinessLogin = account.platform === 'instagram' && 
+      account.permissions?.some(p => p.startsWith('instagram_business_'));
+    
+    let result;
+    if (isInstagramBusinessLogin) {
+      result = await refreshInstagramToken(account.accessToken);
+    } else {
+      result = await refreshFacebookToken(account.accessToken);
+    }
     
     // Aggiorna nel database
-    account.accessToken = accessToken;
-    account.tokenExpiry = tokenExpiry;
+    account.accessToken = result.accessToken;
+    account.tokenExpiry = result.tokenExpiry;
     account.status = 'active';
     await account.save();
     
     return NextResponse.json({
       message: 'Token aggiornato con successo',
-      tokenExpiry
+      tokenExpiry: result.tokenExpiry
     });
     
   } catch (error) {
     console.error('Errore refresh token:', error);
     return NextResponse.json({ 
-      error: 'Errore refresh token', 
-      details: error.message 
+      error: 'Errore refresh token'
     }, { status: 500 });
   }
 }

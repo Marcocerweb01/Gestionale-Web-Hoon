@@ -401,9 +401,9 @@ export default function RulesPage() {
                         <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md font-medium">
                           {getTypeLabel(automation.type)}
                         </span>
-                        {automation.action?.type && (
+                        {(automation.action?.actionType || automation.action?.type) && (
                           <span className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-md font-medium">
-                            {ACTION_TYPES.find(a => a.value === automation.action.type)?.label}
+                            {ACTION_TYPES.find(a => a.value === (automation.action.actionType || automation.action.type))?.label}
                           </span>
                         )}
                       </div>
