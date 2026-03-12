@@ -79,7 +79,7 @@ function SocialAutomationContent() {
 
   const handleConnectMeta = () => {
     const redirectUri = encodeURIComponent(process.env.NEXT_PUBLIC_META_REDIRECT_URI || `${window.location.origin}/api/oauth/meta/callback`);
-    const scope = encodeURIComponent('public_profile,pages_show_list,pages_read_engagement,pages_messaging,business_management,instagram_manage_comments,instagram_manage_messages,instagram_content_publish');
+    const scope = encodeURIComponent('public_profile,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_manage_comments,instagram_manage_messages');
     const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${process.env.NEXT_PUBLIC_META_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=facebook&auth_type=rerequest`;
     window.location.href = oauthUrl;
   };
