@@ -68,11 +68,15 @@ export async function GET(req) {
     console.log('🔄 [POLLING] Controllo nuovi commenti...');
     
     await connectToDB();
+
+    const { searchParams } = new URL(req.url);
+    const debugMode = searchParams.get('debug') === '1';
+    const onlyAccount = searchParams.get('account'); // username filter for debug
     
     // Trova tutti gli account attivi (Instagram e Facebook)
-    const accounts = await SocialAccount.find({ 
-      status: 'active' 
-    });
+    const filter = { status: 'active' };
+    if (onlyAccount) filter.username = onlyAccount;
+    const accounts = await SocialAccount.find(filter);
     
     if (accounts.length === 0) {
       return Response.json({ status: 'no_accounts' });
@@ -114,17 +118,35 @@ export async function GET(req) {
       
       // Per ogni post, controlla i commenti
       for (const media of mediaData.data) {
-        let commentsUrl;
+        let commentsData = null;
+
         if (account.platform === 'instagram') {
-          commentsUrl = `https://graph.instagram.com/v21.0/${media.id}/comments?fields=id,text,username,timestamp&access_token=${account.accessToken}`;
+          // Tentativo 1: graph.instagram.com (standard)
+          const commentsUrl1 = `https://graph.instagram.com/v21.0/${media.id}/comments?fields=id,text,username,timestamp,from{id,username}&access_token=${account.accessToken}`;
+          const commentsRes1 = await fetch(commentsUrl1);
+          commentsData = await commentsRes1.json();
+
+          // Se vuoto, tentativo 2: graph.facebook.com con IGID
+          if ((!commentsData.data || commentsData.data.length === 0) && account.metadata?.igUserId) {
+            console.log(`🔄 [POLLING] graph.instagram.com vuoto per ${media.id}, provo graph.facebook.com...`);
+            const commentsUrl2 = `https://graph.facebook.com/v21.0/${media.id}/comments?fields=id,text,username,timestamp,from{id,username}&access_token=${account.accessToken}`;
+            const commentsRes2 = await fetch(commentsUrl2);
+            const fbData = await commentsRes2.json();
+            if (fbData.data && fbData.data.length > 0) {
+              console.log(`✅ [POLLING] graph.facebook.com ha restituito ${fbData.data.length} commenti!`);
+              commentsData = fbData;
+            } else if (fbData.error) {
+              console.log(`⚠️ [POLLING] graph.facebook.com errore:`, fbData.error.message);
+            }
+          }
         } else {
-          commentsUrl = `https://graph.facebook.com/v21.0/${media.id}/comments?fields=id,message,from,created_time&access_token=${account.accessToken}`;
+          const commentsUrl = `https://graph.facebook.com/v21.0/${media.id}/comments?fields=id,message,from,created_time&access_token=${account.accessToken}`;
+          const commentsRes = await fetch(commentsUrl);
+          commentsData = await commentsRes.json();
         }
-        const commentsRes = await fetch(commentsUrl);
-        const commentsData = await commentsRes.json();
         
-        if (!commentsData.data) {
-          if (commentsData.error) {
+        if (!commentsData?.data) {
+          if (commentsData?.error) {
             console.log(`❌ [POLLING] Errore commenti per media ${media.id}:`, commentsData.error.message);
           }
           continue;
@@ -213,6 +235,22 @@ export async function GET(req) {
     }
     
     console.log(`✅ [POLLING] Completato. Processati: ${totalProcessed}`);
+    
+    if (debugMode) {
+      return Response.json({ 
+        status: 'ok', 
+        processed: totalProcessed,
+        accounts: accounts.length,
+        accountDetails: accounts.map(a => ({
+          username: a.username,
+          platform: a.platform,
+          accountId: a.accountId,
+          igUserId: a.metadata?.igUserId,
+          hasToken: !!a.accessToken,
+        })),
+        processedCommentsInMemory: processedComments.size,
+      });
+    }
     
     return Response.json({ 
       status: 'ok', 
