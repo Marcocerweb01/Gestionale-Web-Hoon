@@ -20,6 +20,43 @@ export async function POST(req) {
     const reqBody = await req.json();
     const { senderAccountId, action } = reqBody;
 
+    // ── AZIONE: Fix ALL IGID (sistema tutti gli account Instagram) ────
+    if (action === 'fix-all-igid') {
+      const accounts = await SocialAccount.find({
+        userId: new mongoose.Types.ObjectId(session.user.id),
+        platform: 'instagram',
+        status: 'active',
+      });
+
+      const results = [];
+      for (const acc of accounts) {
+        try {
+          const apiBase = 'https://graph.instagram.com/v21.0';
+          const meRes = await fetch(`${apiBase}/me?fields=id,username,user_id&access_token=${acc.accessToken}`);
+          const meData = await meRes.json();
+
+          if (meData.error) {
+            results.push({ username: acc.username, error: meData.error.message });
+            continue;
+          }
+
+          const igUserId = meData.user_id;
+          acc.metadata = { ...acc.metadata, igUserId };
+          await acc.save();
+          results.push({
+            username: acc.username,
+            accountId_IGSID: meData.id,
+            igUserId_IGID: igUserId,
+            success: true,
+          });
+        } catch (e) {
+          results.push({ username: acc.username, error: e.message });
+        }
+      }
+
+      return NextResponse.json({ success: true, fixed: results });
+    }
+
     if (!senderAccountId) {
       return NextResponse.json({ error: 'senderAccountId richiesto' }, { status: 400 });
     }
