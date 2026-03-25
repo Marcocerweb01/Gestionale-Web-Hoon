@@ -40,8 +40,6 @@ export default function DispensePage() {
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/Login");
-    } else if (status === "authenticated" && session?.user?.role !== "amministratore") {
-      router.push("/unauthorized");
     } else if (status === "authenticated") {
       pulisciECarica();
     }
