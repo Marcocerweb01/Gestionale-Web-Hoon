@@ -47,8 +47,10 @@ export default function DispensePage() {
 
   const pulisciECarica = async () => {
     try {
-      // Prima rimuovi eventuali duplicati
-      await fetch('/api/dispense/migra', { method: 'DELETE' });
+      if (isAdmin) {
+        // Prima rimuovi eventuali duplicati (solo admin)
+        await fetch('/api/dispense/migra', { method: 'DELETE' });
+      }
       // Poi carica i dati
       await caricaDati();
     } catch (error) {
@@ -295,7 +297,7 @@ export default function DispensePage() {
     );
   }
 
-  if (status === "unauthenticated" || session?.user?.role !== "amministratore") {
+  if (status === "unauthenticated") {
     return null;
   }
 
