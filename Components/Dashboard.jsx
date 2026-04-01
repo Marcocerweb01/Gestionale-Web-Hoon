@@ -413,6 +413,35 @@ const Dashboard = () => {
     }
   };
 
+  // Funzione per riattivare i trimestrali (ripartire come primo giorno del mese)
+  const handleRiattivaTrimestrali = async () => {
+    const conferma = window.confirm(
+      "🔄 RIATTIVA TRIMESTRALI\n\nQuesta operazione riporterà tutti i conteggi come se fosse il primo giorno del mese:\n\n- Azzera tutti i fatti mensili\n- Azzera tutti i fatti trimestrali\n- Imposta i totali trimestrali = valori mensili pianificati\n\nSei sicuro di voler continuare?"
+    );
+
+    if (!conferma) return;
+
+    setResetLoading(true);
+    try {
+      const response = await fetch("/api/riattiva-trimestrali", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`✅ Riattivazione completata!\n${result.modifiedCount} collaborazioni riattivate su ${result.collaborazioniTrovate} trovate.`);
+      } else {
+        alert("❌ Errore durante la riattivazione trimestrali. Riprova.");
+      }
+    } catch (error) {
+      console.error("Errore:", error);
+      alert("❌ Errore di connessione. Riprova.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   // Funzione per fix appuntamenti fatti dal 1 novembre
   const handleFixAppuntamenti = async () => {
     const conferma = window.confirm(
@@ -934,6 +963,15 @@ const Dashboard = () => {
               >
                 <RotateCcw className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
                 <span className="font-medium text-sm md:text-base">{resetLoading ? "Reset..." : "Reset Trimestrali"}</span>
+              </button>
+
+              <button 
+                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 group" 
+                onClick={handleRiattivaTrimestrali}
+                disabled={resetLoading}
+              >
+                <RotateCcw className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
+                <span className="font-medium text-sm md:text-base">{resetLoading ? "Riattivazione..." : "Riattiva Trimestrali"}</span>
               </button>
             </div>
           )}
