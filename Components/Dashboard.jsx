@@ -619,13 +619,12 @@ const Dashboard = () => {
               </button>
             </Link>
             
-            <div 
-              className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed opacity-60 pointer-events-none select-none"
-              title="Disponibile solo per amministratori"
-            >
-              <Settings className="w-4 h-4 md:w-5 md:h-5" />
-              <span className="font-medium text-sm md:text-base">Operations</span>
-            </div>
+            <Link href="/Operations">
+              <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors duration-200 group">
+                <Settings className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">Operations</span>
+              </button>
+            </Link>
             
             <Link href="/Dispense">
               <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors duration-200 group">
