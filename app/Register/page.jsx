@@ -113,6 +113,7 @@ const Registrazione = () => {
                 <option value="contatto">Contatto</option>
                 <option value="collaboratore">Collaboratore</option>
                 <option value="amministratore">Amministratore</option>
+                <option value="segretaria">Segretaria</option>
               </select>
             </div>
 

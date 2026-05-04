@@ -63,6 +63,7 @@ const AmministratoreSchema = new Schema({
   cognome: { type: String, required: false },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  ruolo: { type: String, enum: ["amministratore", "segretaria"], default: "amministratore" },
 }, { timestamps: true });
 
 const ContattoSchema = new Schema({

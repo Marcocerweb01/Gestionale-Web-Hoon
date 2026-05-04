@@ -82,7 +82,7 @@ const Header = () => {
             ) : session ? (
               <div className="flex items-center space-x-4">
                 {/* Link Fatturazione - Solo per amministratori */}
-                {session.user.role === "amministratore" && (
+                {(session.user.role === "amministratore" || session.user.role === "segretaria") && (
                   <Link 
                     href="/Fatturazione"
                     className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"

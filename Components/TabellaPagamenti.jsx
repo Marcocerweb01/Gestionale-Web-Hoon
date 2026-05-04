@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { Edit, Trash2, TrendingUp, TrendingDown, Eye } from "lucide-react";
 
 export default function TabellaPagamenti({ pagamenti, onPagamentoAggiornato, onPagamentoEliminato }) {
   const [pagamentoSelezionato, setPagamentoSelezionato] = useState(null);
   const [mostraDettagli, setMostraDettagli] = useState(false);
+  const { data: session } = useSession();
+  const canDelete = session?.user?.role === "amministratore";
 
   const handleCambioStato = async (pagamentoId, nuovoStato) => {
     try {
@@ -171,6 +174,7 @@ export default function TabellaPagamenti({ pagamenti, onPagamentoAggiornato, onP
                       >
                         <Eye className="w-4 h-4" />
                       </button>
+                      {canDelete && (
                       <button
                         onClick={() => handleElimina(pagamento._id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -178,6 +182,7 @@ export default function TabellaPagamenti({ pagamenti, onPagamentoAggiornato, onP
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -252,12 +257,14 @@ export default function TabellaPagamenti({ pagamenti, onPagamentoAggiornato, onP
                   >
                     <Eye className="w-5 h-5" />
                   </button>
+                  {canDelete && (
                   <button
                     onClick={() => handleElimina(pagamento._id)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
+                  )}
                 </div>
               </div>
             </div>

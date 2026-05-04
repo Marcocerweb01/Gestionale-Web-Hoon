@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 const AdminCollaborationsList = ({ id }) => {
   console.log("🔄 RENDER - AdminCollaborationsList", new Date().toLocaleTimeString());
+  const { data: session } = useSession();
+  const canDelete = session?.user?.role === "amministratore";
   
   const [data, setData] = useState([]);
   const [editingRow, setEditingRow] = useState(null);
@@ -336,7 +340,13 @@ const AdminCollaborationsList = ({ id }) => {
                   <span className="text-blue-600">🏢</span>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">{row.cliente}</h4>
+                  {row.clienteId ? (
+                    <Link href={`/User/${row.clienteId}`} className="font-semibold text-blue-700 hover:underline">
+                      {row.cliente}
+                    </Link>
+                  ) : (
+                    <h4 className="font-semibold text-gray-900">{row.cliente}</h4>
+                  )}
                   {row.durata_contratto && (
                     <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
                       ⏱️ {row.durata_contratto}
@@ -368,6 +378,7 @@ const AdminCollaborationsList = ({ id }) => {
                         <>🔄 Azzera Generali</>
                       )}
                     </button>
+                    {canDelete && (
                     <button 
                       onClick={() => handleDeleteCollab(row.id, row.cliente)}
                       disabled={eliminandoCollab === row.id}
@@ -382,6 +393,7 @@ const AdminCollaborationsList = ({ id }) => {
                         <>🗑️ Elimina</>
                       )}
                     </button>
+                    )}
                   </>
                 )}
                 {editingRow === row.id && (

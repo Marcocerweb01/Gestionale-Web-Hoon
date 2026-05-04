@@ -35,6 +35,11 @@ export async function GET(req, { params }) {
       post_ig_fb_fatti: collaborazione.post_ig_fb_fatti,
       post_tiktok_fatti: collaborazione.post_tiktok_fatti,
       post_linkedin_fatti: collaborazione.post_linkedin_fatti,
+      post_totali_previsti: collaborazione.post_totali_previsti,
+      appuntamenti_totali_previsti: collaborazione.appuntamenti_totali_previsti,
+      durata_contratto: collaborazione.durata_contratto,
+      data_inizio_contratto: collaborazione.data_inizio_contratto,
+      data_fine_contratto: collaborazione.data_fine_contratto,
     }));
 
     return new Response(JSON.stringify(result), { status: 200 });

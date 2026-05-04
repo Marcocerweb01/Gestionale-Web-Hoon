@@ -35,7 +35,7 @@ export async function POST(req) {
       exists = await Collaboratore.findOne({ email });
     } else if (ruolo.nome === "contatto") {
       exists = await Contatto.findOne({ email });
-    } else if (ruolo.nome === "amministratore") {
+    } else if (ruolo.nome === "amministratore" || ruolo.nome === "segretaria") {
       exists = await Amministratore.findOne({ email });
     }
 
@@ -98,11 +98,13 @@ export async function POST(req) {
         indirizzo: ruolo.dettagli?.indirizzo,
         notes: ruolo.dettagli?.notes,
       });
-    } else if (ruolo.nome === "amministratore") {
+    } else if (ruolo.nome === "amministratore" || ruolo.nome === "segretaria") {
       nuovoUtente = await Amministratore.create({
         nome,
+        cognome,
         email,
         password: hashedPassword,
+        ruolo: ruolo.nome,
       });
     } else {
       return NextResponse.json(

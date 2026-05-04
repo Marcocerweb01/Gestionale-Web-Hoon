@@ -50,7 +50,7 @@ const FatturazionePage = () => {
       return;
     }
     
-    if (session?.user?.role !== "amministratore") {
+    if (session?.user?.role !== "amministratore" && session?.user?.role !== "segretaria") {
       router.push("/unauthorized");
     }
   }, [session, status, router]);
@@ -263,7 +263,7 @@ const FatturazionePage = () => {
     );
   }
 
-  if (session?.user?.role !== "amministratore") {
+  if (session?.user?.role !== "amministratore" && session?.user?.role !== "segretaria") {
     return null;
   }
 

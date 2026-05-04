@@ -592,8 +592,8 @@ const Dashboard = () => {
             </div>
           </div>
           
-          {/* Bottone Faq & App - Solo per utenti non amministratori */}
-          {session?.user?.role !== "amministratore" && (
+          {/* Bottone Faq & App - Solo per utenti non amministratori e non segretaria */}
+          {session?.user?.role !== "amministratore" && session?.user?.role !== "segretaria" && (
             <button
               onClick={() => setSezioneAperta(sezioneAperta === 'faq-app' ? null : 'faq-app')}
               className={`flex items-center justify-center space-x-2 px-4 md:px-6 py-3 rounded-lg transition-colors duration-200 group flex-shrink-0 ${
@@ -610,7 +610,7 @@ const Dashboard = () => {
         </div>
         
         {/* Contenuto Sezione Faq & App - Giallo */}
-        {session?.user?.role !== "amministratore" && sezioneAperta === 'faq-app' && (
+        {session?.user?.role !== "amministratore" && session?.user?.role !== "segretaria" && sezioneAperta === 'faq-app' && (
           <div className="mt-6 grid grid-cols-3 gap-3 md:gap-4 border-t border-yellow-200 pt-6">
             <Link href="/Faq">
               <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors duration-200 group">
@@ -788,7 +788,7 @@ const Dashboard = () => {
       )} */}
 
       {/* Admin Panel - Mobile Responsive */}
-      {session?.user?.role === "amministratore" && (
+      {(session?.user?.role === "amministratore" || session?.user?.role === "segretaria") && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
           <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6 flex items-center">
             <Settings className="w-5 h-5 md:w-6 md:h-6 mr-2 text-blue-600" />
@@ -811,18 +811,20 @@ const Dashboard = () => {
               </button>
             </Link>
 
-            <button
-              onClick={() => setSezioneAperta(sezioneAperta === 'faq-app' ? null : 'faq-app')}
-              className={`w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 rounded-lg transition-colors duration-200 group ${
-                sezioneAperta === 'faq-app' 
-                  ? 'bg-yellow-600 text-white' 
-                  : 'bg-yellow-500 text-white hover:bg-yellow-600'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-              <span className="font-medium text-sm md:text-base">Faq & App</span>
-              <span className="ml-1">{sezioneAperta === 'faq-app' ? '▲' : '▼'}</span>
-            </button>
+            {session?.user?.role === "amministratore" && (
+              <button
+                onClick={() => setSezioneAperta(sezioneAperta === 'faq-app' ? null : 'faq-app')}
+                className={`w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 rounded-lg transition-colors duration-200 group ${
+                  sezioneAperta === 'faq-app' 
+                    ? 'bg-yellow-600 text-white' 
+                    : 'bg-yellow-500 text-white hover:bg-yellow-600'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">Faq & App</span>
+                <span className="ml-1">{sezioneAperta === 'faq-app' ? '▲' : '▼'}</span>
+              </button>
+            )}
           </div>
 
           {/* Sezioni espandibili - 3 in basso orizzontali */}
@@ -855,19 +857,21 @@ const Dashboard = () => {
               <span className="ml-1">{sezioneAperta === 'collaborazioni' ? '▲' : '▼'}</span>
             </button>
 
-            {/* Bottone Funzioni - Arancione */}
-            <button
-              onClick={() => setSezioneAperta(sezioneAperta === 'funzioni' ? null : 'funzioni')}
-              className={`flex items-center justify-center space-x-2 px-3 md:px-4 py-3 rounded-lg transition-colors duration-200 group ${
-                sezioneAperta === 'funzioni' 
-                  ? 'bg-orange-600 text-white' 
-                  : 'bg-orange-500 text-white hover:bg-orange-600'
-              }`}
-            >
-              <Settings className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-              <span className="font-medium text-sm md:text-base">Funzioni</span>
-              <span className="ml-1">{sezioneAperta === 'funzioni' ? '▲' : '▼'}</span>
-            </button>
+            {/* Bottone Funzioni - Arancione - Solo per amministratori */}
+            {session?.user?.role === "amministratore" && (
+              <button
+                onClick={() => setSezioneAperta(sezioneAperta === 'funzioni' ? null : 'funzioni')}
+                className={`flex items-center justify-center space-x-2 px-3 md:px-4 py-3 rounded-lg transition-colors duration-200 group ${
+                  sezioneAperta === 'funzioni' 
+                    ? 'bg-orange-600 text-white' 
+                    : 'bg-orange-500 text-white hover:bg-orange-600'
+                }`}
+              >
+                <Settings className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                <span className="font-medium text-sm md:text-base">Funzioni</span>
+                <span className="ml-1">{sezioneAperta === 'funzioni' ? '▲' : '▼'}</span>
+              </button>
+            )}
           </div>
 
           {/* Contenuto Sezione Pagamenti - Verde */}
@@ -1007,7 +1011,7 @@ const Dashboard = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-4 md:p-6 border-b border-gray-200">
           <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
-            {session?.user?.role === "amministratore" ? (
+            {(session?.user?.role === "amministratore" || session?.user?.role === "segretaria") ? (
               <>
                 <Users className="w-5 h-5 md:w-6 md:h-6 mr-2 text-blue-600" />
                 Lista Collaboratori
@@ -1022,7 +1026,7 @@ const Dashboard = () => {
         </div>
         
         <div className="p-4 md:p-6">
-          {session?.user?.role === "amministratore" ? (
+          {(session?.user?.role === "amministratore" || session?.user?.role === "segretaria") ? (
             <ListaCollaboratori collaboratori={collaboratoriAttivi} />
           ) : (
             <>

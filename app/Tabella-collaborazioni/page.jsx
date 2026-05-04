@@ -22,14 +22,14 @@ const TabellaCollaborazioni = () => {
       return;
     }
     
-    if (session?.user?.role !== "amministratore") {
+    if (session?.user?.role !== "amministratore" && session?.user?.role !== "segretaria") {
       router.push("/unauthorized");
     }
   }, [session, status, router]);
 
   // Caricamento dati
   useEffect(() => {
-    if (session?.user?.role === "amministratore") {
+    if (session?.user?.role === "amministratore" || session?.user?.role === "segretaria") {
       fetchData();
     }
   }, [session]);
@@ -37,7 +37,7 @@ const TabellaCollaborazioni = () => {
   // Ricarica automaticamente quando la finestra torna in focus
   useEffect(() => {
     const handleFocus = () => {
-      if (session?.user?.role === "amministratore") {
+      if (session?.user?.role === "amministratore" || session?.user?.role === "segretaria") {
         console.log("🔄 Finestra in focus - ricarico dati...");
         fetchData();
       }
@@ -176,7 +176,7 @@ const TabellaCollaborazioni = () => {
     );
   }
 
-  if (session?.user?.role !== "amministratore") {
+  if (session?.user?.role !== "amministratore" && session?.user?.role !== "segretaria") {
     return null;
   }
 

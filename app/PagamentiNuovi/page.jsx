@@ -125,7 +125,7 @@ export default function PagamentiNuovi() {
     );
   }
 
-  if (!session || session.user.role !== "amministratore") {
+  if (!session || (session.user.role !== "amministratore" && session.user.role !== "segretaria")) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

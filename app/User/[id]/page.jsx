@@ -273,7 +273,7 @@ const UserDetails = ({ params }) => {
                 </div>
               </div>
               
-              {session?.user?.role === "amministratore" && !editMode && (
+              {(session?.user?.role === "amministratore" || session?.user?.role === "segretaria") && !editMode && (
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                   {user?.subRole && (
                     <button
@@ -404,7 +404,7 @@ const UserDetails = ({ params }) => {
                         </div>
                       )}
                       
-                      {user.subRole && session?.user?.role === "amministratore" && (
+                      {user.subRole && (session?.user?.role === "amministratore" || session?.user?.role === "segretaria") && (
                         <div>
                           <label className="block text-sm font-semibold text-gray-900 mb-2">
                             🔄 Status Collaboratore
@@ -622,7 +622,7 @@ const UserDetails = ({ params }) => {
                       </div>
                     )}
                     
-                    {user.subRole && user.noteAmministratore && session?.user?.role === "amministratore" && (
+                    {user.subRole && user.noteAmministratore && (session?.user?.role === "amministratore" || session?.user?.role === "segretaria") && (
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4 sm:col-span-2 lg:col-span-3">
                         <div className="flex items-start space-x-2">
                           <span className="text-lg flex-shrink-0">📝</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { FaCheck, FaTimes, FaClock, FaPhone, FaCalendar, FaMapMarkerAlt, FaEnvelope, FaStickyNote, FaEdit } from "react-icons/fa";
 import ModificaLead from "@/Components/ModificaLead";
 
@@ -12,6 +13,8 @@ const STATI = [
 ];
 
 export default function TimelineLead({ lead, onUpdate, onDelete, onArchive }) {
+  const { data: session } = useSession();
+  const canDelete = session?.user?.role === "amministratore";
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [dataRicontatto, setDataRicontatto] = useState("");
@@ -426,6 +429,7 @@ export default function TimelineLead({ lead, onUpdate, onDelete, onArchive }) {
                 {isExpanded ? "Nascondi dettagli ▲" : "Mostra dettagli ▼"}
               </button>
 
+              {canDelete && (
               <button
                 onClick={handleElimina}
                 disabled={isUpdating}
@@ -433,6 +437,7 @@ export default function TimelineLead({ lead, onUpdate, onDelete, onArchive }) {
               >
                 Elimina
               </button>
+              )}
             </div>
 
             {/* Cambio Stato con Select - Mobile Responsive */}

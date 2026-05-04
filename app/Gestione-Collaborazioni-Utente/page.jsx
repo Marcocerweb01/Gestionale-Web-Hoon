@@ -14,9 +14,10 @@ export default function GestioneCollaborazioniUtentePage() {
   const [loading, setLoading] = useState(true);
   const [utenteEspanso, setUtenteEspanso] = useState(null);
   const [eliminandoCollab, setEliminandoCollab] = useState(null);
+  const canDelete = session?.user?.role === "amministratore";
 
   useEffect(() => {
-    if (status === "authenticated" && session?.user?.role === "amministratore") {
+    if (status === "authenticated" && (session?.user?.role === "amministratore" || session?.user?.role === "segretaria")) {
       caricaDati();
     }
   }, [status, session]);
@@ -79,7 +80,7 @@ export default function GestioneCollaborazioniUtentePage() {
     );
   }
 
-  if (status === "unauthenticated" || session?.user?.role !== "amministratore") {
+  if (status === "unauthenticated" || (session?.user?.role !== "amministratore" && session?.user?.role !== "segretaria")) {
     router.push("/Login");
     return null;
   }
@@ -249,6 +250,7 @@ export default function GestioneCollaborazioniUtentePage() {
                                       )}
                                     </div>
                                   </div>
+                                  {canDelete && (
                                   <button
                                     onClick={() => handleEliminaCollaborazione(collab._id, 'social', utente.ragioneSociale)}
                                     disabled={eliminandoCollab === collab._id}
@@ -257,6 +259,7 @@ export default function GestioneCollaborazioniUtentePage() {
                                   >
                                     <Trash2 className="w-5 h-5" />
                                   </button>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -294,6 +297,7 @@ export default function GestioneCollaborazioniUtentePage() {
                                       <span>{new Date(collab.dataInizioContratto).toLocaleDateString('it-IT')} - {new Date(collab.dataFineContratto).toLocaleDateString('it-IT')}</span>
                                     </div>
                                   </div>
+                                  {canDelete && (
                                   <button
                                     onClick={() => handleEliminaCollaborazione(collab._id, 'webdesign', utente.ragioneSociale)}
                                     disabled={eliminandoCollab === collab._id}
@@ -302,6 +306,7 @@ export default function GestioneCollaborazioniUtentePage() {
                                   >
                                     <Trash2 className="w-5 h-5" />
                                   </button>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -343,6 +348,7 @@ export default function GestioneCollaborazioniUtentePage() {
                                       )}
                                     </div>
                                   </div>
+                                  {canDelete && (
                                   <button
                                     onClick={() => handleEliminaCollaborazione(collab._id, 'googleads', utente.ragioneSociale)}
                                     disabled={eliminandoCollab === collab._id}
@@ -351,6 +357,7 @@ export default function GestioneCollaborazioniUtentePage() {
                                   >
                                     <Trash2 className="w-5 h-5" />
                                   </button>
+                                  )}
                                 </div>
                               ))}
                             </div>
