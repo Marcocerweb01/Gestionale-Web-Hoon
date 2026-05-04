@@ -275,7 +275,7 @@ const UserDetails = ({ params }) => {
               
               {(session?.user?.role === "amministratore" || session?.user?.role === "segretaria") && !editMode && (
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                  {user?.subRole && (
+                  {user?.subRole && session?.user?.role === "amministratore" && (
                     <button
                       onClick={() => toggleStatus()}
                       className={`px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors ${
@@ -404,7 +404,7 @@ const UserDetails = ({ params }) => {
                         </div>
                       )}
                       
-                      {user.subRole && (session?.user?.role === "amministratore" || session?.user?.role === "segretaria") && (
+                      {user.subRole && session?.user?.role === "amministratore" && (
                         <div>
                           <label className="block text-sm font-semibold text-gray-900 mb-2">
                             🔄 Status Collaboratore

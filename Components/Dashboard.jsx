@@ -796,7 +796,7 @@ const Dashboard = () => {
           </h2>
           
           {/* Pulsanti principali - 3 in alto orizzontali */}
-          <div className="grid grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
+          <div className={`grid ${session?.user?.role === 'segretaria' ? 'grid-cols-2' : 'grid-cols-3'} gap-3 md:gap-4 mb-4 md:mb-6`}>
             <Link href="/AddCollab">
               <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 group">
                 <PlusCircle className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
@@ -828,7 +828,7 @@ const Dashboard = () => {
           </div>
 
           {/* Sezioni espandibili - 3 in basso orizzontali */}
-          <div className="grid grid-cols-3 gap-3 md:gap-4">
+          <div className={`grid ${session?.user?.role === 'segretaria' ? 'grid-cols-2' : 'grid-cols-3'} gap-3 md:gap-4`}>
             {/* Bottone Sezione Pagamenti - Verde */}
             <button
               onClick={() => setSezioneAperta(sezioneAperta === 'pagamenti' ? null : 'pagamenti')}

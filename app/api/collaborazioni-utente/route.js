@@ -13,7 +13,7 @@ export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || session.user.role !== 'amministratore') {
+    if (!session || (session.user.role !== 'amministratore' && session.user.role !== 'segretaria')) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
     }
     
