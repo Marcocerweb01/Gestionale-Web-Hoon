@@ -1,6 +1,7 @@
 import Nota from "@/models/Note";
 import Collaborazione from "@/models/Collaborazioni";
 import { connectToDB } from "@/utils/database";
+import { createNotifica } from "@/utils/createNotifica";
 
 export async function POST(req) {
   try {
@@ -24,6 +25,19 @@ export async function POST(req) {
     });
 
     await newNote.save();
+
+    // Se è un problema, crea notifica per gli amministratori
+    if (tipo === 'problema') {
+      const collab = await Collaborazione.findById(collaborazione).lean();
+      const clienteNome = collab?.aziendaRagioneSociale || 'cliente';
+      await createNotifica({
+        tipo: 'nota_problema',
+        titolo: `Nota problema da ${autore}`,
+        messaggio: `${autore} ha segnalato un problema per ${clienteNome}: "${nota.substring(0, 80)}${nota.length > 80 ? '…' : ''}"`,
+        link: `/Feed-2/${autoreId}`,
+        refId: newNote._id.toString(),
+      });
+    }
 
     // Se è un appuntamento, incrementa appuntamenti_fatti, appuntamenti_totali E appuntamenti_trimestrale_fatti
     if (tipo === 'appuntamento') {

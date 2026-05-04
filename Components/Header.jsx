@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { User, LogOut, Menu, ArrowLeft, Home } from "lucide-react";
+import NotificheDropdown from "./NotificheDropdown";
 
 const Header = () => {
   const { data: session, status } = useSession();
@@ -90,6 +91,11 @@ const Header = () => {
                     <span className="text-lg">💰</span>
                     <span className="hidden md:block">Fatturazione</span>
                   </Link>
+                )}
+
+                {/* Campanella notifiche - Solo amministratori */}
+                {session.user.role === "amministratore" && (
+                  <NotificheDropdown />
                 )}
                 
                 
