@@ -93,6 +93,17 @@ const Header = () => {
                   </Link>
                 )}
 
+                {/* Gestione Utenti - Solo amministratori */}
+                {session.user.role === "amministratore" && (
+                  <Link
+                    href="/Gestione-Utenti"
+                    className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  >
+                    <span className="text-lg">🔐</span>
+                    <span className="hidden md:block">Utenti</span>
+                  </Link>
+                )}
+
                 {/* Campanella notifiche - Solo amministratori */}
                 {session.user.role === "amministratore" && (
                   <NotificheDropdown />
