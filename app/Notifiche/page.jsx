@@ -24,7 +24,7 @@ export default function NotifichePage() {
   const [notifiche, setNotifiche] = useState([]);
   const [nonLette, setNonLette] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [filtro, setFiltro] = useState('tutte'); // tutte | non_lette | lette
+  const [filtro, setFiltro] = useState('non_lette'); // tutte | non_lette | lette
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/Login');
@@ -129,9 +129,9 @@ export default function NotifichePage() {
         {/* Filtri */}
         <div className="flex gap-2 mb-4">
           {[
-            { key: 'tutte', label: `Tutte (${notifiche.length})` },
             { key: 'non_lette', label: `Non lette (${nonLette})` },
             { key: 'lette', label: `Lette (${notifiche.length - nonLette})` },
+            { key: 'tutte', label: `Tutte (${notifiche.length})` },
           ].map(f => (
             <button
               key={f.key}
