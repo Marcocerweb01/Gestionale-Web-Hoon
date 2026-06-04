@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useCollaboratoriWithGlobalRefresh } from '@/hooks/useCollaboratori'; // ✨ Importa il nuovo hook
 import ListaCollaboratori from './Lista-collaboratori';
 import ListaClienti from './Lista-clienti';
-import TimelineWebDesigner from './timeline-web-designer'; // ✨ Uso TimelineWebDesigner al posto di ListaClientiWebDesigner
+import TimelineWebDesignerV2 from './timeline-web-designer-v2';
 import TimelineLead from './TimelineLead';
 import CreaLead from './CreaLead';
 import VistaGoogleAdsCollaboratore from './VistaGoogleAdsCollaboratore';
@@ -30,6 +30,27 @@ import {
   Target,
   Share2
 } from 'lucide-react';
+
+const WebDesignSection = ({ userId }) => {
+  if (!userId) {
+    return (
+      <div className="text-center py-8 text-red-600">
+        ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
+      </div>
+    );
+  }
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex items-center">
+          <span className="w-6 h-6 mr-2 text-orange-600 text-xl">🎨</span>
+          <h3 className="text-xl font-semibold text-gray-900">I tuoi progetti Web Design</h3>
+        </div>
+      </div>
+      <TimelineWebDesignerV2 userId={userId} />
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const { data: session, status } = useSession();
@@ -921,8 +942,8 @@ const Dashboard = () => {
                 </Link>
               </div>
               
-              {/* Gestione Collaborazioni Utente + Gestione Domini */}
-              <div className="grid grid-cols-2 gap-3 md:gap-4">
+              {/* Gestione Collaborazioni Utente + Gestione Domini + Lista Web Designer */}
+              <div className="grid grid-cols-3 gap-3 md:gap-4">
                 <Link href="/Gestione-Collaborazioni-Utente">
                   <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
                     <Users className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
@@ -933,6 +954,12 @@ const Dashboard = () => {
                   <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
                     <Monitor className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
                     <span className="font-medium text-sm md:text-base">🌐 Gestione Domini Web Design</span>
+                  </button>
+                </Link>
+                <Link href="/Lista_webdesigner">
+                  <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
+                    <Monitor className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium text-sm md:text-base">🖥️ Lista Web Designer</span>
                   </button>
                 </Link>
               </div>
@@ -1068,19 +1095,7 @@ const Dashboard = () => {
 
               {/* Progetti Web Design */}
               {hasRole("web designer") && (
-                <div className="mb-8">
-                  <div className="flex items-center mb-4">
-                    <Clock className="w-6 h-6 mr-2 text-orange-600" />
-                    <h3 className="text-xl font-semibold text-gray-900">I tuoi progetti Web Design</h3>
-                  </div>
-                  {session?.user?.id ? (
-                    <TimelineWebDesigner userId={session.user.id} />
-                  ) : (
-                    <div className="text-center py-8 text-red-600">
-                      ❌ Errore: ID utente non disponibile. Riprova ad effettuare il login.
-                    </div>
-                  )}
-                </div>
+                <WebDesignSection userId={session?.user?.id} />
               )}
 
               {/* Social Media Manager */}

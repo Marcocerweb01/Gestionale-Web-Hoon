@@ -19,6 +19,7 @@ export async function GET(req) {
 
     // Formatta i dati per il frontend
     const result = collaboratori.map((collaboratore) => ({
+      _id: collaboratore._id,
       id: collaboratore._id,
       nome: collaboratore.nome,
       cognome:collaboratore.cognome,
@@ -28,6 +29,7 @@ export async function GET(req) {
       partitaIva: collaboratore.partitaIva,
       status: collaboratore.status || 'attivo', // ✨ Aggiungi il campo status
       noteAmministratore: collaboratore.noteAmministratore || '', // ✨ Aggiungi le note amministratore
+      createdAt: collaboratore.createdAt,
     }));
     
     console.log(`📊 Lista collaboratori recuperata: ${result.length} elementi`);

@@ -113,8 +113,24 @@ const ListaCollaboratori = () => {
                         router.push(`/User/${collab.id}`);
                     }}
                   >
-                    <td className="px-6 py-4 text-gray-900 font-medium">{collab.nome}</td>
-                    <td className="px-6 py-4 text-gray-900 font-medium">{collab.cognome}</td>
+                    <td className="px-6 py-4 text-gray-900 font-medium">
+                      <Link
+                        href={`/User/${collab.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {collab.nome}
+                      </Link>
+                    </td>
+                    <td className="px-6 py-4 text-gray-900 font-medium">
+                      <Link
+                        href={`/User/${collab.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {collab.cognome}
+                      </Link>
+                    </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 capitalize">
                         {collab.subRole}

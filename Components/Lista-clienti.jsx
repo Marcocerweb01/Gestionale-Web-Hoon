@@ -312,11 +312,23 @@ const ListaClienti = ({ id, amministratore }) => {
         {data.map((row) => (
               <tr key={row.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-3 py-2">
-                  <Link 
+                  {row.clienteId ? (
+                    <Link
+                      href={`/User/${row.clienteId}`}
+                      className="text-primary hover:text-primary-600 font-medium text-sm truncate block"
+                    >
+                      {row.cliente}
+                    </Link>
+                  ) : (
+                    <span className="text-gray-900 font-medium text-sm truncate block">
+                      {row.cliente}
+                    </span>
+                  )}
+                  <Link
                     href={`/Feed-2/${id}?collaborazioneId=${row.id}`}
-                    className="text-primary hover:text-primary-600 font-medium text-sm truncate block"
-                  > 
-                    {row.cliente} 
+                    className="text-[11px] text-gray-500 hover:text-indigo-600 hover:underline"
+                  >
+                    Apri feed
                   </Link>
                 </td>
               
@@ -536,7 +548,16 @@ const ListaClienti = ({ id, amministratore }) => {
         <div key={row.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">{row.cliente}</h3>
+              {row.clienteId ? (
+                <Link
+                  href={`/User/${row.clienteId}`}
+                  className="text-lg font-semibold text-gray-900 hover:text-primary hover:underline"
+                >
+                  {row.cliente}
+                </Link>
+              ) : (
+                <h3 className="text-lg font-semibold text-gray-900">{row.cliente}</h3>
+              )}
               <Link 
                 href={`/Feed-2/${id}?collaborazioneId=${row.id}`}
                 className="inline-flex items-center mt-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"

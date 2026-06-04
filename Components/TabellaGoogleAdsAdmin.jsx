@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Search, Plus, Trash2, Edit2, RefreshCw } from 'lucide-react';
 
 const TabellaGoogleAdsAdmin = () => {
@@ -184,13 +185,31 @@ const TabellaGoogleAdsAdmin = () => {
                 campagneFiltrate.map((campagna) => (
                   <tr key={campagna._id} className="border-b hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-4">
-                      <div className="font-medium text-gray-900">
-                        {campagna.collaboratoreNome} {campagna.collaboratoreCognome}
-                      </div>
+                      {campagna.collaboratore?._id ? (
+                        <Link
+                          href={`/User/${campagna.collaboratore._id}`}
+                          className="font-medium text-gray-900 hover:text-purple-700 hover:underline"
+                        >
+                          {campagna.collaboratoreNome} {campagna.collaboratoreCognome}
+                        </Link>
+                      ) : (
+                        <div className="font-medium text-gray-900">
+                          {campagna.collaboratoreNome} {campagna.collaboratoreCognome}
+                        </div>
+                      )}
                       <div className="text-sm text-gray-500">{campagna.collaboratore?.email}</div>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="font-medium text-gray-900">{campagna.clienteEtichetta}</div>
+                      {campagna.cliente?._id ? (
+                        <Link
+                          href={`/User/${campagna.cliente._id}`}
+                          className="font-medium text-gray-900 hover:text-purple-700 hover:underline"
+                        >
+                          {campagna.clienteEtichetta}
+                        </Link>
+                      ) : (
+                        <div className="font-medium text-gray-900">{campagna.clienteEtichetta}</div>
+                      )}
                       <div className="text-sm text-gray-500">{campagna.cliente?.email}</div>
                     </td>
                     <td className="px-4 py-4 text-center">

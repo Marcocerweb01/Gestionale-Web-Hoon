@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 
 const ListaGoogleAdsCollaboratore = ({ collaboratoreId }) => {
   const [collaborazioni, setCollaborazioni] = useState([]);
@@ -67,9 +68,18 @@ const ListaGoogleAdsCollaboratore = ({ collaboratoreId }) => {
         >
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <h5 className="font-semibold text-gray-900 mb-2">
-                {collab.cliente?.etichetta || "Cliente senza nome"}
-              </h5>
+              {collab.cliente?._id ? (
+                <Link
+                  href={`/User/${collab.cliente._id}`}
+                  className="inline-block font-semibold text-gray-900 mb-2 hover:text-orange-700 hover:underline"
+                >
+                  {collab.cliente?.etichetta || "Cliente senza nome"}
+                </Link>
+              ) : (
+                <h5 className="font-semibold text-gray-900 mb-2">
+                  {collab.cliente?.etichetta || "Cliente senza nome"}
+                </h5>
+              )}
               
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="flex items-center gap-1">

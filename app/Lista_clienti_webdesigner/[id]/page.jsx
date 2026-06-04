@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import ListaClientiWebDesigner from '@/Components/Lista-clienti-webdesigner';
+import TimelineWebDesignerV2 from '@/Components/timeline-web-designer-v2';
 import { Monitor, ArrowLeft, User } from 'lucide-react';
 
 const ProgettiWebDesigner = () => {
@@ -98,7 +98,7 @@ const ProgettiWebDesigner = () => {
 
           {/* Progetti del designer */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <ListaClientiWebDesigner userId={webDesignerId} />
+            <TimelineWebDesignerV2 userId={webDesignerId} />
           </div>
         </div>
       </div>

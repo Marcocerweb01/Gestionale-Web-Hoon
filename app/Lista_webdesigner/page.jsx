@@ -21,7 +21,7 @@ const ListaWebDesigner = () => {
         
         // Filtra solo i web designer
         const webDesignersOnly = collaboratori.filter(
-          collab => collab.subrole === 'webdesigner'
+          collab => Array.isArray(collab.subRoles) && collab.subRoles.includes('web designer')
         );
         
         setWebDesigners(webDesignersOnly);
@@ -87,9 +87,12 @@ const ListaWebDesigner = () => {
                         <User className="w-6 h-6 text-white" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <Link
+                          href={`/User/${designer._id}`}
+                          className="text-lg font-semibold text-gray-900 hover:text-orange-700 hover:underline"
+                        >
                           {designer.nome} {designer.cognome}
-                        </h3>
+                        </Link>
                         <p className="text-sm text-orange-600 font-medium">Web Designer</p>
                       </div>
                     </div>

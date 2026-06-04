@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Header from '@/Components/Header';
-import { BookOpen, ArrowLeft, ChevronDown, ChevronRight, Search, List, Plus, X, Trash2, Edit2, CheckCircle2, Circle } from 'lucide-react';
+import { BookOpen, ArrowLeft, ChevronDown, ChevronRight, Search, List, Plus, X, Trash2, Edit2, CheckCircle2, Circle, Lightbulb, Send, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DispensePage() {
@@ -34,6 +34,17 @@ export default function DispensePage() {
   const [nuovoNomeCategoria, setNuovoNomeCategoria] = useState('');
   const [nuovaIconaCategoria, setNuovaIconaCategoria] = useState('');
   const [eliminandoCategoria, setEliminandoCategoria] = useState(null);
+
+  // Stati per dispense suggerite
+  const [mostraFormSuggerimento, setMostraFormSuggerimento] = useState(false);
+  const [dispensaSuggerita, setDispensaSuggerita] = useState({ categoria: '', argomento: '' });
+  const [usaNuovaCategoriaSuggerimento, setUsaNuovaCategoriaSuggerimento] = useState(false);
+  const [nuovaCategoriaSuggerimento, setNuovaCategoriaSuggerimento] = useState('');
+  const [dispenseSuggerite, setDispenseSuggerite] = useState([]);
+  const [pubblicandoSuggerimento, setPubblicandoSuggerimento] = useState(null);
+  const [pubblicazioneDati, setPubblicazioneDati] = useState({ categoria: '', icona: '📄', argomento: '' });
+  const [usaNuovaCategoriaPublish, setUsaNuovaCategoriaPublish] = useState(false);
+  const [nuovaCategoriaPublish, setNuovaCategoriaPublish] = useState('');
 
   const isAdmin = session?.user?.role === "amministratore";
 
@@ -76,6 +87,14 @@ export default function DispensePage() {
           }
         } else {
           setDispense(data);
+        }
+      }
+
+      // Carica dispense suggerite (solo admin)
+      if (isAdmin) {
+        const resSug = await fetch('/api/dispense-suggerite');
+        if (resSug.ok) {
+          setDispenseSuggerite(await resSug.json());
         }
       }
     } catch (error) {
@@ -261,6 +280,108 @@ export default function DispensePage() {
     setNuovaIconaCategoria('');
   };
 
+  // === Funzioni suggerimenti ===
+
+  const handleSuggerisciDispensa = async (e) => {
+    e.preventDefault();
+    const categoriaFinale = usaNuovaCategoriaSuggerimento ? nuovaCategoriaSuggerimento : dispensaSuggerita.categoria;
+    if (!categoriaFinale.trim() || !dispensaSuggerita.argomento.trim()) {
+      alert('Compila tutti i campi');
+      return;
+    }
+    try {
+      setSalvando(true);
+      const res = await fetch('/api/dispense-suggerite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoria: categoriaFinale, argomento: dispensaSuggerita.argomento }),
+      });
+      if (res.ok) {
+        alert('Grazie per il tuo suggerimento! Gli amministratori lo esamineranno presto.');
+        setDispensaSuggerita({ categoria: '', argomento: '' });
+        setNuovaCategoriaSuggerimento('');
+        setUsaNuovaCategoriaSuggerimento(false);
+        setMostraFormSuggerimento(false);
+      } else {
+        const error = await res.json();
+        alert(`Errore: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Errore invio suggerimento:', error);
+      alert("Errore durante l'invio del suggerimento");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const handleEliminaDispensaSuggerita = async (id) => {
+    if (!confirm('Sei sicuro di voler eliminare questo suggerimento?')) return;
+    try {
+      const res = await fetch(`/api/dispense-suggerite/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setDispenseSuggerite(dispenseSuggerite.filter(d => d._id !== id));
+      } else {
+        alert("Errore durante l'eliminazione");
+      }
+    } catch (error) {
+      console.error('Errore eliminazione suggerimento:', error);
+    }
+  };
+
+  const iniziaPubblicazioneSuggerita = (sug) => {
+    setPubblicandoSuggerimento(sug._id);
+    const catEsistente = categorie.includes(sug.categoria) ? sug.categoria : '';
+    const nuovaCat = categorie.includes(sug.categoria) ? '' : sug.categoria;
+    setUsaNuovaCategoriaPublish(!categorie.includes(sug.categoria));
+    setNuovaCategoriaPublish(nuovaCat);
+    setPubblicazioneDati({
+      categoria: catEsistente,
+      icona: dispensaCategorie.find(c => c.categoria === sug.categoria)?.icona || '📄',
+      argomento: sug.argomento,
+    });
+  };
+
+  const annullaPubblicazioneSuggerita = () => {
+    setPubblicandoSuggerimento(null);
+    setPubblicazioneDati({ categoria: '', icona: '📄', argomento: '' });
+    setUsaNuovaCategoriaPublish(false);
+    setNuovaCategoriaPublish('');
+  };
+
+  const handlePubblicaDispensaSuggerita = async (idSuggerita) => {
+    const categoriaFinale = usaNuovaCategoriaPublish ? nuovaCategoriaPublish : pubblicazioneDati.categoria;
+    if (!categoriaFinale || !pubblicazioneDati.argomento) {
+      alert('Compila tutti i campi');
+      return;
+    }
+    try {
+      setSalvando(true);
+      const res = await fetch(`/api/dispense-suggerite/${idSuggerita}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categoria: categoriaFinale,
+          icona: pubblicazioneDati.icona,
+          argomento: pubblicazioneDati.argomento,
+        }),
+      });
+      if (res.ok) {
+        alert('Argomento pubblicato con successo!');
+        setDispenseSuggerite(dispenseSuggerite.filter(d => d._id !== idSuggerita));
+        annullaPubblicazioneSuggerita();
+        await caricaDati();
+      } else {
+        const error = await res.json();
+        alert(`Errore: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Errore pubblicazione:', error);
+      alert('Errore durante la pubblicazione');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
   const handleModificaCategoria = async (vecchioNome) => {
     if (!nuovoNomeCategoria.trim()) {
       alert("Inserisci un nome per la categoria");
@@ -321,15 +442,25 @@ export default function DispensePage() {
                 </h1>
               </div>
 
-              {isAdmin && (
+              <div className="flex gap-3">
                 <button
-                  onClick={() => setMostraFormItem(!mostraFormItem)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  onClick={() => setMostraFormSuggerimento(!mostraFormSuggerimento)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
-                  {mostraFormItem ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                  <span>{mostraFormItem ? 'Annulla' : 'Aggiungi Argomento'}</span>
+                  {mostraFormSuggerimento ? <X className="w-4 h-4" /> : <Lightbulb className="w-4 h-4" />}
+                  <span>{mostraFormSuggerimento ? 'Annulla' : 'Suggerisci'}</span>
                 </button>
-              )}
+
+                {isAdmin && (
+                  <button
+                    onClick={() => setMostraFormItem(!mostraFormItem)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    {mostraFormItem ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    <span>{mostraFormItem ? 'Annulla' : 'Aggiungi Argomento'}</span>
+                  </button>
+                )}
+              </div>
             </div>
             <p className="text-gray-600 text-lg">
               Guida operativa per la gestione dei contenuti social per ogni tipologia di attività
@@ -345,6 +476,75 @@ export default function DispensePage() {
               </span>
             </div>
           </div>
+
+          {/* Form Suggerisci Argomento - visibile a tutti */}
+          {mostraFormSuggerimento && (
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl shadow-sm border border-purple-200 p-6 mb-8">
+              <div className="flex items-center space-x-3 mb-4">
+                <Lightbulb className="w-6 h-6 text-purple-600" />
+                <h3 className="text-xl font-semibold text-gray-900">Suggerisci un Argomento</h3>
+              </div>
+              <p className="text-gray-600 mb-4">
+                Hai un argomento che manca nella dispensa? Suggeriscilo qui e il team lo valuterà!
+              </p>
+              <form onSubmit={handleSuggerisciDispensa} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
+                  <div className="space-y-2">
+                    <select
+                      value={usaNuovaCategoriaSuggerimento ? '_nuova_' : dispensaSuggerita.categoria}
+                      onChange={(e) => {
+                        if (e.target.value === '_nuova_') {
+                          setUsaNuovaCategoriaSuggerimento(true);
+                          setDispensaSuggerita({ ...dispensaSuggerita, categoria: '' });
+                        } else {
+                          setUsaNuovaCategoriaSuggerimento(false);
+                          setDispensaSuggerita({ ...dispensaSuggerita, categoria: e.target.value });
+                        }
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required={!usaNuovaCategoriaSuggerimento}
+                    >
+                      <option value="">Seleziona una categoria...</option>
+                      {categorie.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option value="_nuova_">➕ Nuova categoria...</option>
+                    </select>
+                    {usaNuovaCategoriaSuggerimento && (
+                      <input
+                        type="text"
+                        value={nuovaCategoriaSuggerimento}
+                        onChange={(e) => setNuovaCategoriaSuggerimento(e.target.value)}
+                        placeholder="Nome nuova categoria"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        required
+                      />
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Argomento / Post suggerito</label>
+                  <input
+                    type="text"
+                    value={dispensaSuggerita.argomento}
+                    onChange={(e) => setDispensaSuggerita({ ...dispensaSuggerita, argomento: e.target.value })}
+                    placeholder="es. Dietro le quinte del lavoro quotidiano"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={salvando}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{salvando ? 'Invio in corso...' : 'Invia Suggerimento'}</span>
+                </button>
+              </form>
+            </div>
+          )}
 
           {/* Form Aggiungi Argomento */}
           {isAdmin && mostraFormItem && (
@@ -419,6 +619,124 @@ export default function DispensePage() {
                   <span>{salvando ? 'Salvataggio...' : 'Salva Argomento'}</span>
                 </button>
               </form>
+            </div>
+          )}
+
+          {/* Dispense Suggerite (solo admin) */}
+          {isAdmin && dispenseSuggerite.length > 0 && (
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl shadow-sm border border-yellow-200 p-6 mb-8">
+              <div className="flex items-center space-x-3 mb-4">
+                <MessageSquare className="w-6 h-6 text-orange-600" />
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Argomenti Suggeriti dagli Utenti ({dispenseSuggerite.length})
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {dispenseSuggerite.map((sug) => (
+                  <div key={sug._id} className="bg-white rounded-lg border border-orange-200 p-4">
+                    {pubblicandoSuggerimento === sug._id ? (
+                      <div className="space-y-4">
+                        <h4 className="text-lg font-semibold text-gray-900">Pubblica Argomento</h4>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
+                          <div className="space-y-2">
+                            <select
+                              value={usaNuovaCategoriaPublish ? '_nuova_' : pubblicazioneDati.categoria}
+                              onChange={(e) => {
+                                if (e.target.value === '_nuova_') {
+                                  setUsaNuovaCategoriaPublish(true);
+                                  setPubblicazioneDati({ ...pubblicazioneDati, categoria: '' });
+                                } else {
+                                  setUsaNuovaCategoriaPublish(false);
+                                  const icona = dispensaCategorie.find(c => c.categoria === e.target.value)?.icona || '📄';
+                                  setPubblicazioneDati({ ...pubblicazioneDati, categoria: e.target.value, icona });
+                                }
+                              }}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            >
+                              <option value="">Seleziona una categoria...</option>
+                              {categorie.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ))}
+                              <option value="_nuova_">➕ Nuova categoria...</option>
+                            </select>
+                            {usaNuovaCategoriaPublish && (
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={nuovaCategoriaPublish}
+                                  onChange={(e) => setNuovaCategoriaPublish(e.target.value)}
+                                  placeholder="Nome nuova categoria"
+                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                  required
+                                />
+                                <input
+                                  type="text"
+                                  value={pubblicazioneDati.icona}
+                                  onChange={(e) => setPubblicazioneDati({ ...pubblicazioneDati, icona: e.target.value })}
+                                  placeholder="Emoji"
+                                  className="w-20 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-center text-xl"
+                                  maxLength={4}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Argomento</label>
+                          <input
+                            type="text"
+                            value={pubblicazioneDati.argomento}
+                            onChange={(e) => setPubblicazioneDati({ ...pubblicazioneDati, argomento: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handlePubblicaDispensaSuggerita(sug._id)}
+                            disabled={salvando}
+                            className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>{salvando ? 'Pubblicazione...' : 'Pubblica'}</span>
+                          </button>
+                          <button
+                            onClick={annullaPubblicazioneSuggerita}
+                            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                          >
+                            Annulla
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-500 mb-1">Categoria suggerita: <span className="font-medium text-gray-700">{sug.categoria}</span></p>
+                          <p className="text-sm font-medium text-gray-900">{sug.argomento}</p>
+                          <p className="text-xs text-gray-400 mt-1">da {sug.suggeritaDa?.nome}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => iniziaPubblicazioneSuggerita(sug)}
+                            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Pubblica
+                          </button>
+                          <button
+                            onClick={() => handleEliminaDispensaSuggerita(sug._id)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Elimina suggerimento"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

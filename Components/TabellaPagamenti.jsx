@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Edit, Trash2, TrendingUp, TrendingDown, Eye } from "lucide-react";
 
@@ -136,9 +137,18 @@ export default function TabellaPagamenti({ pagamenti, onPagamentoAggiornato, onP
                     <div className="text-sm">
                       {pagamento.tipo === "entrata" ? (
                         <>
-                          <p className="font-medium text-gray-900">
-                            {pagamento.chi_paga?.etichetta || pagamento.chi_paga?.ragione_sociale || "Cliente"}
-                          </p>
+                          {pagamento.chi_paga?._id ? (
+                            <Link
+                              href={`/User/${pagamento.chi_paga._id}`}
+                              className="font-medium text-gray-900 hover:text-blue-700 hover:underline"
+                            >
+                              {pagamento.chi_paga?.etichetta || pagamento.chi_paga?.ragione_sociale || "Cliente"}
+                            </Link>
+                          ) : (
+                            <p className="font-medium text-gray-900">
+                              {pagamento.chi_paga?.etichetta || pagamento.chi_paga?.ragione_sociale || "Cliente"}
+                            </p>
+                          )}
                           <p className="text-gray-500 text-xs">{pagamento.servizio}</p>
                         </>
                       ) : (
@@ -226,9 +236,18 @@ export default function TabellaPagamenti({ pagamenti, onPagamentoAggiornato, onP
               <div className="mb-3">
                 {pagamento.tipo === "entrata" ? (
                   <>
-                    <p className="font-medium text-gray-900">
-                      {pagamento.chi_paga?.etichetta || pagamento.chi_paga?.ragione_sociale || "Cliente"}
-                    </p>
+                    {pagamento.chi_paga?._id ? (
+                      <Link
+                        href={`/User/${pagamento.chi_paga._id}`}
+                        className="font-medium text-gray-900 hover:text-blue-700 hover:underline"
+                      >
+                        {pagamento.chi_paga?.etichetta || pagamento.chi_paga?.ragione_sociale || "Cliente"}
+                      </Link>
+                    ) : (
+                      <p className="font-medium text-gray-900">
+                        {pagamento.chi_paga?.etichetta || pagamento.chi_paga?.ragione_sociale || "Cliente"}
+                      </p>
+                    )}
                     <p className="text-gray-500 text-sm">{pagamento.servizio}</p>
                   </>
                 ) : (
@@ -318,7 +337,16 @@ export default function TabellaPagamenti({ pagamenti, onPagamentoAggiornato, onP
                 <>
                   <div>
                     <p className="text-sm text-gray-500">Cliente</p>
-                    <p className="font-medium">{pagamentoSelezionato.chi_paga?.etichetta || pagamentoSelezionato.chi_paga?.ragione_sociale}</p>
+                    {pagamentoSelezionato.chi_paga?._id ? (
+                      <Link
+                        href={`/User/${pagamentoSelezionato.chi_paga._id}`}
+                        className="font-medium hover:text-blue-700 hover:underline"
+                      >
+                        {pagamentoSelezionato.chi_paga?.etichetta || pagamentoSelezionato.chi_paga?.ragione_sociale}
+                      </Link>
+                    ) : (
+                      <p className="font-medium">{pagamentoSelezionato.chi_paga?.etichetta || pagamentoSelezionato.chi_paga?.ragione_sociale}</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Servizio</p>
@@ -330,7 +358,16 @@ export default function TabellaPagamenti({ pagamenti, onPagamentoAggiornato, onP
                       <div className="space-y-2">
                         {pagamentoSelezionato.collaboratori.map((collab, idx) => (
                           <div key={idx} className="bg-gray-50 rounded-lg p-3">
-                            <p className="font-medium">{collab.nome_collaboratore}</p>
+                            {collab.collaboratore_id ? (
+                              <Link
+                                href={`/User/${collab.collaboratore_id}`}
+                                className="font-medium hover:text-blue-700 hover:underline"
+                              >
+                                {collab.nome_collaboratore}
+                              </Link>
+                            ) : (
+                              <p className="font-medium">{collab.nome_collaboratore}</p>
+                            )}
                             <p className="text-sm text-gray-600">
                               {collab.usa_percentuale 
                                 ? `${collab.percentuale}% = € ${collab.importo_calcolato?.toFixed(2)}`

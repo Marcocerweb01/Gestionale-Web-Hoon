@@ -57,6 +57,7 @@ export async function GET() {
             
             return {
               id: collab._id,
+              aziendaId: collab.azienda?._id || collab.azienda || null,
               aziendaNome: aziendaNome,
               aziendaEmail: collab.azienda?.email || "Email non disponibile",
               numero_appuntamenti: collab.numero_appuntamenti || 0,

@@ -7,8 +7,12 @@ import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+// Soglie in giorni in cui si vuole ricevere una notifica
+const SOGLIE_GIORNI = [30, 20, 10, 5, 3, 2, 1];
+
 /**
- * GET - Controlla domini in scadenza (entro 30 giorni) e genera notifiche.
+ * GET - Controlla domini in scadenza e genera notifiche alle soglie: 30,20,10,5,3,2,1 giorni.
+ * Ogni soglia produce al massimo una notifica in assoluto (mai duplicati).
  * Chiamato automaticamente dal NotificheDropdown al caricamento del primo admin.
  */
 export async function GET() {
@@ -21,44 +25,48 @@ export async function GET() {
     await connectToDB();
 
     const oggi = new Date();
-    const fra30giorni = new Date();
-    fra30giorni.setDate(oggi.getDate() + 30);
+    const massimaSoglia = Math.max(...SOGLIE_GIORNI);
+    const fraMaxGiorni = new Date();
+    fraMaxGiorni.setDate(oggi.getDate() + massimaSoglia);
 
-    const dominiInScadenza = await Dominio.find({
-      dataScadenza: { $gte: oggi, $lte: fra30giorni },
+    // Recupera tutti i domini che scadono entro la soglia massima (o già scaduti)
+    const domini = await Dominio.find({
+      dataScadenza: { $lte: fraMaxGiorni },
     }).lean();
 
     let create = 0;
-    for (const d of dominiInScadenza) {
+
+    for (const d of domini) {
       const giorniMancanti = Math.ceil((new Date(d.dataScadenza) - oggi) / (1000 * 60 * 60 * 24));
-      const notifica = await createNotifica({
-        tipo: 'dominio_scadenza',
-        titolo: `Dominio in scadenza: ${d.urlDominio}`,
-        messaggio: `Il dominio ${d.urlDominio} (${d.webDesigner}) scade tra ${giorniMancanti} giorni.`,
-        link: '/Gestione-Domini',
-        refId: `dominio_${d._id}`,
-      });
-      if (notifica) create++;
+
+      if (giorniMancanti < 0) {
+        // Dominio già scaduto — una sola notifica in assoluto
+        const notifica = await createNotifica({
+          tipo: 'dominio_scadenza',
+          titolo: `Dominio scaduto: ${d.urlDominio}`,
+          messaggio: `Il dominio ${d.urlDominio} (${d.webDesigner}) è scaduto ${Math.abs(giorniMancanti)} giorni fa!`,
+          link: '/Gestione-Domini',
+          refId: `dominio_scaduto_${d._id}`,
+        });
+        if (notifica) create++;
+      } else {
+        // Controlla tutte le soglie raggiunte (es. se siamo a 8gg → soglie 10,5 non ancora create)
+        for (const soglia of SOGLIE_GIORNI) {
+          if (giorniMancanti <= soglia) {
+            const notifica = await createNotifica({
+              tipo: 'dominio_scadenza',
+              titolo: `Dominio in scadenza tra ${soglia} giorni: ${d.urlDominio}`,
+              messaggio: `Il dominio ${d.urlDominio} (${d.webDesigner}) scade tra ${giorniMancanti} giorni (soglia ${soglia}gg).`,
+              link: '/Gestione-Domini',
+              refId: `dominio_${d._id}_${soglia}gg`,
+            });
+            if (notifica) create++;
+          }
+        }
+      }
     }
 
-    // Controlla anche domini già scaduti ma non notificati
-    const dominiScaduti = await Dominio.find({
-      dataScadenza: { $lt: oggi },
-    }).lean();
-
-    for (const d of dominiScaduti) {
-      const giorniFA = Math.abs(Math.ceil((new Date(d.dataScadenza) - oggi) / (1000 * 60 * 60 * 24)));
-      const notifica = await createNotifica({
-        tipo: 'dominio_scadenza',
-        titolo: `Dominio scaduto: ${d.urlDominio}`,
-        messaggio: `Il dominio ${d.urlDominio} (${d.webDesigner}) è scaduto ${giorniFA} giorni fa!`,
-        link: '/Gestione-Domini',
-        refId: `dominio_scaduto_${d._id}`,
-      });
-      if (notifica) create++;
-    }
-
-    return NextResponse.json({ controllati: dominiInScadenza.length + dominiScaduti.length, create });
+    return NextResponse.json({ controllati: domini.length, create });
   } catch (error) {
     console.error('Errore check domini scadenza:', error);
     return NextResponse.json({ error: 'Errore interno' }, { status: 500 });

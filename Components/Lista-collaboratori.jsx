@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "@node_modules/next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Lista_clienti from "./Lista-clienti";
-import ListaClientiWebDesigner from "./Lista-clienti-webdesigner";
+import TimelineWebDesignerV2 from "./timeline-web-designer-v2";
 import ListaGoogleAdsCollaboratore from "./ListaGoogleAdsCollaboratore";
 
 // Se serve una mappa per modificare l'etichetta dei ruoli
@@ -482,7 +482,7 @@ const CollaboratoreItem = ({ id, nome, ruolo, tipoLista, status = "attivo", note
                 : "Lista Clienti"}
             </h4>
             {tipoLista === "web designer" ? (
-              <ListaClientiWebDesigner userId={id} showWebDesignerLink={true} />
+              <TimelineWebDesignerV2 userId={id} />
             ) : tipoLista === "google ads" ? (
               <ListaGoogleAdsCollaboratore collaboratoreId={id} />
             ) : tipoLista === "seo" ? (

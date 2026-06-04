@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -352,9 +353,18 @@ const FatturazionePage = () => {
                   fatture.map((fattura) => (
                     <tr key={fattura.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {fattura.collaboratoreNome} {fattura.collaboratoreCognome}
-                        </div>
+                        {fattura.collaboratoreId ? (
+                          <Link
+                            href={`/User/${fattura.collaboratoreId}`}
+                            className="text-sm font-medium text-gray-900 hover:text-blue-700 hover:underline"
+                          >
+                            {fattura.collaboratoreNome} {fattura.collaboratoreCognome}
+                          </Link>
+                        ) : (
+                          <div className="text-sm font-medium text-gray-900">
+                            {fattura.collaboratoreNome} {fattura.collaboratoreCognome}
+                          </div>
+                        )}
                         <div className="text-sm text-gray-500">{fattura.collaboratoreEmail}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">

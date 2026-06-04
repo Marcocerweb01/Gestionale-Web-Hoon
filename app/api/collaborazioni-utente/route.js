@@ -1,6 +1,7 @@
 import { connectToDB } from "@/utils/database";
 import Collaborazioni from "@/models/Collaborazioni";
 import Collaborazioniwebdesign from "@/models/Collaborazioniwebdesign";
+import CollaborazioniWebDesignV2 from "@/models/CollaborazioniWebDesignV2";
 import GoogleAds from "@/models/GoogleAds";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -28,6 +29,11 @@ export async function GET(req) {
     // Recupera tutte le collaborazioni web design
     const collaborazioniWebDesign = await Collaborazioniwebdesign.find()
       .populate('cliente', 'ragioneSociale email')
+      .populate('webDesigner', 'nome cognome')
+      .sort({ aziendaRagioneSociale: 1 });
+
+    const collaborazioniWebDesignV2 = await CollaborazioniWebDesignV2.find()
+      .populate('cliente', 'ragioneSociale etichetta email')
       .populate('webDesigner', 'nome cognome')
       .sort({ aziendaRagioneSociale: 1 });
     
@@ -58,6 +64,7 @@ export async function GET(req) {
       
       utentiMap.get(userId).social.push({
         _id: collab._id,
+        collaboratoreId: collab.collaboratore?._id?.toString(),
         collaboratore: `${collab.collaboratoreNome} ${collab.collaboratoreCognome}`,
         stato: collab.stato,
         dataInizio: collab.dataInizio,
@@ -84,12 +91,42 @@ export async function GET(req) {
       
       utentiMap.get(userId).webDesign.push({
         _id: collab._id,
+        collaboratoreId: collab.webDesigner?._id?.toString(),
         collaboratore: `${collab.collaboratoreNome} ${collab.collaboratoreCognome}`,
         tipoProgetto: collab.tipoProgetto,
         stato: collab.stato,
         dataInizioContratto: collab.dataInizioContratto,
         dataFineContratto: collab.dataFineContratto,
         tipo: 'webdesign'
+      });
+    });
+
+    // Processa collaborazioni web design V2
+    collaborazioniWebDesignV2.forEach(collab => {
+      const userId = collab.cliente?._id?.toString();
+      if (!userId) return;
+
+      if (!utentiMap.has(userId)) {
+        utentiMap.set(userId, {
+          _id: userId,
+          ragioneSociale: collab.aziendaRagioneSociale || collab.cliente?.etichetta || collab.cliente?.ragioneSociale,
+          email: collab.cliente?.email,
+          social: [],
+          webDesign: [],
+          googleAds: []
+        });
+      }
+
+      utentiMap.get(userId).webDesign.push({
+        _id: collab._id,
+        collaboratoreId: collab.webDesigner?._id?.toString(),
+        collaboratore: `${collab.collaboratoreNome} ${collab.collaboratoreCognome}`,
+        tipoProgetto: collab.tipoProgetto,
+        stato: collab.stato,
+        dataInizioContratto: collab.dataInizioContratto,
+        dataFineContratto: collab.dataFineContratto,
+        tipo: 'webdesign-v2',
+        versione: 'V2'
       });
     });
     
@@ -111,6 +148,7 @@ export async function GET(req) {
       
       utentiMap.get(userId).googleAds.push({
         _id: collab._id,
+        collaboratoreId: collab.collaboratore?._id?.toString(),
         collaboratore: `${collab.collaboratoreNome} ${collab.collaboratoreCognome}`,
         contattato: collab.contattato,
         campagnaAvviata: collab.campagnaAvviata,

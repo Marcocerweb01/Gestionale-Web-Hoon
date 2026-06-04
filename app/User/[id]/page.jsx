@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import TimelineWebDesigner from "@/Components/timeline-web-designer"; // Dashboard per Web Designer
+import TimelineWebDesignerV2 from "@/Components/timeline-web-designer-v2"; // Dashboard per Web Designer
 import FeedCommerciale from "@/Components/feed-commerciale"; // Dashboard per Commerciali
 import AdminCollaborationsList from "@/Components/edit-collab"; // Dashboard per Social Media Manager
 import AziendaCollab from "@/Components/azienda-collab"; // Dashboard per Cliente
@@ -721,7 +721,7 @@ const UserDetails = ({ params }) => {
           <div className="p-4 sm:p-6">
             {/* Render condizionale in base al ruolo */}
             {(user?.subRole === "web designer" || user?.subrole === "web designer") && (
-              <TimelineWebDesigner userId={user._id} />
+              <TimelineWebDesignerV2 userId={user._id} />
             )}
 
             {(user?.subRole === "commerciale" || user?.subrole === "commerciale") && (

@@ -281,9 +281,12 @@ const TabellaCollaborazioni = () => {
                     <div className="bg-pink-50 p-2 border-b border-gray-200 sticky top-0 z-10">
                       <div className="text-center space-y-1">
                         <div className="text-lg">📱</div>
-                        <div className="font-bold text-gray-900 text-xs leading-tight">
+                        <Link
+                          href={`/User/${collaboratore.id}`}
+                          className="block font-bold text-gray-900 text-xs leading-tight hover:text-pink-700 hover:underline"
+                        >
                           {collaboratore.nome} {collaboratore.cognome}
-                        </div>
+                        </Link>
                         <div className="text-xs text-pink-600 font-semibold">
                           {collaboratore.collaborazioni.length} clienti
                         </div>
@@ -307,9 +310,18 @@ const TabellaCollaborazioni = () => {
                               }`}
                             >
                               {/* Nome Cliente */}
-                              <div className="font-medium text-gray-900 text-xs text-center leading-tight mb-2">
-                                {collaborazione.aziendaNome}
-                              </div>
+                              {collaborazione.aziendaId ? (
+                                <Link
+                                  href={`/User/${collaborazione.aziendaId}`}
+                                  className="block font-medium text-gray-900 text-xs text-center leading-tight mb-2 hover:text-pink-700 hover:underline"
+                                >
+                                  {collaborazione.aziendaNome}
+                                </Link>
+                              ) : (
+                                <div className="font-medium text-gray-900 text-xs text-center leading-tight mb-2">
+                                  {collaborazione.aziendaNome}
+                                </div>
+                              )}
                               
                               {/* Totali Generali (non si azzerano) */}
                               <div className="bg-purple-50 rounded p-1.5 mb-1">

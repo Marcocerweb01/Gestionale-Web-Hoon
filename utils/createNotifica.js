@@ -12,16 +12,10 @@ export async function createNotifica({ tipo, titolo, messaggio, link = '', refId
   try {
     await connectToDB();
 
-    // Evita duplicati: stesso tipo e refId creati oggi
+    // Evita duplicati: stesso refId già presente (qualunque giorno)
     if (refId) {
-      const inizioGiorno = new Date();
-      inizioGiorno.setHours(0, 0, 0, 0);
-      const esiste = await Notifica.findOne({
-        tipo,
-        refId,
-        createdAt: { $gte: inizioGiorno },
-      });
-      if (esiste) return null; // già presente oggi
+      const esiste = await Notifica.findOne({ tipo, refId });
+      if (esiste) return null;
     }
 
     const notifica = await Notifica.create({ tipo, titolo, messaggio, link, refId });

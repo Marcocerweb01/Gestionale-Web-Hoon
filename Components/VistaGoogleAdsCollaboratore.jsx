@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { RefreshCw, Save, CheckCircle } from 'lucide-react';
 
@@ -152,9 +153,18 @@ const VistaGoogleAdsCollaboratore = () => {
             >
               {/* Nome Cliente */}
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                <span className="bg-purple-600 text-white px-3 py-1 rounded-lg mr-3">
-                  {campagna.clienteEtichetta}
-                </span>
+                {campagna.cliente?._id ? (
+                  <Link
+                    href={`/User/${campagna.cliente._id}`}
+                    className="bg-purple-600 text-white px-3 py-1 rounded-lg mr-3 hover:bg-purple-700 transition-colors"
+                  >
+                    {campagna.clienteEtichetta}
+                  </Link>
+                ) : (
+                  <span className="bg-purple-600 text-white px-3 py-1 rounded-lg mr-3">
+                    {campagna.clienteEtichetta}
+                  </span>
+                )}
                 {salvando[campagna._id] && (
                   <span className="text-green-600 text-sm flex items-center">
                     <CheckCircle className="w-4 h-4 mr-1" />

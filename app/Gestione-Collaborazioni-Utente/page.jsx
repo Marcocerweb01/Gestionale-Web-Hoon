@@ -41,7 +41,7 @@ export default function GestioneCollaborazioniUtentePage() {
   };
 
   const handleEliminaCollaborazione = async (collabId, tipo, utenteRagioneSociale) => {
-    const tipoNome = tipo === 'social' ? 'Social' : tipo === 'webdesign' ? 'Web Design' : 'Google Ads';
+    const tipoNome = tipo === 'social' ? 'Social' : tipo?.startsWith('webdesign') ? 'Web Design' : 'Google Ads';
     
     if (!confirm(`Sei sicuro di voler eliminare questa collaborazione ${tipoNome} per ${utenteRagioneSociale}?`)) {
       return;
@@ -180,9 +180,13 @@ export default function GestioneCollaborazioniUtentePage() {
                       className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer"
                     >
                       <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900">
+                        <Link
+                          href={`/User/${utente._id}`}
+                          onClick={(event) => event.stopPropagation()}
+                          className="inline-block text-xl font-semibold text-gray-900 hover:text-blue-700 hover:underline"
+                        >
                           {utente.ragioneSociale}
-                        </h3>
+                        </Link>
                         <p className="text-sm text-gray-600">{utente.email}</p>
                       </div>
                       
@@ -234,7 +238,17 @@ export default function GestioneCollaborazioniUtentePage() {
                                 >
                                   <div className="flex-1">
                                     <p className="font-medium text-gray-900">
-                                      Collaboratore: {collab.collaboratore}
+                                      Collaboratore:{' '}
+                                      {collab.collaboratoreId ? (
+                                        <Link
+                                          href={`/User/${collab.collaboratoreId}`}
+                                          className="hover:text-purple-700 hover:underline"
+                                        >
+                                          {collab.collaboratore}
+                                        </Link>
+                                      ) : (
+                                        collab.collaboratore
+                                      )}
                                     </p>
                                     <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
                                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -281,11 +295,21 @@ export default function GestioneCollaborazioniUtentePage() {
                                 >
                                   <div className="flex-1">
                                     <p className="font-medium text-gray-900">
-                                      Web Designer: {collab.collaboratore}
+                                      Web Designer:{' '}
+                                      {collab.collaboratoreId ? (
+                                        <Link
+                                          href={`/User/${collab.collaboratoreId}`}
+                                          className="hover:text-green-700 hover:underline"
+                                        >
+                                          {collab.collaboratore}
+                                        </Link>
+                                      ) : (
+                                        collab.collaboratore
+                                      )}
                                     </p>
                                     <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
                                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                                        {collab.tipoProgetto}
+                                        {collab.versione ? `${collab.tipoProgetto} ${collab.versione}` : collab.tipoProgetto}
                                       </span>
                                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                                         collab.stato === 'in corso' ? 'bg-green-100 text-green-700' :
@@ -299,7 +323,7 @@ export default function GestioneCollaborazioniUtentePage() {
                                   </div>
                                   {canDelete && (
                                   <button
-                                    onClick={() => handleEliminaCollaborazione(collab._id, 'webdesign', utente.ragioneSociale)}
+                                    onClick={() => handleEliminaCollaborazione(collab._id, collab.tipo, utente.ragioneSociale)}
                                     disabled={eliminandoCollab === collab._id}
                                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                     title="Elimina collaborazione"
@@ -328,7 +352,17 @@ export default function GestioneCollaborazioniUtentePage() {
                                 >
                                   <div className="flex-1">
                                     <p className="font-medium text-gray-900">
-                                      Collaboratore: {collab.collaboratore}
+                                      Collaboratore:{' '}
+                                      {collab.collaboratoreId ? (
+                                        <Link
+                                          href={`/User/${collab.collaboratoreId}`}
+                                          className="hover:text-orange-700 hover:underline"
+                                        >
+                                          {collab.collaboratore}
+                                        </Link>
+                                      ) : (
+                                        collab.collaboratore
+                                      )}
                                     </p>
                                     <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
                                       {collab.contattato && (

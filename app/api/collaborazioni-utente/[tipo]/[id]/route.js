@@ -1,6 +1,7 @@
 import { connectToDB } from "@/utils/database";
 import Collaborazioni from "@/models/Collaborazioni";
 import Collaborazioniwebdesign from "@/models/Collaborazioniwebdesign";
+import CollaborazioniWebDesignV2 from "@/models/CollaborazioniWebDesignV2";
 import GoogleAds from "@/models/GoogleAds";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -29,6 +30,9 @@ export async function DELETE(req, { params }) {
         break;
       case 'webdesign':
         risultato = await Collaborazioniwebdesign.findByIdAndDelete(id);
+        break;
+      case 'webdesign-v2':
+        risultato = await CollaborazioniWebDesignV2.findByIdAndDelete(id);
         break;
       case 'googleads':
         risultato = await GoogleAds.findByIdAndDelete(id);
