@@ -29,6 +29,11 @@ export async function proxy(req) {
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
+  } else if (pathname.startsWith("/Operations")) {
+    if (token.role !== "amministratore" && token.role !== "segretaria") {
+      url.pathname = "/unauthorized";
+      return NextResponse.redirect(url);
+    }
   } else if (["/Register", "/AddCollab", "/Lista_clienti"].includes(pathname)) {
     if (token.role !== "amministratore" && token.role !== "segretaria") {
       url.pathname = "/unauthorized";

@@ -480,6 +480,46 @@ const getProjectControlsProgress = (controls) => {
   return { done, total: controls.length, pct: Math.round((done / controls.length) * 100) };
 };
 
+const createDefaultInterview = () => ({
+  azienda: '',
+  descrizioneAzienda: '',
+  servizioPrincipale: '',
+  serviziSpingere: '',
+  clienteIdeale: '',
+  provenienzaClienti: '',
+  obiettivoSito: '',
+  utenteCosaFare: '',
+  callToAction: '',
+  tipoSito: '',
+  sezioni: '',
+  pagine: '',
+  serviziEvidenza: '',
+  recensioniClienti: '',
+  lavoriProgetti: '',
+  sitiRiferimento: '',
+  sitiNonPiacciono: '',
+  stilePreferito: '',
+  tipologiaSito: '',
+  animazioni: '',
+  videoHomepage: '',
+  preferenzeColori: '',
+  preferenzeFont: '',
+  haLineeGuidaBrand: 'no',
+  lineeGuidaBrand: '',
+  haDominio: 'no',
+  dominio: '',
+  servizioDominio: '',
+  mailCollegate: '',
+  accessiDominio: '',
+  noteAccessi: '',
+  scadenzaDominio: '',
+  branding: '',
+  media: '',
+  testi: '',
+  noteMateriali: '',
+  fileUtili: '',
+});
+
 const TimelineWebDesignerV2 = ({ userId }) => {
   const { data: session } = useSession();
   const [collaborazioni, setCollaborazioni] = useState([]);
@@ -758,10 +798,22 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                       {new Date(collab.dataInizioContratto).toLocaleDateString('it-IT')} →{' '}
                       {new Date(collab.dataFineContratto).toLocaleDateString('it-IT')}
                     </p>
+                    {collab.interviewPrompt ? (
+                      <p className="text-xs text-emerald-700 mt-1">
+                        Intervista salvata · pronta per GPT
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                  <Link
+                    href={`/Lista_clienti_webdesigner/${userId}/interview/${collab._id}`}
+                    className="inline-flex items-center rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
+                  >
+                    Intervista
+                  </Link>
+
                   {/* Progress globale */}
                   <div className="hidden md:flex flex-col items-end">
                     <span className="text-xs text-gray-500 mb-1">Avanzamento</span>

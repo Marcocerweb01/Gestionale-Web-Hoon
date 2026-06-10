@@ -39,6 +39,46 @@ const ChecklistPubblicazioneV2Schema = new Schema({
   note: { type: String, default: '' }
 }, { _id: false });
 
+const InterviewV2Schema = new Schema({
+  azienda: { type: String, default: '' },
+  descrizioneAzienda: { type: String, default: '' },
+  servizioPrincipale: { type: String, default: '' },
+  serviziSpingere: { type: String, default: '' },
+  clienteIdeale: { type: String, default: '' },
+  provenienzaClienti: { type: String, default: '' },
+  obiettivoSito: { type: String, default: '' },
+  utenteCosaFare: { type: String, default: '' },
+  callToAction: { type: String, default: '' },
+  tipoSito: { type: String, default: '' },
+  sezioni: { type: String, default: '' },
+  pagine: { type: String, default: '' },
+  serviziEvidenza: { type: String, default: '' },
+  recensioniClienti: { type: String, default: '' },
+  lavoriProgetti: { type: String, default: '' },
+  sitiRiferimento: { type: String, default: '' },
+  sitiNonPiacciono: { type: String, default: '' },
+  stilePreferito: { type: String, default: '' },
+  tipologiaSito: { type: String, default: '' },
+  animazioni: { type: String, default: '' },
+  videoHomepage: { type: String, default: '' },
+  preferenzeColori: { type: String, default: '' },
+  preferenzeFont: { type: String, default: '' },
+  haLineeGuidaBrand: { type: String, default: 'no' },
+  lineeGuidaBrand: { type: String, default: '' },
+  haDominio: { type: String, default: 'no' },
+  dominio: { type: String, default: '' },
+  servizioDominio: { type: String, default: '' },
+  mailCollegate: { type: String, default: '' },
+  accessiDominio: { type: String, default: '' },
+  noteAccessi: { type: String, default: '' },
+  scadenzaDominio: { type: String, default: '' },
+  branding: { type: String, default: '' },
+  media: { type: String, default: '' },
+  testi: { type: String, default: '' },
+  noteMateriali: { type: String, default: '' },
+  fileUtili: { type: String, default: '' }
+}, { _id: false });
+
 const CollaborazioneWebDesignV2Schema = new Schema(
   {
     tipoProgetto: {
@@ -55,6 +95,8 @@ const CollaborazioneWebDesignV2Schema = new Schema(
     controlli: [ControlloV2Schema],
     fasiControllo: [FaseControlloV2Schema],
     checklistPubblicazione: [ChecklistPubblicazioneV2Schema],
+    interview: InterviewV2Schema,
+    interviewPrompt: { type: String, default: '' },
     note: { type: String, default: '' },
     stato: {
       type: String,

@@ -79,6 +79,14 @@ export async function PATCH(req, { params }) {
       updatePayload.checklistPubblicazione = body.checklistPubblicazione;
     }
 
+    if (body.interview !== undefined) {
+      updatePayload.interview = body.interview;
+    }
+
+    if (body.interviewPrompt !== undefined) {
+      updatePayload.interviewPrompt = body.interviewPrompt;
+    }
+
     if (body.dominio !== undefined) {
       if (body.dominio.dataAcquisto) {
         const dataAcquisto = new Date(body.dominio.dataAcquisto);

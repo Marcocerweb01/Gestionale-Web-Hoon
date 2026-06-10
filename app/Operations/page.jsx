@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { 
   QrCode, 
   Image as ImageIcon, 
-  Share2, 
+  Share2,
   BarChart3,
-  Sparkles 
+  Building2,
+  Sparkles
 } from 'lucide-react';
 
 export default function OperationsPage() {
@@ -17,7 +18,8 @@ export default function OperationsPage() {
   const [stats, setStats] = useState({
     qrCodes: 0,
     images: 0,
-    automations: 0
+    automations: 0,
+    placesCalls: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -46,11 +48,15 @@ export default function OperationsPage() {
       // Carica statistiche Image Compression
       const imgResponse = await fetch('/api/compress-image');
       const imgData = await imgResponse.ok ? await imgResponse.json() : { totalCompressed: 0 };
-      
+
+      const placesResponse = await fetch('/api/operations/google-places-no-website');
+      const placesData = await placesResponse.ok ? await placesResponse.json() : { usage: { used: 0 } };
+
       setStats({
         qrCodes: totalScans,
         images: imgData.totalCompressed || 0,
-        automations: 0 // TODO: implementare quando ci sarà social automation
+        automations: 0, // TODO: implementare quando ci sarà social automation
+        placesCalls: placesData.usage?.used || 0
       });
     } catch (error) {
       console.error('Errore caricamento statistiche:', error);
@@ -86,6 +92,15 @@ export default function OperationsPage() {
       icon: ImageIcon,
       href: '/Operations/ImageCompression',
       color: 'bg-blue-500',
+      status: 'active'
+    },
+    {
+      id: 'google-places-no-website',
+      name: 'Aziende senza sito',
+      description: 'Trova schede Google Places senza websiteUri ed esporta CSV',
+      icon: Building2,
+      href: '/Operations/GooglePlacesNoWebsite',
+      color: 'bg-cyan-600',
       status: 'active'
     },
     {
@@ -198,7 +213,7 @@ export default function OperationsPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600">{stats.qrCodes}</div>
                 <div className="text-sm text-gray-600 mt-1">Scansioni QR Code</div>
@@ -210,6 +225,10 @@ export default function OperationsPage() {
               <div className="text-center">
                 <div className="text-3xl font-bold text-pink-600">{stats.automations}</div>
                 <div className="text-sm text-gray-600 mt-1">Automazioni Attive</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-cyan-600">{stats.placesCalls}</div>
+                <div className="text-sm text-gray-600 mt-1">Chiamate Places Mese</div>
               </div>
             </div>
           )}
