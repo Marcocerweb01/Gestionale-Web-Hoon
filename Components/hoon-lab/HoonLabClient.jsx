@@ -5,18 +5,36 @@ import Link from "next/link";
 import {
   BarChart3,
   Boxes,
+  CheckCircle2,
+  ChevronDown,
+  CircleDot,
   ClipboardList,
   Download,
   FileText,
+  ListTodo,
   PackagePlus,
   Plus,
   RefreshCw,
   Search,
   Send,
+  Trash2,
   Truck,
+  Upload,
   Users,
   X
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
 import { calculateCommercialLine, calculateDocumentTotals } from "@/lib/hoon-lab/calculations";
 
 const emptyLine = {
@@ -29,6 +47,12 @@ const emptyLine = {
 };
 
 const NO_SECOND_PRICE_LIST = "__none__";
+const DEFAULT_HOON_LAB_SETTINGS = {
+  companyName: "Hoon Srl",
+  companyHeader: "Hoon Srl\nVia Buon Pastore 9 d\n01100 Viterbo (VT)\nTel. 3760361046 / Fax\nwww.hoonlab.it / info@hoonlab.it\nP.IVA 02338800564 - Cod. Fiscale 02338800564",
+  quoteNoteTitle: "NOTA PREVENTIVO",
+  quoteNote: "Per l’avvio dell’ordine è richiesto un acconto pari al 50% dell’importo totale. Il restante 50% dovrà essere saldato prima della consegna della merce"
+};
 
 function currency(value) {
   return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(value || 0));
@@ -46,13 +70,59 @@ function formatDate(value) {
   return value ? new Intl.DateTimeFormat("it-IT").format(new Date(value)) : "-";
 }
 
+function formatDateTime(value) {
+  return value ? new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value)) : "-";
+}
+
 function monthLabel(value) {
   const date = value ? new Date(value) : new Date();
   return new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric" }).format(date);
 }
 
+function startOfDay(date) {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
+
+function endOfDay(date) {
+  const copy = new Date(date);
+  copy.setHours(23, 59, 59, 999);
+  return copy;
+}
+
+function currentWeekRange() {
+  const today = startOfDay(new Date());
+  const day = today.getDay() || 7;
+  const start = new Date(today);
+  start.setDate(today.getDate() - day + 1);
+  const end = endOfDay(start);
+  end.setDate(start.getDate() + 6);
+  return { start, end };
+}
+
+function currentMonthRange() {
+  const today = new Date();
+  return {
+    start: new Date(today.getFullYear(), today.getMonth(), 1),
+    end: endOfDay(new Date(today.getFullYear(), today.getMonth() + 1, 0))
+  };
+}
+
+function isDateInRange(value, range) {
+  if (!value) return false;
+  const date = new Date(value);
+  return date >= range.start && date <= range.end;
+}
+
 export default function HoonLabClient() {
-  const [activeTab, setActiveTab] = useState("crea-preventivo");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
@@ -60,22 +130,40 @@ export default function HoonLabClient() {
   const [quotes, setQuotes] = useState([]);
   const [orders, setOrders] = useState([]);
   const [deliveryNotes, setDeliveryNotes] = useState([]);
+  const [todos, setTodos] = useState([]);
   const [stats, setStats] = useState(null);
+  const [settings, setSettings] = useState(DEFAULT_HOON_LAB_SETTINGS);
   const [message, setMessage] = useState("");
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
+  const [customerCreateOpen, setCustomerCreateOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [productSuggestionsOpen, setProductSuggestionsOpen] = useState(false);
   const [quoteSearch, setQuoteSearch] = useState("");
-  const [quoteStatusFilter, setQuoteStatusFilter] = useState("all");
+  const [quoteBoardTab, setQuoteBoardTab] = useState("da-inviare");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderBoardTab, setOrderBoardTab] = useState("ddt-da-generare");
+  const [settingsTab, setSettingsTab] = useState("statistiche");
   const [customerListSearch, setCustomerListSearch] = useState("");
   const [productListSearch, setProductListSearch] = useState("");
   const [ddtSearch, setDdtSearch] = useState("");
   const [selectedPriceListView, setSelectedPriceListView] = useState("");
   const [priceListProductSearch, setPriceListProductSearch] = useState("");
   const [lineError, setLineError] = useState("");
+  const [importingProducts, setImportingProducts] = useState(false);
+  const [todoView, setTodoView] = useState("tutte");
+  const [todoForm, setTodoForm] = useState({ note: "", dueDate: "", status: "da_fare" });
+  const [settingsForm, setSettingsForm] = useState(DEFAULT_HOON_LAB_SETTINGS);
 
-  const [customerForm, setCustomerForm] = useState({ name: "", type: "privato", email: "", phone: "" });
+  const [customerForm, setCustomerForm] = useState({
+    type: "privato",
+    firstName: "",
+    lastName: "",
+    name: "",
+    vatNumber: "",
+    taxCode: "",
+    billingAddress: { address: "" }
+  });
   const [productForm, setProductForm] = useState({
     sku: "",
     name: "",
@@ -106,14 +194,16 @@ export default function HoonLabClient() {
   async function loadData() {
     setLoading(true);
     try {
-      const [customersRes, productsRes, priceListsRes, quotesRes, ordersRes, ddtRes, statsRes] = await Promise.all([
+      const [customersRes, productsRes, priceListsRes, quotesRes, ordersRes, ddtRes, statsRes, todosRes, settingsRes] = await Promise.all([
         fetch("/api/hoon-lab/customers"),
         fetch("/api/hoon-lab/products"),
         fetch("/api/hoon-lab/price-lists?items=true"),
         fetch("/api/hoon-lab/quotes"),
         fetch("/api/hoon-lab/orders"),
         fetch("/api/hoon-lab/ddt"),
-        fetch("/api/hoon-lab/stats")
+        fetch("/api/hoon-lab/stats"),
+        fetch("/api/hoon-lab/todos"),
+        fetch("/api/hoon-lab/settings")
       ]);
 
       setCustomers(await customersRes.json());
@@ -123,6 +213,11 @@ export default function HoonLabClient() {
       setOrders(await ordersRes.json());
       setDeliveryNotes(await ddtRes.json());
       setStats(await statsRes.json());
+      setTodos(await todosRes.json());
+      const loadedSettings = await settingsRes.json();
+      const nextSettings = { ...DEFAULT_HOON_LAB_SETTINGS, ...loadedSettings };
+      setSettings(nextSettings);
+      setSettingsForm(nextSettings);
     } catch (error) {
       console.error("Errore caricamento Hoon Lab:", error);
       setMessage("Errore caricamento dati Hoon Lab");
@@ -253,13 +348,101 @@ export default function HoonLabClient() {
     return data;
   }
 
-  async function handleCreateCustomer(event) {
+  async function deleteJson(url) {
+    const response = await fetch(url, { method: "DELETE" });
+    const data = await parseApiResponse(response);
+    if (!response.ok) throw new Error(data.error || "Eliminazione non riuscita");
+    return data;
+  }
+
+  async function handleCreateCustomer(event, options = {}) {
     event.preventDefault();
     try {
-      await postJson("/api/hoon-lab/customers", customerForm);
-      setCustomerForm({ name: "", type: "privato", email: "", phone: "" });
+      const customerName = customerForm.type === "privato"
+        ? `${customerForm.firstName} ${customerForm.lastName}`.trim()
+        : customerForm.name.trim();
+
+      const createdCustomer = await postJson("/api/hoon-lab/customers", {
+        ...customerForm,
+        name: customerName,
+        vatNumber: customerForm.type === "privato" ? "" : customerForm.vatNumber,
+        taxCode: customerForm.type === "privato" ? customerForm.taxCode : ""
+      });
+      setCustomerForm({
+        type: "privato",
+        firstName: "",
+        lastName: "",
+        name: "",
+        vatNumber: "",
+        taxCode: "",
+        billingAddress: { address: "" }
+      });
       setMessage("Cliente creato");
       await loadData();
+      if (options.selectAfterCreate) {
+        setQuoteForm((current) => ({ ...current, customer: createdCustomer._id }));
+        setCustomerSearch("");
+      }
+      if (options.closeModal) setCustomerCreateOpen(false);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  function cancelCustomerCreate() {
+    const confirmed = window.confirm("Sicuro di annullare la creazione del cliente?");
+    if (!confirmed) return;
+    setCustomerCreateOpen(false);
+  }
+
+  async function handleCreateTodo(event) {
+    event.preventDefault();
+    try {
+      if (!todoForm.note.trim()) {
+        setMessage("Scrivi la nota dell'attivita");
+        return;
+      }
+
+      await postJson("/api/hoon-lab/todos", todoForm);
+      setTodoForm({ note: "", dueDate: "", status: "da_fare" });
+      setMessage("Attivita creata");
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function changeTodoStatus(todo, status) {
+    try {
+      await patchJson(`/api/hoon-lab/todos/${todo._id}`, { status });
+      setMessage("Stato attivita aggiornato");
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function deleteTodo(todo) {
+    const confirmed = window.confirm("Eliminare questa attivita?");
+    if (!confirmed) return;
+
+    try {
+      await deleteJson(`/api/hoon-lab/todos/${todo._id}`);
+      setMessage("Attivita eliminata");
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleSaveSettings(event) {
+    event.preventDefault();
+    try {
+      const savedSettings = await patchJson("/api/hoon-lab/settings", settingsForm);
+      const nextSettings = { ...DEFAULT_HOON_LAB_SETTINGS, ...savedSettings };
+      setSettings(nextSettings);
+      setSettingsForm(nextSettings);
+      setMessage("Impostazioni documenti salvate");
     } catch (error) {
       setMessage(error.message);
     }
@@ -289,6 +472,47 @@ export default function HoonLabClient() {
         description: ""
       });
       setMessage("Prodotto creato");
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleImportProducts() {
+    setImportingProducts(true);
+    try {
+      const result = await postJson("/api/hoon-lab/products/import", {});
+      setMessage(`Import completato: ${result.products} prodotti, ${result.prices} prezzi aggiornati`);
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setImportingProducts(false);
+    }
+  }
+
+  async function handleDeleteProduct(product) {
+    const confirmed = window.confirm(`Eliminare il prodotto "${product.name}"? Non comparira piu nei nuovi preventivi.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteJson(`/api/hoon-lab/products/${product._id}`);
+      setMessage(`Prodotto "${product.name}" eliminato`);
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleDeletePriceList(priceList) {
+    const confirmed = window.confirm(`Eliminare il listino "${priceList.name}"? I preventivi gia creati resteranno invariati.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteJson(`/api/hoon-lab/price-lists/${priceList._id}`);
+      setSelectedPriceListView("");
+      setPriceItemForm({ priceList: "", product: "", price: "" });
+      setMessage(`Listino "${priceList.name}" eliminato`);
       await loadData();
     } catch (error) {
       setMessage(error.message);
@@ -396,7 +620,9 @@ export default function HoonLabClient() {
   async function changeQuoteStatus(quote, status, payload = {}) {
     try {
       await patchJson(`/api/hoon-lab/quotes/${quote._id}`, { status, ...payload });
-      setMessage(`Preventivo ${quote.number} aggiornato`);
+      setMessage(status === "inviato"
+        ? `Preventivo ${quote.number} segnato come inviato`
+        : `Preventivo ${quote.number} aggiornato`);
       await loadData();
     } catch (error) {
       setMessage(error.message);
@@ -406,7 +632,7 @@ export default function HoonLabClient() {
   async function convertQuote(quote) {
     try {
       await postJson(`/api/hoon-lab/quotes/${quote._id}/convert`, {});
-      setMessage(`Preventivo ${quote.number} convertito in ordine`);
+      setMessage(`Preventivo ${quote.number} accettato e convertito in conferma d'ordine`);
       await loadData();
     } catch (error) {
       setMessage(error.message);
@@ -423,17 +649,75 @@ export default function HoonLabClient() {
     }
   }
 
+  const todoStatuses = useMemo(() => [
+    { id: "da_fare", label: "Da fare", icon: ListTodo, tone: "slate" },
+    { id: "in_lavorazione", label: "In lavorazione", icon: CircleDot, tone: "blue" },
+    { id: "fatta", label: "Fatta", icon: CheckCircle2, tone: "green" }
+  ], []);
+
+  const openTodos = useMemo(() => todos.filter((todo) => todo.status !== "fatta"), [todos]);
+
+  const todoViewOptions = useMemo(() => {
+    const weekRange = currentWeekRange();
+    const monthRange = currentMonthRange();
+
+    return [
+      { id: "tutte", label: "Tutte", count: openTodos.length },
+      {
+        id: "settimana",
+        label: "Questa settimana",
+        count: openTodos.filter((todo) => isDateInRange(todo.dueDate, weekRange)).length
+      },
+      {
+        id: "mese",
+        label: "Questo mese",
+        count: openTodos.filter((todo) => isDateInRange(todo.dueDate, monthRange)).length
+      }
+    ];
+  }, [openTodos]);
+
+  const visibleTodos = useMemo(() => {
+    if (todoView === "settimana") {
+      const range = currentWeekRange();
+      return openTodos.filter((todo) => isDateInRange(todo.dueDate, range));
+    }
+
+    if (todoView === "mese") {
+      const range = currentMonthRange();
+      return openTodos.filter((todo) => isDateInRange(todo.dueDate, range));
+    }
+
+    return todos;
+  }, [openTodos, todoView, todos]);
+
+  const visibleTodoStatuses = useMemo(() => (
+    todoView === "tutte" ? todoStatuses : todoStatuses.filter((status) => status.id !== "fatta")
+  ), [todoStatuses, todoView]);
+
+  const todoBoard = useMemo(() => {
+    const sorted = [...visibleTodos].sort((a, b) => {
+      if (a.status === "fatta" && b.status !== "fatta") return 1;
+      if (a.status !== "fatta" && b.status === "fatta") return -1;
+      const aDate = a.dueDate ? new Date(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+      const bDate = b.dueDate ? new Date(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+      return aDate - bDate || new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    return visibleTodoStatuses.map((status) => ({
+      ...status,
+      todos: sorted.filter((todo) => todo.status === status.id)
+    }));
+  }, [visibleTodoStatuses, visibleTodos]);
+
   const tabs = [
+    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
     { id: "crea-preventivo", label: "Crea preventivo", icon: ClipboardList },
     { id: "lista-preventivi", label: "Lista preventivi", icon: FileText },
     { id: "ordini", label: "Lista conferme d'ordine", icon: ClipboardList },
     { id: "ddt", label: "Lista DDT", icon: Truck },
     { id: "clienti", label: "Clienti", icon: Users },
     { id: "prodotti", label: "Prodotti", icon: PackagePlus },
-    { id: "listini", label: "Listini", icon: Boxes },
-    { id: "statistiche", label: "Statistiche", icon: BarChart3 },
-    { id: "export", label: "Export", icon: Download },
-    { id: "setup", label: "Setup", icon: Boxes }
+    { id: "listini", label: "Listini", icon: Boxes }
   ];
 
   const currentLinePreview = useMemo(() => {
@@ -456,16 +740,13 @@ export default function HoonLabClient() {
     return calculateDocumentTotals(lines, quoteDiscountOptions);
   }, [currentLinePreview, lineDraft, quoteDiscountOptions, quoteForm.lines]);
 
-  const filteredQuotes = useMemo(() => {
+  const searchedQuotes = useMemo(() => {
     const term = quoteSearch.trim().toLowerCase();
     const sorted = [...quotes].sort((a, b) => new Date(b.issueDate || b.createdAt) - new Date(a.issueDate || a.createdAt));
-    const statusFiltered = quoteStatusFilter === "all"
-      ? sorted
-      : sorted.filter((quote) => quote.status === quoteStatusFilter);
 
-    if (!term) return statusFiltered;
+    if (!term) return sorted;
 
-    return statusFiltered.filter((quote) => {
+    return sorted.filter((quote) => {
       const productsText = (quote.lines || []).map((line) => [
         line.description,
         line.productSnapshot?.name,
@@ -481,16 +762,121 @@ export default function HoonLabClient() {
         productsText
       ].some((value) => String(value || "").toLowerCase().includes(term));
     });
-  }, [quoteSearch, quoteStatusFilter, quotes]);
+  }, [quoteSearch, quotes]);
 
-  const quotesByMonth = useMemo(() => {
-    return filteredQuotes.reduce((groups, quote) => {
-      const key = monthLabel(quote.issueDate || quote.createdAt);
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(quote);
-      return groups;
-    }, {});
-  }, [filteredQuotes]);
+  const quoteBoardTabs = useMemo(() => [
+    {
+      id: "da-inviare",
+      label: "Da inviare",
+      statuses: ["bozza"],
+      tone: "slate"
+    },
+    {
+      id: "inviati",
+      label: "Inviati",
+      statuses: ["inviato"],
+      tone: "blue"
+    },
+    {
+      id: "confermati",
+      label: "Confermati",
+      statuses: ["convertito", "accettato"],
+      tone: "green"
+    },
+    {
+      id: "rifiutati",
+      label: "Rifiutati",
+      statuses: ["rifiutato"],
+      tone: "red"
+    }
+  ], []);
+
+  const quoteBoardData = useMemo(() => {
+    return quoteBoardTabs.map((tab) => {
+      const tabQuotes = searchedQuotes.filter((quote) => tab.statuses.includes(quote.status));
+      const months = tabQuotes.reduce((groups, quote) => {
+        const key = monthLabel(quote.issueDate || quote.createdAt);
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(quote);
+        return groups;
+      }, {});
+
+      return {
+        ...tab,
+        quotes: tabQuotes,
+        months
+      };
+    });
+  }, [quoteBoardTabs, searchedQuotes]);
+
+  const selectedQuoteBoard = useMemo(() => (
+    quoteBoardData.find((tab) => tab.id === quoteBoardTab) || quoteBoardData[0]
+  ), [quoteBoardData, quoteBoardTab]);
+
+  const filteredQuotes = selectedQuoteBoard?.quotes || [];
+
+  const searchedOrders = useMemo(() => {
+    const term = orderSearch.trim().toLowerCase();
+    const sorted = [...orders].sort((a, b) => new Date(b.issueDate || b.createdAt) - new Date(a.issueDate || a.createdAt));
+
+    if (!term) return sorted;
+
+    return sorted.filter((order) => {
+      const productsText = (order.lines || []).map((line) => [
+        line.description,
+        line.productSnapshot?.name,
+        line.productSnapshot?.sku
+      ].join(" ")).join(" ");
+
+      return [
+        order.number,
+        order.status,
+        order.customerSnapshot?.name,
+        order.customerSnapshot?.type,
+        order.quote?.number,
+        productsText
+      ].some((value) => String(value || "").toLowerCase().includes(term));
+    });
+  }, [orderSearch, orders]);
+
+  const orderBoardTabs = useMemo(() => [
+    {
+      id: "ddt-da-generare",
+      label: "DDT da generare",
+      statuses: ["bozza", "confermato"],
+      tone: "blue"
+    },
+    {
+      id: "ddt-generato",
+      label: "DDT generato",
+      statuses: ["ddt_generato"],
+      tone: "green"
+    }
+  ], []);
+
+  const orderBoardData = useMemo(() => {
+    return orderBoardTabs.map((tab) => {
+      const tabOrders = searchedOrders.filter((order) => tab.statuses.includes(order.status));
+      const months = tabOrders.reduce((groups, order) => {
+        const key = monthLabel(order.issueDate || order.createdAt);
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(order);
+        return groups;
+      }, {});
+
+      return {
+        ...tab,
+        orders: tabOrders,
+        months
+      };
+    });
+  }, [orderBoardTabs, searchedOrders]);
+
+  const selectedOrderBoard = useMemo(() => (
+    orderBoardData.find((tab) => tab.id === orderBoardTab) || orderBoardData[0]
+  ), [orderBoardData, orderBoardTab]);
+
+  const filteredOrders = selectedOrderBoard?.orders || [];
 
   const customerList = useMemo(() => {
     const term = customerListSearch.trim().toLowerCase();
@@ -504,6 +890,7 @@ export default function HoonLabClient() {
       customer.phone,
       customer.vatNumber,
       customer.taxCode,
+      customer.billingAddress?.address,
       customer.defaultPriceList?.name
     ].some((value) => String(value || "").toLowerCase().includes(term)));
   }, [customerListSearch, customers]);
@@ -638,13 +1025,28 @@ export default function HoonLabClient() {
           <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">Gestionale commerciale</p>
           <h1 className="text-3xl font-bold text-slate-900">Hoon Lab</h1>
         </div>
-        <button
-          onClick={loadData}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Aggiorna
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("impostazioni")}
+            className={`inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold shadow-sm transition ${
+              activeTab === "impostazioni"
+                ? "border-slate-900 bg-slate-900 text-white"
+                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+            }`}
+          >
+            <Boxes className="h-4 w-4" />
+            Impostazioni
+          </button>
+          <button
+            type="button"
+            onClick={loadData}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Aggiorna
+          </button>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200">
@@ -677,6 +1079,95 @@ export default function HoonLabClient() {
         <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-600">Caricamento Hoon Lab...</div>
       ) : (
         <>
+          {activeTab === "dashboard" && (
+            <section className="space-y-5">
+              <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">Dashboard operativa</p>
+                    <h2 className="text-xl font-bold text-slate-900">To do list</h2>
+                  </div>
+                  <div className="text-sm font-semibold text-slate-500">
+                    {openTodos.length} attivita aperte
+                  </div>
+                </div>
+
+                <form onSubmit={handleCreateTodo} className="grid gap-3 lg:grid-cols-[1fr_180px_180px_auto]">
+                  <label className="grid gap-1.5">
+                    <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Nota</span>
+                    <input
+                      value={todoForm.note}
+                      onChange={(event) => setTodoForm((current) => ({ ...current, note: event.target.value }))}
+                      className="field"
+                      placeholder="Scrivi cosa c'e da fare..."
+                    />
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Entro quando</span>
+                    <input
+                      type="date"
+                      value={todoForm.dueDate}
+                      onChange={(event) => setTodoForm((current) => ({ ...current, dueDate: event.target.value }))}
+                      className="field"
+                    />
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Stato</span>
+                    <select
+                      value={todoForm.status}
+                      onChange={(event) => setTodoForm((current) => ({ ...current, status: event.target.value }))}
+                      className="field"
+                    >
+                      {todoStatuses.map((status) => (
+                        <option key={status.id} value={status.id}>{status.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="flex items-end">
+                    <button className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-800">
+                      <Plus className="h-4 w-4" />
+                      Aggiungi
+                    </button>
+                  </div>
+                </form>
+
+                <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+                  {todoViewOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setTodoView(option.id)}
+                      className={`inline-flex min-w-[150px] items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm font-bold transition ${
+                        todoView === option.id
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white"
+                      }`}
+                    >
+                      <span>{option.label}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs ${
+                        todoView === option.id ? "bg-white/20 text-white" : "bg-white text-slate-600"
+                      }`}>
+                        {option.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`grid gap-4 ${todoView === "tutte" ? "xl:grid-cols-3" : "xl:grid-cols-2"}`}>
+                {todoBoard.map((column) => (
+                  <TodoColumn
+                    key={column.id}
+                    column={column}
+                    statuses={todoStatuses}
+                    onChangeStatus={changeTodoStatus}
+                    onDelete={deleteTodo}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           {activeTab === "crea-preventivo" && (
               <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-5 flex items-center gap-2">
@@ -708,6 +1199,16 @@ export default function HoonLabClient() {
                           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                         >
                           Lista
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomerPickerOpen(false);
+                            setCustomerCreateOpen(true);
+                          }}
+                          className="rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+                        >
+                          Crea cliente
                         </button>
                       </div>
                       {selectedCustomer && (
@@ -997,9 +1498,9 @@ export default function HoonLabClient() {
                     <FileText className="h-5 w-5 text-blue-700" />
                     <h2 className="text-xl font-bold text-slate-900">Lista preventivi</h2>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase text-slate-600">{filteredQuotes.length}</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase text-slate-600">{searchedQuotes.length}</span>
                 </div>
-                <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_150px]">
+                <div className="mb-4">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                     <input
@@ -1009,57 +1510,150 @@ export default function HoonLabClient() {
                       placeholder="Cerca cliente, prodotto o motivo..."
                     />
                   </div>
-                  <select
-                    value={quoteStatusFilter}
-                    onChange={(event) => setQuoteStatusFilter(event.target.value)}
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  >
-                    <option value="all">Tutti gli stati</option>
-                    <option value="bozza">Bozza</option>
-                    <option value="inviato">Inviato</option>
-                    <option value="accettato">Accettato</option>
-                    <option value="rifiutato">Rifiutato</option>
-                    <option value="scaduto">Scaduto</option>
-                    <option value="convertito">Convertito in conferma d'ordine</option>
-                  </select>
                 </div>
-                <div className="space-y-5">
-                  {Object.entries(quotesByMonth).map(([month, monthQuotes]) => (
-                    <div key={month}>
-                      <div className="sticky top-0 z-10 mb-2 flex items-center justify-between rounded-lg bg-slate-100 px-3 py-2">
-                        <h3 className="text-sm font-bold capitalize text-slate-800">{month}</h3>
-                        <span className="text-xs font-semibold text-slate-500">{monthQuotes.length}</span>
-                      </div>
-                      <div className="space-y-3">
-                        {monthQuotes.map((quote) => (
-                          <QuoteCard
-                            key={quote._id}
-                            quote={quote}
-                            onChangeStatus={changeQuoteStatus}
-                            onConvert={convertQuote}
-                          />
-                        ))}
-                      </div>
-                    </div>
+
+                <div className="mb-5 flex gap-2 overflow-x-auto pb-2">
+                  {quoteBoardData.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setQuoteBoardTab(tab.id)}
+                      className={`min-w-[180px] flex-1 rounded-lg border px-4 py-3 text-left transition ${
+                        quoteBoardTab === tab.id
+                          ? quoteBoardTabClass(tab.tone, true)
+                          : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white"
+                      }`}
+                    >
+                      <span className="block text-sm font-bold">{tab.label}</span>
+                      <span className="mt-1 block text-2xl font-bold">{tab.quotes.length}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-3">
+                  {Object.entries(selectedQuoteBoard?.months || {}).map(([month, monthQuotes], index) => (
+                    <QuoteMonthAccordion
+                      key={month}
+                      month={month}
+                      quotes={monthQuotes}
+                      defaultOpen={index === 0}
+                      onChangeStatus={changeQuoteStatus}
+                      onConvert={convertQuote}
+                    />
                   ))}
                   {filteredQuotes.length === 0 && (
-                    <p className="rounded-lg bg-slate-100 p-4 text-sm text-slate-600">Nessun preventivo trovato.</p>
+                    <p className="rounded-lg bg-slate-100 p-4 text-sm text-slate-600">Nessun preventivo in questa scheda.</p>
                   )}
                 </div>
               </section>
           )}
 
-          {activeTab === "setup" && (
-            <div className="grid gap-6 xl:grid-cols-3">
+          {activeTab === "impostazioni" && (
+            <div className="space-y-6">
+              <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center gap-2">
+                  <Boxes className="h-5 w-5 text-blue-700" />
+                  <h2 className="text-xl font-bold text-slate-900">Impostazioni</h2>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {[
+                    { id: "statistiche", label: "Statistiche", icon: BarChart3 },
+                    { id: "setup", label: "Setup", icon: Boxes },
+                    { id: "export", label: "Export", icon: Download }
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setSettingsTab(item.id)}
+                        className={`inline-flex min-w-[160px] items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-bold transition ${
+                          settingsTab === item.id
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {settingsTab === "statistiche" && stats && <StatsDashboard stats={stats} />}
+
+              {settingsTab === "export" && (
+              <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 className="mb-4 text-xl font-bold text-slate-900">Export Excel</h2>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {[
+                    ["quotes", "Elenco preventivi"],
+                    ["quote-lines", "Righe preventivo"],
+                    ["orders", "Conferme ordine"],
+                    ["ddt", "DDT"],
+                    ["sold-products", "Prodotti venduti"],
+                    ["customers-report", "Report clienti"]
+                  ].map(([type, label]) => (
+                    <Link key={type} href={`/api/hoon-lab/export/${type}`} className="inline-flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
+                      {label}
+                      <Download className="h-4 w-4" />
+                    </Link>
+                  ))}
+                </div>
+              </section>
+              )}
+
+              {settingsTab === "setup" && (
+              <>
+              <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex flex-col gap-1">
+                  <h2 className="text-xl font-bold text-slate-900">Impostazioni documenti</h2>
+                  <p className="text-sm text-slate-500">Intestazione e nota usate nei PDF di preventivi, conferme e DDT.</p>
+                </div>
+                <form onSubmit={handleSaveSettings} className="grid gap-4 lg:grid-cols-2">
+                  <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
+                    Nome azienda
+                    <input
+                      value={settingsForm.companyName}
+                      onChange={(event) => setSettingsForm((current) => ({ ...current, companyName: event.target.value }))}
+                      className="field font-normal"
+                    />
+                  </label>
+                  <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
+                    Titolo nota preventivo
+                    <input
+                      value={settingsForm.quoteNoteTitle}
+                      onChange={(event) => setSettingsForm((current) => ({ ...current, quoteNoteTitle: event.target.value }))}
+                      className="field font-normal"
+                    />
+                  </label>
+                  <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
+                    Intestazione azienda
+                    <textarea
+                      value={settingsForm.companyHeader}
+                      onChange={(event) => setSettingsForm((current) => ({ ...current, companyHeader: event.target.value }))}
+                      className="field min-h-40 font-normal"
+                    />
+                  </label>
+                  <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
+                    Nota sempre visibile sui preventivi
+                    <textarea
+                      value={settingsForm.quoteNote}
+                      onChange={(event) => setSettingsForm((current) => ({ ...current, quoteNote: event.target.value }))}
+                      className="field min-h-40 font-normal"
+                    />
+                  </label>
+                  <div className="lg:col-span-2">
+                    <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800">
+                      Salva impostazioni documenti
+                    </button>
+                  </div>
+                </form>
+              </section>
+              <div className="grid gap-6 xl:grid-cols-3">
               <SetupPanel title="Clienti" icon={Users} onSubmit={handleCreateCustomer} submitLabel="Crea cliente">
-                <input value={customerForm.name} onChange={(event) => setCustomerForm((current) => ({ ...current, name: event.target.value }))} className="field" placeholder="Nome cliente" />
-                <select value={customerForm.type} onChange={(event) => setCustomerForm((current) => ({ ...current, type: event.target.value }))} className="field">
-                  <option value="privato">Privato</option>
-                  <option value="team">Team</option>
-                  <option value="azienda">Azienda</option>
-                </select>
-                <input value={customerForm.email} onChange={(event) => setCustomerForm((current) => ({ ...current, email: event.target.value }))} className="field" placeholder="Email" />
-                <input value={customerForm.phone} onChange={(event) => setCustomerForm((current) => ({ ...current, phone: event.target.value }))} className="field" placeholder="Telefono" />
+                <CustomerFormFields customerForm={customerForm} setCustomerForm={setCustomerForm} />
               </SetupPanel>
 
               <SetupPanel title="Prodotti" icon={PackagePlus} onSubmit={handleCreateProduct} submitLabel="Crea prodotto">
@@ -1132,10 +1726,10 @@ export default function HoonLabClient() {
                   <table className="w-full min-w-[760px] text-sm">
                     <thead className="bg-slate-100 text-left text-xs uppercase text-slate-600">
                       <tr>
-                        <th className="px-3 py-2">Cliente</th>
+                        <th className="px-3 py-2">Ragione sociale</th>
+                        <th className="px-3 py-2">Via</th>
+                        <th className="px-3 py-2">Partita IVA</th>
                         <th className="px-3 py-2">Tipo</th>
-                        <th className="px-3 py-2">Email</th>
-                        <th className="px-3 py-2">Telefono</th>
                         <th className="px-3 py-2">Listino default</th>
                       </tr>
                     </thead>
@@ -1143,9 +1737,9 @@ export default function HoonLabClient() {
                       {customers.map((customer) => (
                         <tr key={customer._id} className="border-b border-slate-100">
                           <td className="px-3 py-3 font-semibold text-slate-900">{customer.name}</td>
+                          <td className="px-3 py-3 text-slate-700">{customer.billingAddress?.address || "-"}</td>
+                          <td className="px-3 py-3 text-slate-700">{customer.vatNumber || "-"}</td>
                           <td className="px-3 py-3 capitalize text-slate-700">{customer.type}</td>
-                          <td className="px-3 py-3 text-slate-700">{customer.email || "-"}</td>
-                          <td className="px-3 py-3 text-slate-700">{customer.phone || "-"}</td>
                           <td className="px-3 py-3 text-slate-700">{customer.defaultPriceList?.name || "-"}</td>
                         </tr>
                       ))}
@@ -1158,6 +1752,9 @@ export default function HoonLabClient() {
                   </table>
                 </div>
               </section>
+              </div>
+              </>
+              )}
             </div>
           )}
 
@@ -1179,13 +1776,13 @@ export default function HoonLabClient() {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[820px] text-sm">
+                <table className="w-full min-w-[900px] text-sm">
                   <thead className="bg-slate-100 text-left text-xs uppercase text-slate-600">
                     <tr>
-                      <th className="px-3 py-2">Cliente</th>
+                      <th className="px-3 py-2">Ragione sociale</th>
+                      <th className="px-3 py-2">Via</th>
+                      <th className="px-3 py-2">Partita IVA</th>
                       <th className="px-3 py-2">Tipo</th>
-                      <th className="px-3 py-2">Email</th>
-                      <th className="px-3 py-2">Telefono</th>
                       <th className="px-3 py-2">Listino default</th>
                       <th className="px-3 py-2">Note</th>
                     </tr>
@@ -1194,9 +1791,9 @@ export default function HoonLabClient() {
                     {customerList.map((customer) => (
                       <tr key={customer._id} className="border-b border-slate-100">
                         <td className="px-3 py-3 font-semibold text-slate-900">{customer.name}</td>
+                        <td className="px-3 py-3 text-slate-700">{customer.billingAddress?.address || "-"}</td>
+                        <td className="px-3 py-3 text-slate-700">{customer.vatNumber || "-"}</td>
                         <td className="px-3 py-3 capitalize text-slate-700">{customer.type}</td>
-                        <td className="px-3 py-3 text-slate-700">{customer.email || "-"}</td>
-                        <td className="px-3 py-3 text-slate-700">{customer.phone || "-"}</td>
                         <td className="px-3 py-3 text-slate-700">{customer.defaultPriceList?.name || "-"}</td>
                         <td className="px-3 py-3 text-slate-500">{customer.notes || "-"}</td>
                       </tr>
@@ -1219,18 +1816,29 @@ export default function HoonLabClient() {
                   <h2 className="text-xl font-bold text-slate-900">Lista prodotti</h2>
                   <p className="text-sm text-slate-500">{productList.length} prodotti trovati</p>
                 </div>
-                <div className="relative w-full md:max-w-sm">
-                  <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                  <input
-                    value={productListSearch}
-                    onChange={(event) => setProductListSearch(event.target.value)}
-                    className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm"
-                    placeholder="Cerca prodotto..."
-                  />
+                <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
+                  <button
+                    type="button"
+                    onClick={handleImportProducts}
+                    disabled={importingProducts}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {importingProducts ? "Import..." : "Importa XLSX"}
+                  </button>
+                  <div className="relative w-full md:w-80">
+                    <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      value={productListSearch}
+                      onChange={(event) => setProductListSearch(event.target.value)}
+                      className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm"
+                      placeholder="Cerca prodotto..."
+                    />
+                  </div>
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[820px] text-sm">
+                <table className="w-full min-w-[920px] text-sm">
                   <thead className="bg-slate-100 text-left text-xs uppercase text-slate-600">
                     <tr>
                       <th className="px-3 py-2">Prodotto</th>
@@ -1240,6 +1848,7 @@ export default function HoonLabClient() {
                       <th className="px-3 py-2 text-right">{visibleProductPriceLists[0]?.name || "Listino principale"}</th>
                       <th className="px-3 py-2 text-right">{visibleProductPriceLists[1]?.name || "Secondo listino"}</th>
                       <th className="px-3 py-2">Descrizione</th>
+                      <th className="px-3 py-2"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1264,12 +1873,22 @@ export default function HoonLabClient() {
                             {secondListPrice === null ? "-" : currency(secondListPrice)}
                           </td>
                           <td className="px-3 py-3 text-slate-500">{product.description || "-"}</td>
+                          <td className="px-3 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProduct(product)}
+                              className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Elimina
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
                     {productList.length === 0 && (
                       <tr>
-                        <td className="px-3 py-5 text-slate-500" colSpan={7}>Nessun prodotto trovato.</td>
+                        <td className="px-3 py-5 text-slate-500" colSpan={8}>Nessun prodotto trovato.</td>
                       </tr>
                     )}
                   </tbody>
@@ -1289,7 +1908,7 @@ export default function HoonLabClient() {
                       {selectedListView ? `${priceListProducts.length} prodotti in vista` : "Nessun listino disponibile"}
                     </p>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-[260px_1fr]">
+                  <div className="grid gap-3 md:grid-cols-[260px_1fr_auto] md:items-end">
                     <label className="space-y-1 text-sm font-semibold text-slate-700">
                       Listino
                       <select
@@ -1319,6 +1938,16 @@ export default function HoonLabClient() {
                         />
                       </div>
                     </label>
+                    {selectedListView && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePriceList(selectedListView)}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Elimina listino
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1425,18 +2054,60 @@ export default function HoonLabClient() {
           )}
 
           {activeTab === "ordini" && (
-            <div className="grid gap-6">
-              <DocumentList title="Conferme ordine" items={orders} renderActions={(order) => (
-                <>
-                  <Link href={`/api/hoon-lab/pdf/order_confirmation/${order._id}?download=1`} download className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-100">Download PDF</Link>
-                  {order.status === "ddt_generato" ? (
-                    <span className="rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-700">DDT generato</span>
-                  ) : (
-                    <button onClick={() => generateDdt(order)} className="rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-800">Genera DDT</button>
-                  )}
-                </>
-              )} />
-            </div>
+            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-blue-700" />
+                  <h2 className="text-xl font-bold text-slate-900">Conferme ordine</h2>
+                </div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase text-slate-600">{searchedOrders.length}</span>
+              </div>
+
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <input
+                    value={orderSearch}
+                    onChange={(event) => setOrderSearch(event.target.value)}
+                    className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm"
+                    placeholder="Cerca conferma, cliente o prodotto..."
+                  />
+                </div>
+              </div>
+
+              <div className="mb-5 flex gap-2 overflow-x-auto pb-2">
+                {orderBoardData.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setOrderBoardTab(tab.id)}
+                    className={`min-w-[210px] flex-1 rounded-lg border px-4 py-3 text-left transition ${
+                      orderBoardTab === tab.id
+                        ? quoteBoardTabClass(tab.tone, true)
+                        : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white"
+                    }`}
+                  >
+                    <span className="block text-sm font-bold">{tab.label}</span>
+                    <span className="mt-1 block text-2xl font-bold">{tab.orders.length}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-3">
+                {Object.entries(selectedOrderBoard?.months || {}).map(([month, monthOrders], index) => (
+                  <OrderMonthAccordion
+                    key={month}
+                    month={month}
+                    orders={monthOrders}
+                    defaultOpen={index === 0}
+                    onGenerateDdt={generateDdt}
+                  />
+                ))}
+                {filteredOrders.length === 0 && (
+                  <p className="rounded-lg bg-slate-100 p-4 text-sm text-slate-600">Nessuna conferma ordine in questa scheda.</p>
+                )}
+              </div>
+            </section>
           )}
 
           {activeTab === "ddt" && (
@@ -1476,12 +2147,15 @@ export default function HoonLabClient() {
                         <td className="px-3 py-3 text-slate-700">{formatDate(ddt.issueDate || ddt.createdAt)}</td>
                         <td className="px-3 py-3 text-slate-700">{ddt.customerSnapshot?.name || "-"}</td>
                         <td className="px-3 py-3">
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase text-slate-700">{ddt.status}</span>
+                          <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold uppercase text-green-700">{deliveryStatusLabel(ddt.status)}</span>
                         </td>
                         <td className="px-3 py-3 text-slate-700">{ddt.reason || "-"}</td>
                         <td className="px-3 py-3 text-right text-slate-700">{ddt.lines?.length || 0}</td>
                         <td className="px-3 py-3 text-right">
-                          <Link href={`/api/hoon-lab/pdf/delivery_note/${ddt._id}?download=1`} download className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-100">Download PDF</Link>
+                          <div className="flex justify-end gap-2">
+                            <Link href={`/api/hoon-lab/pdf/delivery_note/${ddt._id}`} target="_blank" className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50">Anteprima PDF</Link>
+                            <Link href={`/api/hoon-lab/pdf/delivery_note/${ddt._id}?download=1`} download className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-100">Download PDF</Link>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1496,30 +2170,6 @@ export default function HoonLabClient() {
             </section>
           )}
 
-          {activeTab === "statistiche" && stats && (
-            <StatsDashboard stats={stats} />
-          )}
-
-          {activeTab === "export" && (
-            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="mb-4 text-xl font-bold text-slate-900">Export Excel</h2>
-              <div className="grid gap-3 md:grid-cols-3">
-                {[
-                  ["quotes", "Elenco preventivi"],
-                  ["quote-lines", "Righe preventivo"],
-                  ["orders", "Conferme ordine"],
-                  ["ddt", "DDT"],
-                  ["sold-products", "Prodotti venduti"],
-                  ["customers-report", "Report clienti"]
-                ].map(([type, label]) => (
-                  <Link key={type} href={`/api/hoon-lab/export/${type}`} className="inline-flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">
-                    {label}
-                    <Download className="h-4 w-4" />
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
         </>
       )}
 
@@ -1534,6 +2184,15 @@ export default function HoonLabClient() {
         />
       )}
 
+      {customerCreateOpen && (
+        <CustomerCreateModal
+          customerForm={customerForm}
+          setCustomerForm={setCustomerForm}
+          onSubmit={(event) => handleCreateCustomer(event, { closeModal: true, selectAfterCreate: true })}
+          onCancel={cancelCustomerCreate}
+        />
+      )}
+
       <style jsx>{`
         .field {
           width: 100%;
@@ -1542,6 +2201,207 @@ export default function HoonLabClient() {
           padding: 0.5rem 0.75rem;
         }
       `}</style>
+    </div>
+  );
+}
+
+function TodoColumn({ column, statuses, onChangeStatus, onDelete }) {
+  const Icon = column.icon;
+  const toneClasses = {
+    slate: "border-slate-200 bg-slate-50 text-slate-700",
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    green: "border-green-200 bg-green-50 text-green-700"
+  };
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border ${toneClasses[column.tone]}`}>
+            <Icon className="h-4 w-4" />
+          </span>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">{column.label}</h3>
+            <p className="text-xs font-semibold text-slate-500">{column.todos.length} attivita</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {column.todos.length === 0 && (
+          <div className="rounded-lg border border-dashed border-slate-200 p-4 text-sm font-medium text-slate-500">
+            Nessuna attivita in questa scheda.
+          </div>
+        )}
+
+        {column.todos.map((todo) => (
+          <TodoCard
+            key={todo._id}
+            todo={todo}
+            statuses={statuses}
+            onChangeStatus={onChangeStatus}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TodoCard({ todo, statuses, onChangeStatus, onDelete }) {
+  const dueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+  const overdue = dueDate && todo.status !== "fatta" && dueDate < new Date(new Date().toDateString());
+
+  return (
+    <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <p className="min-w-0 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-900">{todo.note}</p>
+        <button
+          type="button"
+          onClick={() => onDelete(todo)}
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-700"
+          aria-label="Elimina attivita"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="mb-3 grid gap-1 text-xs font-semibold text-slate-500">
+        <span className={overdue ? "text-red-700" : ""}>
+          Entro: {todo.dueDate ? formatDate(todo.dueDate) : "senza scadenza"}
+        </span>
+        <span>Ultimo cambio stato: {formatDateTime(todo.statusChangedAt || todo.updatedAt)}</span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {statuses.map((status) => {
+          const active = todo.status === status.id;
+          return (
+            <button
+              key={status.id}
+              type="button"
+              onClick={() => onChangeStatus(todo, status.id)}
+              disabled={active}
+              className={`rounded-lg border px-2 py-2 text-xs font-bold transition ${
+                active
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white"
+              }`}
+            >
+              {status.label}
+            </button>
+          );
+        })}
+      </div>
+    </article>
+  );
+}
+
+function CustomerFormFields({ customerForm, setCustomerForm, stacked = false }) {
+  const wrapField = (label, field) => {
+    if (!stacked) return <div key={label}>{field}</div>;
+
+    return (
+      <label key={label} className="grid gap-1.5">
+        <span className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span>
+        {field}
+      </label>
+    );
+  };
+
+  const fields = [
+    wrapField("Tipo cliente", (
+      <select value={customerForm.type} onChange={(event) => setCustomerForm((current) => ({ ...current, type: event.target.value }))} className="field">
+        <option value="privato">Privato</option>
+        <option value="team">Team</option>
+        <option value="azienda">Azienda</option>
+      </select>
+    ))
+  ];
+
+  if (customerForm.type === "privato") {
+    fields.push(
+      wrapField("Nome", <input value={customerForm.firstName} onChange={(event) => setCustomerForm((current) => ({ ...current, firstName: event.target.value }))} className="field" placeholder="Nome" />),
+      wrapField("Cognome", <input value={customerForm.lastName} onChange={(event) => setCustomerForm((current) => ({ ...current, lastName: event.target.value }))} className="field" placeholder="Cognome" />),
+      wrapField("Via", (
+        <input
+            value={customerForm.billingAddress.address}
+            onChange={(event) => setCustomerForm((current) => ({
+              ...current,
+              billingAddress: {
+                ...current.billingAddress,
+                address: event.target.value
+              }
+            }))}
+            className="field"
+            placeholder="Via"
+          />
+      )),
+      wrapField("Codice fiscale", <input value={customerForm.taxCode} onChange={(event) => setCustomerForm((current) => ({ ...current, taxCode: event.target.value }))} className="field" placeholder="Codice fiscale" />)
+    );
+  }
+
+  if (customerForm.type === "azienda") {
+    fields.push(
+      wrapField("Ragione sociale", <input value={customerForm.name} onChange={(event) => setCustomerForm((current) => ({ ...current, name: event.target.value }))} className="field" placeholder="Ragione sociale" />),
+      wrapField("Via", (
+        <input
+            value={customerForm.billingAddress.address}
+            onChange={(event) => setCustomerForm((current) => ({
+              ...current,
+              billingAddress: {
+                ...current.billingAddress,
+                address: event.target.value
+              }
+            }))}
+            className="field"
+            placeholder="Via"
+          />
+      )),
+      wrapField("Partita IVA", <input value={customerForm.vatNumber} onChange={(event) => setCustomerForm((current) => ({ ...current, vatNumber: event.target.value }))} className="field" placeholder="Partita IVA" />)
+    );
+  }
+
+  if (customerForm.type === "team") {
+    fields.push(
+      wrapField("Nome team", <input value={customerForm.name} onChange={(event) => setCustomerForm((current) => ({ ...current, name: event.target.value }))} className="field" placeholder="Nome team" />),
+      wrapField("Partita IVA", <input value={customerForm.vatNumber} onChange={(event) => setCustomerForm((current) => ({ ...current, vatNumber: event.target.value }))} className="field" placeholder="Partita IVA" />)
+    );
+  }
+
+  return stacked ? <div className="grid gap-3">{fields}</div> : <>{fields}</>;
+}
+
+function CustomerCreateModal({ customerForm, setCustomerForm, onSubmit, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 px-4 py-6">
+      <div className="w-full max-w-lg rounded-lg bg-white shadow-2xl">
+        <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Crea cliente</h2>
+            <p className="text-sm text-slate-500">Il cliente verra selezionato nel preventivo dopo il salvataggio.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100"
+            aria-label="Annulla creazione cliente"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <form onSubmit={onSubmit} className="space-y-4 p-5">
+          <CustomerFormFields customerForm={customerForm} setCustomerForm={setCustomerForm} stacked />
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+              Annulla
+            </button>
+            <button className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-bold text-white hover:bg-blue-800">
+              Salva cliente
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -1670,6 +2530,128 @@ function DocumentList({ title, items, renderActions }) {
   );
 }
 
+function quoteBoardTabClass(tone, active) {
+  if (!active) return "";
+
+  const classes = {
+    slate: "border-slate-300 bg-slate-900 text-white shadow-sm",
+    blue: "border-blue-200 bg-blue-50 text-blue-800 shadow-sm",
+    green: "border-green-200 bg-green-50 text-green-800 shadow-sm",
+    red: "border-red-200 bg-red-50 text-red-800 shadow-sm"
+  };
+
+  return classes[tone] || classes.slate;
+}
+
+function QuoteMonthAccordion({ month, quotes, defaultOpen, onChangeStatus, onConvert }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const total = quotes.reduce((sum, quote) => sum + Number(quote.total || 0), 0);
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 bg-slate-50 px-4 py-3 text-left hover:bg-slate-100"
+      >
+        <div>
+          <h3 className="text-sm font-bold capitalize text-slate-900">{month}</h3>
+          <p className="text-xs font-semibold text-slate-500">
+            {quotes.length} preventivi · {currency(total)}
+          </p>
+        </div>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-slate-500 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="space-y-3 p-3">
+          {quotes.map((quote) => (
+            <QuoteCard
+              key={quote._id}
+              quote={quote}
+              onChangeStatus={onChangeStatus}
+              onConvert={onConvert}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrderMonthAccordion({ month, orders, defaultOpen, onGenerateDdt }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const total = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 bg-slate-50 px-4 py-3 text-left hover:bg-slate-100"
+      >
+        <div>
+          <h3 className="text-sm font-bold capitalize text-slate-900">{month}</h3>
+          <p className="text-xs font-semibold text-slate-500">
+            {orders.length} conferme · {currency(total)}
+          </p>
+        </div>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-slate-500 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="space-y-3 p-3">
+          {orders.map((order) => (
+            <OrderCard key={order._id} order={order} onGenerateDdt={onGenerateDdt} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrderCard({ order, onGenerateDdt }) {
+  const ddtGenerated = order.status === "ddt_generato";
+  const products = (order.lines || [])
+    .map((line) => line.productSnapshot?.name || line.description)
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return (
+    <div className="rounded-lg border border-slate-200 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-bold text-slate-900">{order.number}</p>
+          <p className="truncate text-sm text-slate-600">{order.customerSnapshot?.name || "-"}</p>
+          <p className="mt-1 text-xs font-semibold text-slate-500">{formatDate(order.issueDate || order.createdAt)}</p>
+        </div>
+        <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold uppercase ${
+          ddtGenerated ? "bg-green-50 text-green-700" : "bg-blue-50 text-blue-700"
+        }`}>
+          {ddtGenerated ? "DDT generato" : "DDT da generare"}
+        </span>
+      </div>
+      {products.length > 0 && (
+        <p className="mt-3 line-clamp-2 text-xs text-slate-500">{products.join(" · ")}</p>
+      )}
+      <p className="mt-3 text-2xl font-bold text-slate-900">{currency(order.total)}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Link href={`/api/hoon-lab/pdf/order_confirmation/${order._id}`} target="_blank" className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50">Anteprima PDF</Link>
+        <Link href={`/api/hoon-lab/pdf/order_confirmation/${order._id}?download=1`} download className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-100">Download PDF</Link>
+        {ddtGenerated ? (
+          <span className="rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-700">DDT generato</span>
+        ) : (
+          <button onClick={() => onGenerateDdt(order)} className="rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-800">Genera DDT</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function deliveryStatusLabel(status) {
+  if (status === "bozza" || status === "emesso") return "Emesso";
+  if (status === "annullato") return "Annullato";
+  return status || "Emesso";
+}
+
 function QuoteCard({ quote, onChangeStatus, onConvert }) {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState(quote.rejectionReason || "");
@@ -1712,18 +2694,19 @@ function QuoteCard({ quote, onChangeStatus, onConvert }) {
       )}
       <p className="mt-3 text-2xl font-bold text-slate-900">{currency(quote.total)}</p>
       <div className="mt-3 flex flex-wrap gap-2">
+        <Link href={`/api/hoon-lab/pdf/quote/${quote._id}`} target="_blank" className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50">Anteprima PDF</Link>
         <Link href={`/api/hoon-lab/pdf/quote/${quote._id}?download=1`} download className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100">Download PDF</Link>
         {quote.status === "bozza" && (
-          <button onClick={() => onChangeStatus(quote, "inviato")} className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50">Inviato</button>
+          <button onClick={() => onChangeStatus(quote, "inviato")} className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50">Conferma invio</button>
         )}
-        {["bozza", "inviato"].includes(quote.status) && (
-          <button onClick={() => onChangeStatus(quote, "accettato")} className="rounded-lg border border-green-200 px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-50">Accettato</button>
+        {quote.status === "inviato" && (
+          <button onClick={() => onConvert(quote)} className="rounded-lg border border-green-200 px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-50">Accettato</button>
         )}
-        {["bozza", "inviato"].includes(quote.status) && (
+        {quote.status === "inviato" && (
           <button onClick={() => setRejectOpen((current) => !current)} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50">Rifiutato</button>
         )}
         {quote.status === "accettato" && (
-          <button onClick={() => onConvert(quote)} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Converti in conferma d'ordine</button>
+          <button onClick={() => onConvert(quote)} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Completa conferma d'ordine</button>
         )}
       </div>
       {rejectOpen && (
@@ -1773,6 +2756,9 @@ function StatsDashboard({ stats }) {
   const acceptedShare = stats.quotesTotalValue
     ? Math.min(100, Math.round((stats.acceptedQuotesValue / stats.quotesTotalValue) * 100))
     : 0;
+  const monthly = stats.analytics?.monthly || [];
+  const annual = stats.analytics?.annual || [];
+  const comparisons = stats.analytics?.comparisons || {};
 
   const kpis = [
     ["Preventivi", stats.quotesCreated],
@@ -1790,6 +2776,132 @@ function StatsDashboard({ stats }) {
           <StatCard key={label} label={label} value={value} />
         ))}
       </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <ComparisonCard
+          label="Mese vs precedente"
+          current={comparisons.currentMonth?.acceptedValue}
+          previous={comparisons.previousMonth?.acceptedValue}
+          currentLabel={comparisons.currentMonth?.label}
+          previousLabel={comparisons.previousMonth?.label}
+        />
+        <ComparisonCard
+          label="Anno vs precedente"
+          current={comparisons.currentYear?.acceptedValue}
+          previous={comparisons.previousYear?.acceptedValue}
+          currentLabel={comparisons.currentYear?.label}
+          previousLabel={comparisons.previousYear?.label}
+        />
+        <ComparisonCard
+          label="Preventivi mese"
+          current={comparisons.currentMonth?.quotes}
+          previous={comparisons.previousMonth?.quotes}
+          currentLabel={comparisons.currentMonth?.label}
+          previousLabel={comparisons.previousMonth?.label}
+          asCurrency={false}
+        />
+        <ComparisonCard
+          label="Conversione anno"
+          current={comparisons.currentYear?.conversionRate}
+          previous={comparisons.previousYear?.conversionRate}
+          currentLabel={comparisons.currentYear?.label}
+          previousLabel={comparisons.previousYear?.label}
+          asPercent
+        />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.4fr_.9fr]">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-slate-900">Andamento mensile</h2>
+            <p className="text-sm text-slate-500">Ultimi 12 mesi con confronto sullo stesso mese dell'anno precedente.</p>
+          </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthly} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#64748b" />
+                <YAxis tickFormatter={(value) => `${Math.round(value / 1000)}k`} tick={{ fontSize: 11 }} stroke="#64748b" />
+                <Tooltip formatter={(value, name) => [currency(value), name]} />
+                <Legend />
+                <Line type="monotone" dataKey="quoteValue" name="Preventivi" stroke="#2563eb" strokeWidth={2.4} dot={false} />
+                <Line type="monotone" dataKey="acceptedValue" name="Accettato" stroke="#16a34a" strokeWidth={2.4} dot={false} />
+                <Line type="monotone" dataKey="previousAcceptedValue" name="Accettato anno prima" stroke="#94a3b8" strokeDasharray="5 5" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-slate-900">Preventivi per mese</h2>
+            <p className="text-sm text-slate-500">Creati, confermati e rifiutati.</p>
+          </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthly} margin={{ top: 12, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#64748b" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="#64748b" />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="quotes" name="Creati" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="accepted" name="Confermati" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="rejected" name="Rifiutati" fill="#dc2626" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+      </div>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-slate-900">Confronto annuale</h2>
+          <p className="text-sm text-slate-500">Valori confermati, preventivi e tasso conversione per anno.</p>
+        </div>
+        <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={annual} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="#64748b" />
+                <YAxis tickFormatter={(value) => `${Math.round(value / 1000)}k`} tick={{ fontSize: 11 }} stroke="#64748b" />
+                <Tooltip formatter={(value, name) => [name === "Conversione" ? percent(value) : currency(value), name]} />
+                <Legend />
+                <Bar dataKey="quoteValue" name="Preventivi" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="acceptedValue" name="Confermato" fill="#16a34a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[420px] text-sm">
+              <thead className="bg-slate-100 text-left text-xs uppercase text-slate-600">
+                <tr>
+                  <th className="px-3 py-2">Anno</th>
+                  <th className="px-3 py-2 text-right">Preventivi</th>
+                  <th className="px-3 py-2 text-right">Confermato</th>
+                  <th className="px-3 py-2 text-right">Conv.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {annual.map((year) => (
+                  <tr key={year.key} className="border-b border-slate-100">
+                    <td className="px-3 py-3 font-bold text-slate-900">{year.label}</td>
+                    <td className="px-3 py-3 text-right text-slate-700">{year.quotes}</td>
+                    <td className="px-3 py-3 text-right font-semibold text-slate-900">{currency(year.acceptedValue)}</td>
+                    <td className="px-3 py-3 text-right text-slate-700">{percent(year.conversionRate)}</td>
+                  </tr>
+                ))}
+                {annual.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-3 py-4 text-slate-500">Nessun dato annuale disponibile.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -1825,6 +2937,31 @@ function StatsDashboard({ stats }) {
         <BarRank title="Clienti migliori" rows={stats.topCustomers} valueKey="total" />
       </div>
     </div>
+  );
+}
+
+function ComparisonCard({ label, current, previous, currentLabel, previousLabel, asCurrency = true, asPercent = false }) {
+  const currentValue = Number(current || 0);
+  const previousValue = Number(previous || 0);
+  const delta = previousValue ? (currentValue - previousValue) / previousValue : null;
+  const positive = Number(delta || 0) >= 0;
+  const formatter = (value) => {
+    if (asPercent) return percent(value);
+    if (asCurrency) return currency(value);
+    return Number(value || 0).toLocaleString("it-IT");
+  };
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-bold uppercase text-slate-500">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-slate-900">{formatter(currentValue)}</p>
+      <div className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold">
+        <span className="text-slate-500">{currentLabel || "Periodo corrente"} vs {previousLabel || "precedente"}</span>
+        <span className={`rounded-full px-2 py-1 ${positive ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+          {delta === null ? "n.d." : `${positive ? "+" : ""}${Math.round(delta * 100)}%`}
+        </span>
+      </div>
+    </section>
   );
 }
 

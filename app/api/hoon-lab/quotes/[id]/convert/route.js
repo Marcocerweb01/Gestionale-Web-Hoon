@@ -7,11 +7,15 @@ export async function POST(_req, { params }) {
   try {
     await connectToDB();
     const { id } = await params;
-    const quote = await HoonLabQuote.findOne({ _id: id, status: "accettato", convertedOrder: null });
+    const quote = await HoonLabQuote.findOne({
+      _id: id,
+      status: { $in: ["inviato", "accettato"] },
+      convertedOrder: null
+    });
 
     if (!quote) {
       return NextResponse.json(
-        { error: "Preventivo non trovato, non accettato o gia convertito" },
+        { error: "Preventivo non trovato, non inviato/accettato o gia convertito" },
         { status: 409 }
       );
     }
@@ -35,8 +39,20 @@ export async function POST(_req, { params }) {
     });
 
     const update = await HoonLabQuote.updateOne(
-      { _id: quote._id, status: "accettato", convertedOrder: null },
-      { $set: { status: "convertito", convertedOrder: order._id } }
+      {
+        _id: quote._id,
+        status: { $in: ["inviato", "accettato"] },
+        convertedOrder: null
+      },
+      {
+        $set: {
+          status: "convertito",
+          acceptedAt: quote.acceptedAt || new Date(),
+          rejectedAt: null,
+          rejectionReason: "",
+          convertedOrder: order._id
+        }
+      }
     );
 
     if (update.modifiedCount !== 1) {

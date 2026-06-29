@@ -15,7 +15,9 @@ export async function GET(req) {
       ...(search ? { $or: [
         { name: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } }
+        { phone: { $regex: search, $options: "i" } },
+        { vatNumber: { $regex: search, $options: "i" } },
+        { "billingAddress.address": { $regex: search, $options: "i" } }
       ] } : {})
     };
 
@@ -35,14 +37,16 @@ export async function POST(req) {
   try {
     await connectToDB();
     const body = await req.json();
+    const type = body.type || "privato";
+    const name = String(body.name || "").trim();
 
-    if (!body.name) {
+    if (!name && type !== "team") {
       return NextResponse.json({ error: "Nome cliente obbligatorio" }, { status: 400 });
     }
 
     const customer = await HoonLabCustomer.create({
-      name: body.name,
-      type: body.type || "privato",
+      name: name || "Team",
+      type,
       email: body.email || "",
       phone: body.phone || "",
       vatNumber: body.vatNumber || "",

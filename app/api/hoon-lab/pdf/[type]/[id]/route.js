@@ -3,10 +3,12 @@ import { connectToDB } from "@/utils/database";
 import {
   HoonLabDeliveryNote,
   HoonLabOrderConfirmation,
-  HoonLabPdfTemplate,
-  HoonLabQuote
+  HoonLabQuote,
+  HoonLabSettings
 } from "@/models/HoonLab";
-import { renderPdfHtml } from "@/lib/hoon-lab/templates";
+import { renderHoonLabPdf } from "@/lib/hoon-lab/pdf";
+
+export const runtime = "nodejs";
 
 const MODEL_BY_TYPE = {
   quote: HoonLabQuote,
@@ -23,21 +25,21 @@ export async function GET(req, { params }) {
 
     if (!Model) return NextResponse.json({ error: "Tipo documento non valido" }, { status: 400 });
 
-    const [document, template] = await Promise.all([
+    const [document, settings] = await Promise.all([
       Model.findById(id).lean(),
-      HoonLabPdfTemplate.findOne({ type, active: true }).sort({ updatedAt: -1 }).lean()
+      HoonLabSettings.findOne({ key: "default" }).lean()
     ]);
 
     if (!document) return NextResponse.json({ error: "Documento non trovato" }, { status: 404 });
 
-    const html = renderPdfHtml({ type, document, template });
+    const pdf = await renderHoonLabPdf({ type, document, settings });
     const disposition = searchParams.get("download") === "1" ? "attachment" : "inline";
     const filename = String(document.number || "documento").replace(/[^\w.-]+/g, "_");
 
-    return new NextResponse(html, {
+    return new NextResponse(pdf, {
       headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Disposition": `${disposition}; filename="${filename}.html"`
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `${disposition}; filename="${filename}.pdf"`
       }
     });
   } catch (error) {

@@ -23,7 +23,7 @@ export async function POST(req, { params }) {
       customerSnapshot: order.customerSnapshot,
       shippingAddressSnapshot: body.shippingAddress || order.customerSnapshot?.shippingAddress || {},
       reason: body.reason || "Vendita",
-      status: body.status || "bozza",
+      status: body.status || "emesso",
       issueDate: body.issueDate || new Date(),
       lines: body.lines?.length ? body.lines : mapQuoteLinesToDeliveryLines(order.lines),
       notes: body.notes || ""

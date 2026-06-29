@@ -1,7 +1,6 @@
 import { connectToDB } from '@/utils/database';
 import QrCode from '@/models/QrCode';
-import { NextResponse } from 'next/server';
-import { redirect } from 'next/navigation';
+import { after, NextResponse } from 'next/server';
 
 // GET /api/qrcode/redirect/[id] - Incrementa scan e redirige
 export async function GET(req, { params }) {
@@ -10,15 +9,7 @@ export async function GET(req, { params }) {
     
     const { id } = await params;
     
-    // Incrementa il contatore
-    const qrCode = await QrCode.findByIdAndUpdate(
-      id,
-      { 
-        $inc: { scans: 1 },
-        lastScan: new Date()
-      },
-      { new: true }
-    );
+    const qrCode = await QrCode.findById(id).select('value').lean();
     
     if (!qrCode) {
       return NextResponse.json(
@@ -26,9 +17,20 @@ export async function GET(req, { params }) {
         { status: 404 }
       );
     }
+
+    after(async () => {
+      try {
+        await QrCode.findByIdAndUpdate(id, {
+          $inc: { scans: 1 },
+          lastScan: new Date()
+        });
+      } catch (error) {
+        console.error('Errore tracking scan post-redirect:', error);
+      }
+    });
     
     // Redirige all'URL originale
-    return NextResponse.redirect(qrCode.value);
+    return NextResponse.redirect(qrCode.value, 302);
     
   } catch (error) {
     console.error('Errore redirect scan:', error);

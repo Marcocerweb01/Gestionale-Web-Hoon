@@ -14,6 +14,121 @@ function dateFilter(searchParams) {
   };
 }
 
+function monthKey(value) {
+  const date = new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthName(monthIndex) {
+  return new Intl.DateTimeFormat("it-IT", { month: "short" }).format(new Date(2026, monthIndex, 1));
+}
+
+function emptyPeriod(label, key = label) {
+  return {
+    key,
+    label,
+    quotes: 0,
+    sent: 0,
+    accepted: 0,
+    rejected: 0,
+    quoteValue: 0,
+    acceptedValue: 0,
+    orderValue: 0,
+    conversionRate: 0
+  };
+}
+
+function applyQuoteToPeriod(period, quote) {
+  const total = Number(quote.total || 0);
+  period.quotes += 1;
+  period.quoteValue += total;
+  if (quote.status !== "bozza") period.sent += 1;
+  if (["accettato", "convertito"].includes(quote.status)) {
+    period.accepted += 1;
+    period.acceptedValue += total;
+  }
+  if (quote.status === "rifiutato") period.rejected += 1;
+}
+
+function applyOrderToPeriod(period, order) {
+  period.orderValue += Number(order.total || 0);
+}
+
+function finalizePeriod(period) {
+  return {
+    ...period,
+    conversionRate: period.sent ? period.accepted / period.sent : 0,
+    averageQuoteValue: period.quotes ? period.quoteValue / period.quotes : 0
+  };
+}
+
+function buildMonthlyAnalytics(quotes, orders) {
+  const now = new Date();
+  const months = [];
+
+  for (let index = 11; index >= 0; index -= 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+    const key = monthKey(date);
+    const previousDate = new Date(date.getFullYear() - 1, date.getMonth(), 1);
+    const previousKey = monthKey(previousDate);
+    months.push({
+      ...emptyPeriod(`${monthName(date.getMonth())} ${date.getFullYear()}`, key),
+      previousKey,
+      previousAcceptedValue: 0,
+      previousQuoteValue: 0
+    });
+  }
+
+  const byKey = new Map(months.map((period) => [period.key, period]));
+  const previousByKey = new Map(months.map((period) => [period.previousKey, period]));
+
+  quotes.forEach((quote) => {
+    const key = monthKey(quote.issueDate || quote.createdAt);
+    const period = byKey.get(key);
+    if (period) applyQuoteToPeriod(period, quote);
+
+    const previousPeriod = previousByKey.get(key);
+    if (previousPeriod) {
+      const total = Number(quote.total || 0);
+      previousPeriod.previousQuoteValue += total;
+      if (["accettato", "convertito"].includes(quote.status)) previousPeriod.previousAcceptedValue += total;
+    }
+  });
+
+  orders.forEach((order) => {
+    const period = byKey.get(monthKey(order.issueDate || order.createdAt));
+    if (period) applyOrderToPeriod(period, order);
+  });
+
+  return months.map((period) => {
+    const finalized = finalizePeriod(period);
+    return {
+      ...finalized,
+      acceptedDelta: finalized.previousAcceptedValue
+        ? (finalized.acceptedValue - finalized.previousAcceptedValue) / finalized.previousAcceptedValue
+        : null,
+      quoteDelta: finalized.previousQuoteValue
+        ? (finalized.quoteValue - finalized.previousQuoteValue) / finalized.previousQuoteValue
+        : null
+    };
+  });
+}
+
+function buildAnnualAnalytics(quotes, orders) {
+  const years = new Map();
+  const ensureYear = (year) => {
+    if (!years.has(year)) years.set(year, emptyPeriod(String(year), String(year)));
+    return years.get(year);
+  };
+
+  quotes.forEach((quote) => applyQuoteToPeriod(ensureYear(new Date(quote.issueDate || quote.createdAt).getFullYear()), quote));
+  orders.forEach((order) => applyOrderToPeriod(ensureYear(new Date(order.issueDate || order.createdAt).getFullYear()), order));
+
+  return Array.from(years.values())
+    .map(finalizePeriod)
+    .sort((a, b) => Number(a.key) - Number(b.key));
+}
+
 export async function GET(req) {
   try {
     await connectToDB();
@@ -59,6 +174,13 @@ export async function GET(req) {
     const totalQuotesValue = quotes.reduce((sum, quote) => sum + Number(quote.total || 0), 0);
     const acceptedValue = acceptedQuotes.reduce((sum, quote) => sum + Number(quote.total || 0), 0);
 
+    const monthly = buildMonthlyAnalytics(quotes, orders);
+    const annual = buildAnnualAnalytics(quotes, orders);
+    const currentMonth = monthly[monthly.length - 1] || emptyPeriod("Mese corrente");
+    const previousMonth = monthly[monthly.length - 2] || emptyPeriod("Mese precedente");
+    const currentYear = annual[annual.length - 1] || emptyPeriod("Anno corrente");
+    const previousYear = annual[annual.length - 2] || emptyPeriod("Anno precedente");
+
     return NextResponse.json({
       quotesCreated: quotes.length,
       quotesTotalValue: totalQuotesValue,
@@ -71,7 +193,17 @@ export async function GET(req) {
       topCustomers: Array.from(topCustomersMap.entries())
         .map(([name, total]) => ({ name, total }))
         .sort((a, b) => b.total - a.total)
-        .slice(0, 10)
+        .slice(0, 10),
+      analytics: {
+        monthly,
+        annual,
+        comparisons: {
+          currentMonth,
+          previousMonth,
+          currentYear,
+          previousYear
+        }
+      }
     });
   } catch (error) {
     console.error("Errore statistiche Hoon Lab:", error);

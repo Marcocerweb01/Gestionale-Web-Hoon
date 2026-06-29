@@ -59,6 +59,15 @@ export default function QrCodeGenerator({ value, name, type, onSaved }) {
     }
   };
 
+  const getTrackingBaseUrl = () => {
+    const configuredBaseUrl =
+      process.env.NEXT_PUBLIC_QR_TRACKING_BASE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      window.location.origin;
+
+    return configuredBaseUrl.replace(/\/$/, '');
+  };
+
   const downloadQR = async () => {
     const canvas = canvasRef.current;
     const url = canvas.toDataURL('image/png');
@@ -91,7 +100,7 @@ export default function QrCodeGenerator({ value, name, type, onSaved }) {
         
         // Se è un URL, genera tracking URL e rigenera QR
         if (type === 'url') {
-          const baseUrl = window.location.origin;
+          const baseUrl = getTrackingBaseUrl();
           const newTrackingUrl = `${baseUrl}/api/qrcode/redirect/${data.qrCodeId}`;
           setTrackingUrl(newTrackingUrl);
         }

@@ -58,7 +58,7 @@ export async function POST(req) {
       customerSnapshot,
       shippingAddressSnapshot: body.shippingAddress || customerSnapshot.shippingAddress || {},
       reason: body.reason || "Vendita",
-      status: body.status || "bozza",
+      status: body.status || "emesso",
       issueDate: body.issueDate || new Date(),
       lines,
       notes: body.notes || ""

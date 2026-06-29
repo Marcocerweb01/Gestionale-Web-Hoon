@@ -1,10 +1,20 @@
-import { Schema, model, models } from "mongoose";
+import mongoose from "mongoose";
+
+const { Schema, model, models } = mongoose;
 
 const CUSTOMER_TYPES = ["privato", "team", "azienda"];
 const DOCUMENT_TYPES = ["quote", "order_confirmation", "delivery_note"];
 const QUOTE_STATUSES = ["bozza", "inviato", "accettato", "rifiutato", "scaduto", "convertito"];
 const ORDER_STATUSES = ["bozza", "confermato", "ddt_generato", "annullato"];
 const DDT_STATUSES = ["bozza", "emesso", "annullato"];
+const TODO_STATUSES = ["da_fare", "in_lavorazione", "fatta"];
+
+export const DEFAULT_HOON_LAB_SETTINGS = {
+  companyName: "Hoon Srl",
+  companyHeader: "Hoon Srl\nVia Buon Pastore 9 d\n01100 Viterbo (VT)\nTel. 3760361046 / Fax\nwww.hoonlab.it / info@hoonlab.it\nP.IVA 02338800564 - Cod. Fiscale 02338800564",
+  quoteNoteTitle: "NOTA PREVENTIVO",
+  quoteNote: "Per l’avvio dell’ordine è richiesto un acconto pari al 50% dell’importo totale. Il restante 50% dovrà essere saldato prima della consegna della merce"
+};
 
 const MoneySchema = {
   type: Number,
@@ -178,6 +188,31 @@ const DocumentSequenceSchema = new Schema({
 
 DocumentSequenceSchema.index({ documentType: 1, year: 1 }, { unique: true });
 
+const TodoStatusHistorySchema = new Schema({
+  status: { type: String, enum: TODO_STATUSES, required: true },
+  at: { type: Date, default: Date.now }
+}, { _id: false });
+
+const HoonLabTodoSchema = new Schema({
+  note: { type: String, required: true, trim: true },
+  dueDate: { type: Date, default: null },
+  status: { type: String, enum: TODO_STATUSES, default: "da_fare" },
+  statusChangedAt: { type: Date, default: Date.now },
+  statusHistory: { type: [TodoStatusHistorySchema], default: () => [{ status: "da_fare", at: new Date() }] },
+  active: { type: Boolean, default: true }
+}, { timestamps: true });
+
+HoonLabTodoSchema.index({ status: 1, dueDate: 1 });
+HoonLabTodoSchema.index({ active: 1, createdAt: -1 });
+
+const HoonLabSettingsSchema = new Schema({
+  key: { type: String, required: true, unique: true, default: "default" },
+  companyName: { type: String, default: DEFAULT_HOON_LAB_SETTINGS.companyName },
+  companyHeader: { type: String, default: DEFAULT_HOON_LAB_SETTINGS.companyHeader },
+  quoteNoteTitle: { type: String, default: DEFAULT_HOON_LAB_SETTINGS.quoteNoteTitle },
+  quoteNote: { type: String, default: DEFAULT_HOON_LAB_SETTINGS.quoteNote }
+}, { timestamps: true });
+
 export const HoonLabCustomer = models.HoonLabCustomer || model("HoonLabCustomer", HoonLabCustomerSchema);
 export const HoonLabProduct = models.HoonLabProduct || model("HoonLabProduct", HoonLabProductSchema);
 export const HoonLabPriceList = models.HoonLabPriceList || model("HoonLabPriceList", HoonLabPriceListSchema);
@@ -187,11 +222,14 @@ export const HoonLabOrderConfirmation = models.HoonLabOrderConfirmation || model
 export const HoonLabDeliveryNote = models.HoonLabDeliveryNote || model("HoonLabDeliveryNote", DeliveryNoteSchema);
 export const HoonLabPdfTemplate = models.HoonLabPdfTemplate || model("HoonLabPdfTemplate", PdfTemplateSchema);
 export const HoonLabDocumentSequence = models.HoonLabDocumentSequence || model("HoonLabDocumentSequence", DocumentSequenceSchema);
+export const HoonLabTodo = models.HoonLabTodo || model("HoonLabTodo", HoonLabTodoSchema);
+export const HoonLabSettings = models.HoonLabSettings || model("HoonLabSettings", HoonLabSettingsSchema);
 
 export const HOON_LAB = {
   CUSTOMER_TYPES,
   DOCUMENT_TYPES,
   QUOTE_STATUSES,
   ORDER_STATUSES,
-  DDT_STATUSES
+  DDT_STATUSES,
+  TODO_STATUSES
 };
