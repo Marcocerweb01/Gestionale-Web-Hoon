@@ -205,7 +205,16 @@ export default function RulesPage() {
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/Login');
+    if (status === 'unauthenticated') {
+      router.push('/Login');
+      return;
+    }
+
+    if (session && session.user?.role !== 'amministratore') {
+      router.push('/unauthorized');
+      return;
+    }
+
     if (session && accountId) {
       loadData();
     }

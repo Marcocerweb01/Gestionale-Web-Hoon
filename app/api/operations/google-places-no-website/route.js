@@ -18,7 +18,7 @@ const FREE_CALLS_LIMIT = Number.isFinite(configuredLimit) && configuredLimit > 0
 const MAX_GOOGLE_RESULTS = 60;
 const MAX_SEARCHES_PER_MINUTE = 8;
 const requestLog = new Map();
-const allowedRoles = new Set(["amministratore", "segretaria"]);
+const allowedRoles = new Set(["amministratore"]);
 
 const getMonthKey = () => new Date().toISOString().slice(0, 7);
 

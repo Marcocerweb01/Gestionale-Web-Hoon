@@ -29,8 +29,12 @@ export async function proxy(req) {
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
-  } else if (pathname.startsWith("/Operations")) {
-    if (token.role !== "amministratore" && token.role !== "segretaria") {
+  } else if (
+    pathname.startsWith("/Operations/GooglePlacesNoWebsite") ||
+    pathname.startsWith("/Operations/SocialAutomation") ||
+    pathname.startsWith("/Operations/Analytics")
+  ) {
+    if (token.role !== "amministratore") {
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }

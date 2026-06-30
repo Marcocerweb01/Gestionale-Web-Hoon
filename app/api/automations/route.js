@@ -1,5 +1,4 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAdminSession } from '@/lib/adminAuth';
 import { connectToDB } from '@/utils/database';
 import SocialAutomation from '@/models/SocialAutomation';
 import SocialAccount from '@/models/SocialAccount';
@@ -9,10 +8,9 @@ import mongoose from 'mongoose';
 // GET - Lista automazioni (filtrabili per accountId)
 export async function GET(req) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
+    const { session } = auth;
 
     await connectToDB();
 
@@ -36,10 +34,9 @@ export async function GET(req) {
 // POST - Crea nuova automazione
 export async function POST(req) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
+    const { session } = auth;
 
     await connectToDB();
 

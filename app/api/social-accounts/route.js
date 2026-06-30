@@ -1,5 +1,4 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAdminSession } from '@/lib/adminAuth';
 import { connectToDB } from '@/utils/database';
 import SocialAccount from '@/models/SocialAccount';
 import { NextResponse } from 'next/server';
@@ -8,10 +7,9 @@ import mongoose from 'mongoose';
 // GET - Lista account social dell'utente
 export async function GET(req) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
+    const { session } = auth;
 
     await connectToDB();
     
@@ -46,10 +44,9 @@ export async function GET(req) {
 // POST - Connetti nuovo account (dopo OAuth callback)
 export async function POST(req) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
+    const { session } = auth;
 
     await connectToDB();
     
@@ -129,10 +126,9 @@ export async function POST(req) {
 // DELETE - Disconnetti account
 export async function DELETE(req) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
+    const { session } = auth;
 
     await connectToDB();
     

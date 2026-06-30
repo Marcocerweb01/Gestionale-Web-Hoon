@@ -35,11 +35,7 @@ export default function GooglePlacesNoWebsitePage() {
       router.push("/Login");
     }
 
-    if (
-      session &&
-      session.user.role !== "amministratore" &&
-      session.user.role !== "segretaria"
-    ) {
+    if (session && session.user.role !== "amministratore") {
       router.push("/unauthorized");
     }
   }, [router, session, status]);

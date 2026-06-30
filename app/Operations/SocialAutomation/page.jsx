@@ -33,6 +33,11 @@ function SocialAutomationContent() {
     if (status === 'unauthenticated') {
       router.push('/Login');
     }
+
+    if (session && session.user?.role !== 'amministratore') {
+      router.push('/unauthorized');
+      return;
+    }
     
     if (session) {
       loadAccounts();

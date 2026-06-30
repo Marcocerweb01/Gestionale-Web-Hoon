@@ -19,6 +19,10 @@ export async function GET(req) {
       return NextResponse.redirect(`${baseUrl}/Login`);
     }
 
+    if (session.user?.role !== 'amministratore') {
+      return NextResponse.redirect(`${baseUrl}/unauthorized`);
+    }
+
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('code');
     const error = searchParams.get('error');

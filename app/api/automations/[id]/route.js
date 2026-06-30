@@ -1,5 +1,4 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAdminSession } from '@/lib/adminAuth';
 import { connectToDB } from '@/utils/database';
 import SocialAutomation from '@/models/SocialAutomation';
 import { NextResponse } from 'next/server';
@@ -8,10 +7,9 @@ import mongoose from 'mongoose';
 // PATCH - Aggiorna automazione (toggle status, modifica dati)
 export async function PATCH(req, context) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
+    const { session } = auth;
 
     const params = await context.params;
     await connectToDB();
@@ -44,10 +42,9 @@ export async function PATCH(req, context) {
 // DELETE - Elimina automazione
 export async function DELETE(req, context) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (auth.error) return auth.error;
+    const { session } = auth;
 
     const params = await context.params;
     await connectToDB();

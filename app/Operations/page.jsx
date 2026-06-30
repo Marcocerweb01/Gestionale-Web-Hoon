@@ -49,8 +49,12 @@ export default function OperationsPage() {
       const imgResponse = await fetch('/api/compress-image');
       const imgData = await imgResponse.ok ? await imgResponse.json() : { totalCompressed: 0 };
 
-      const placesResponse = await fetch('/api/operations/google-places-no-website');
-      const placesData = await placesResponse.ok ? await placesResponse.json() : { usage: { used: 0 } };
+      const isAdminForStats = session?.user?.role === 'amministratore';
+      let placesData = { usage: { used: 0 } };
+      if (isAdminForStats) {
+        const placesResponse = await fetch('/api/operations/google-places-no-website');
+        placesData = await placesResponse.ok ? await placesResponse.json() : placesData;
+      }
 
       setStats({
         qrCodes: totalScans,
@@ -75,6 +79,8 @@ export default function OperationsPage() {
 
   if (!session) return null;
 
+  const isAdmin = session.user?.role === 'amministratore';
+
   const tools = [
     {
       id: 'qrcode',
@@ -83,7 +89,8 @@ export default function OperationsPage() {
       icon: QrCode,
       href: '/Operations/QrCode',
       color: 'bg-purple-500',
-      status: 'active'
+      status: 'active',
+      access: 'all'
     },
     {
       id: 'image-compression',
@@ -92,7 +99,8 @@ export default function OperationsPage() {
       icon: ImageIcon,
       href: '/Operations/ImageCompression',
       color: 'bg-blue-500',
-      status: 'active'
+      status: 'active',
+      access: 'all'
     },
     {
       id: 'google-places-no-website',
@@ -101,7 +109,8 @@ export default function OperationsPage() {
       icon: Building2,
       href: '/Operations/GooglePlacesNoWebsite',
       color: 'bg-cyan-600',
-      status: 'active'
+      status: 'active',
+      access: 'admin'
     },
     {
       id: 'social-automation',
@@ -110,7 +119,8 @@ export default function OperationsPage() {
       icon: Share2,
       href: '/Operations/SocialAutomation',
       color: 'bg-pink-500',
-      status: 'coming-soon'
+      status: 'coming-soon',
+      access: 'admin'
     },
     {
       id: 'analytics',
@@ -119,7 +129,8 @@ export default function OperationsPage() {
       icon: BarChart3,
       href: '/Operations/Analytics',
       color: 'bg-green-500',
-      status: 'coming-soon'
+      status: 'coming-soon',
+      access: 'admin'
     }
   ];
 
@@ -142,23 +153,32 @@ export default function OperationsPage() {
           {tools.map((tool) => {
             const Icon = tool.icon;
             const isActive = tool.status === 'active';
+            const canUseTool = tool.access !== 'admin' || isAdmin;
+            const isClickable = isActive && canUseTool;
 
             return (
               <Link
                 key={tool.id}
-                href={isActive ? tool.href : '#'}
+                href={isClickable ? tool.href : '#'}
                 className={`
                   relative bg-white rounded-xl shadow-md p-6 
                   transition-all duration-200
-                  ${isActive 
+                  ${isClickable 
                     ? 'hover:shadow-xl hover:scale-105 cursor-pointer' 
                     : 'opacity-60 cursor-not-allowed'
                   }
                 `}
-                onClick={(e) => !isActive && e.preventDefault()}
+                onClick={(e) => !isClickable && e.preventDefault()}
               >
                 {/* Status Badge */}
-                {!isActive && (
+                {!canUseTool && (
+                  <div className="absolute top-4 right-4">
+                    <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                      Solo admin
+                    </span>
+                  </div>
+                )}
+                {canUseTool && !isActive && (
                   <div className="absolute top-4 right-4">
                     <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
                       Coming Soon
@@ -180,7 +200,7 @@ export default function OperationsPage() {
                 </p>
 
                 {/* Arrow */}
-                {isActive && (
+                {isClickable && (
                   <div className="mt-4 flex items-center text-blue-600 font-medium text-sm">
                     Apri strumento
                     <svg 
