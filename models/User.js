@@ -10,6 +10,12 @@ const AziendaSchema = new Schema({
   etichetta: { type: String, required: false },
   indirizzo: { type: String, required: false },
   pagamento: { type: Boolean, default: false },
+  status: {
+    type: String,
+    enum: ["attivo", "non_attivo"],
+    default: "attivo",
+    required: true
+  },
   livelloAccesso: { type: Number, default: 3 },
 }, { timestamps: true });
 

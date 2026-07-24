@@ -7,7 +7,13 @@ export async function GET(req) {
   try {
     await connectToDB();
 
-    const aziende = await Azienda.find();
+    const { searchParams } = new URL(req.url);
+    const includeInactive = searchParams.get("inactive") === "true";
+    const filter = includeInactive
+      ? {}
+      : { $or: [{ status: "attivo" }, { status: { $exists: false } }] };
+
+    const aziende = await Azienda.find(filter);
 
     const result = aziende.map((azienda) => ({
       id: azienda._id,
@@ -15,6 +21,7 @@ export async function GET(req) {
       etichetta: azienda.etichetta,
       email: azienda.email,
       partitaIva: azienda.partitaIva,
+      status: azienda.status || "attivo",
     }));
 
     // Imposta intestazioni no-cache

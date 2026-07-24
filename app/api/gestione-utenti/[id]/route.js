@@ -70,9 +70,9 @@ export async function PATCH(req, { params }) {
     }
 
     if (status) {
-      if (tipo !== 'collaboratore') {
+      if (!['collaboratore', 'azienda'].includes(tipo)) {
         return NextResponse.json(
-          { error: 'Lo status attivo/non attivo è disponibile solo per i collaboratori' },
+          { error: 'Lo status attivo/non attivo è disponibile solo per collaboratori e aziende' },
           { status: 400 }
         );
       }

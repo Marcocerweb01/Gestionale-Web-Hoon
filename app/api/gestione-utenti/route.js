@@ -19,7 +19,7 @@ export async function GET() {
     const [collaboratori, amministratori, aziende] = await Promise.all([
       Collaboratore.find({}, '_id nome cognome email status subRoles').lean(),
       Amministratore.find({}, '_id nome cognome email ruolo').lean(),
-      Azienda.find({}, '_id nome cognome email ragioneSociale').lean(),
+      Azienda.find({}, '_id nome cognome email ragioneSociale status').lean(),
     ]);
 
     const result = [
@@ -48,6 +48,7 @@ export async function GET() {
         email: u.email,
         tipo: 'azienda',
         etichetta: 'Azienda',
+        status: u.status || 'attivo',
       })),
     ];
 

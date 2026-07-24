@@ -15,6 +15,8 @@ const statusColori = {
   non_attivo: "bg-red-100 text-red-800",
 };
 
+const canToggleStatus = (user) => ["collaboratore", "azienda"].includes(user.tipo);
+
 export default function GestioneUtenti() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -119,9 +121,10 @@ export default function GestioneUtenti() {
   };
 
   const handleToggleStatus = async (user) => {
-    if (user.tipo !== "collaboratore") return;
+    if (!canToggleStatus(user)) return;
 
-    const newStatus = user.status === "attivo" ? "non_attivo" : "attivo";
+    const currentStatus = user.status || "attivo";
+    const newStatus = currentStatus === "attivo" ? "non_attivo" : "attivo";
     setStatusMsg("");
 
     try {
@@ -195,7 +198,7 @@ export default function GestioneUtenti() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Gestione Utenti</h1>
             <p className="text-sm text-gray-500">
-              Visualizza utenti, password e stato collaboratori
+              Visualizza utenti, password e stato account
             </p>
           </div>
         </div>
@@ -276,7 +279,7 @@ export default function GestioneUtenti() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {u.tipo === "collaboratore" ? (
+                    {canToggleStatus(u) ? (
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColori[u.status || "attivo"]}`}
                       >
@@ -293,14 +296,14 @@ export default function GestioneUtenti() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
-                      {u.tipo === "collaboratore" && (
+                      {canToggleStatus(u) && (
                         <button
                           onClick={() => handleToggleStatus(u)}
                           disabled={updatingStatusId === u._id}
                           title={
                             (u.status || "attivo") === "attivo"
-                              ? "Disattiva collaboratore"
-                              : "Riattiva collaboratore"
+                              ? "Disattiva account"
+                              : "Riattiva account"
                           }
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
                             (u.status || "attivo") === "attivo"
