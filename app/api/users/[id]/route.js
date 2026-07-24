@@ -16,14 +16,21 @@ export async function GET(req, { params }) {
     const userId = resolvedParams.id;
 
     // Cerca l'utente in tutte le collezioni
-    const models = [Azienda, Collaboratore, Contatto, Amministratore];
+    const models = [
+      { model: Azienda, tipo: "azienda" },
+      { model: Collaboratore, tipo: "collaboratore" },
+      { model: Contatto, tipo: "contatto" },
+      { model: Amministratore, tipo: "amministratore" },
+    ];
     let user = null;
     let userModel = null;
+    let userTipo = null;
 
-    for (const model of models) {
+    for (const { model, tipo } of models) {
       user = await model.findById(userId);
       if (user) {
         userModel = model;
+        userTipo = tipo;
         break;
       }
     }
@@ -56,6 +63,8 @@ export async function GET(req, { params }) {
       // Sovrascrivi il campo pagamento con lo stato reale dal DB Pagamenti
       if (pagamento) {
         const userObj = user.toObject();
+        userObj.tipo = userTipo;
+        userObj.status = userObj.status || "attivo";
         // Converti lo stato del pagamento: "si" = true (pagato), "no"/"ragazzi" = false
         userObj.pagamento = pagamento.stato === "si";
         userObj.statoPagamentoReale = pagamento.stato; // Aggiungi anche lo stato originale
@@ -71,7 +80,13 @@ export async function GET(req, { params }) {
       }
     }
 
-    return new Response(JSON.stringify(user), { 
+    const userObj = user.toObject ? user.toObject() : user;
+    userObj.tipo = userTipo;
+    if (["collaboratore", "azienda"].includes(userTipo)) {
+      userObj.status = userObj.status || "attivo";
+    }
+
+    return new Response(JSON.stringify(userObj), { 
       status: 200,
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',

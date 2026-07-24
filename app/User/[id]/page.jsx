@@ -20,6 +20,8 @@ const UserDetails = ({ params }) => {
   const [loadingFatture, setLoadingFatture] = useState(false); // Loading fatture
   const { data: session, status } = useSession();
   const router = useRouter();
+  const hasCollaboratorRole = Boolean(user?.subRole || user?.subrole || (Array.isArray(user?.subRoles) && user.subRoles.length > 0));
+  const canManageStatus = session?.user?.role === "amministratore" && ["collaboratore", "azienda"].includes(user?.tipo);
 
   // Funzione per recuperare le fatture del collaboratore
   const fetchFatture = async () => {
@@ -55,7 +57,7 @@ const UserDetails = ({ params }) => {
         console.log('🔍 Ha subRole?', !!(data.subRole || data.subrole));
         
         // ✨ Assicurati che noteAmministratore sia sempre presente
-        if ((data.subRole || data.subrole) && !data.noteAmministratore) {
+        if ((data.subRole || data.subrole || data.tipo === "collaboratore") && !data.noteAmministratore) {
           data.noteAmministratore = "";
         }
         
@@ -68,7 +70,7 @@ const UserDetails = ({ params }) => {
         setFormData(data); // Imposta i dati iniziali del form
         
         // Se è un collaboratore, carica le fatture
-        if (data.subRole || data.subrole) {
+        if (data.subRole || data.subrole || data.tipo === "collaboratore") {
           console.log('✅ È un collaboratore, carico le fatture...');
           fetchFatture();
         } else {
@@ -179,7 +181,8 @@ const UserDetails = ({ params }) => {
   // Toggle rapido dello status
   const toggleStatus = async () => {
     try {
-      const newStatus = user.status === 'attivo' ? 'non_attivo' : 'attivo';
+      const currentStatus = user.status || 'attivo';
+      const newStatus = currentStatus === 'attivo' ? 'non_attivo' : 'attivo';
       const response = await fetch(`/api/users/${id}`, {
         method: "PATCH",
         headers: {
@@ -206,7 +209,7 @@ const UserDetails = ({ params }) => {
       }
     } catch (err) {
       console.error(err);
-      setError("Non è stato possibile aggiornare lo status del collaboratore.");
+      setError("Non è stato possibile aggiornare lo status dell'account.");
     }
   };
 
@@ -257,7 +260,7 @@ const UserDetails = ({ params }) => {
                       {user?.subrole && `${user.subrole} • `}
                       {user?.email}
                     </p>
-                    {(user?.subRole || user?.subrole) && (
+                    {hasCollaboratorRole && (
                       <a
                         href="#fatturazione"
                         className="inline-flex items-center px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-semibold rounded-full transition-colors self-start"
@@ -275,16 +278,16 @@ const UserDetails = ({ params }) => {
               
               {(session?.user?.role === "amministratore" || session?.user?.role === "segretaria") && !editMode && (
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                  {user?.subRole && session?.user?.role === "amministratore" && (
+                  {canManageStatus && (
                     <button
                       onClick={() => toggleStatus()}
                       className={`px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors ${
-                        user.status === 'attivo' 
+                        (user.status || 'attivo') === 'attivo' 
                           ? 'bg-red-500 hover:bg-red-600' 
                           : 'bg-green-500 hover:bg-green-600'
                       }`}
                     >
-                      {user.status === 'attivo' ? '🔴 Disattiva' : '🟢 Attiva'}
+                      {(user.status || 'attivo') === 'attivo' ? '🔴 Disattiva' : '🟢 Attiva'}
                     </button>
                   )}
                   <button
@@ -366,7 +369,7 @@ const UserDetails = ({ params }) => {
                         />
                       </div>
                       
-                      {user.subRole && (
+                      {hasCollaboratorRole && (
                         <div className="sm:col-span-2">
                           <label className="block text-sm font-semibold text-gray-900 mb-3">
                             💼 Specializzazioni
@@ -404,10 +407,10 @@ const UserDetails = ({ params }) => {
                         </div>
                       )}
                       
-                      {user.subRole && session?.user?.role === "amministratore" && (
+                      {canManageStatus && (
                         <div>
                           <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            🔄 Status Collaboratore
+                            🔄 Status Account
                           </label>
                           <select
                             name="status"
@@ -415,11 +418,11 @@ const UserDetails = ({ params }) => {
                             onChange={handleChange}
                             className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base"
                           >
-                            <option value="attivo">🟢 Attivo - Il collaboratore può accedere normalmente</option>
-                            <option value="non_attivo">🔴 Non Attivo - Il collaboratore non può accedere</option>
+                            <option value="attivo">🟢 Attivo - L'account può accedere normalmente</option>
+                            <option value="non_attivo">🔴 Non Attivo - L'account non può accedere</option>
                           </select>
                           <p className="text-xs text-gray-500 mt-2">
-                            ⚠️ <strong>Importante:</strong> I collaboratori con status &quot;Non Attivo&quot; non potranno effettuare il login
+                            ⚠️ <strong>Importante:</strong> Gli account con status &quot;Non Attivo&quot; non potranno effettuare il login
                           </p>
                         </div>
                       )}
@@ -563,7 +566,7 @@ const UserDetails = ({ params }) => {
                       </div>
                     </div>
                     
-                    {user.subRole && (
+                    {hasCollaboratorRole && (
                       <div className="bg-gray-50 rounded-lg p-3 sm:p-4 sm:col-span-2 lg:col-span-3">
                         <div className="flex items-start space-x-2">
                           <span className="text-lg flex-shrink-0">💼</span>
@@ -602,17 +605,17 @@ const UserDetails = ({ params }) => {
                       </div>
                     )}
                     
-                    {user.subRole && (
+                    {canManageStatus && (
                       <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
                         <div className="flex items-center space-x-2">
                           <span className="text-lg flex-shrink-0">🔄</span>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm text-gray-600">Status</p>
                             <p className={`font-semibold text-sm sm:text-base flex items-center space-x-1 ${
-                              user.status === 'attivo' ? 'text-green-600' : 'text-red-600'
+                              (user.status || 'attivo') === 'attivo' ? 'text-green-600' : 'text-red-600'
                             }`}>
-                              <span>{user.status === 'attivo' ? '🟢' : '🔴'}</span>
-                              <span>{user.status === 'attivo' ? 'Attivo' : 'Non Attivo'}</span>
+                              <span>{(user.status || 'attivo') === 'attivo' ? '🟢' : '🔴'}</span>
+                              <span>{(user.status || 'attivo') === 'attivo' ? 'Attivo' : 'Non Attivo'}</span>
                             </p>
                             {user.status === 'non_attivo' && (
                               <p className="text-xs text-red-500 mt-1">⚠️ Non può accedere al sistema</p>
