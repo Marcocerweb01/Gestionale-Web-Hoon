@@ -752,23 +752,919 @@ trova_orizzonte_blu.js — Script specifico ricerca dati
 
 ---
 
-## 16. SUGGERIMENTI PER V3.0
+## 16. AUDIT FUNZIONALE V3.0
 
-### Architettura
-- **Separare** models in cartelle per dominio (`/models/smm/`, `/models/webdesign/`, ecc.)
-- **Unificare** il sistema utenti: un solo `User` model con discriminatori Mongoose
-- **Normalizzare** `Dominio.webDesigner` da String a ObjectId ref
-- **Eliminare** il vecchio sistema pagamenti (`Pagamenti.js`)
-- **Rimuovere** endpoint debug da produzione
+### Obiettivo V3
+La versione 3.0 deve trasformare il gestionale da somma di moduli separati a piattaforma unica per agenzia, collaboratori e aziende clienti.
 
-### Funzionalità nuove da valutare
-- 📧 **Email reader** (IMAP via `imapflow`) — preview email in gestionale
-- 📊 **Dashboard analytics** — grafici entrate/uscite, KPI collaboratori
-- 📱 **PWA / notifiche push** — invece di polling ogni 60s
-- 🔗 **CRM integrato** — tracciamento completo customer journey
-- 📅 **Calendario** — appuntamenti, scadenze domini, fine contratti
-- 🤖 **AI Assistant** — suggerimenti basati su dati storici
-- 📤 **Invio fatture** — generazione PDF + invio email via Nodemailer
-- 🔔 **Notifiche multi-canale** — email + in-app + WhatsApp
-- 🏷️ **Tag/Label** su lead e clienti
-- 📁 **File attachment** su note e lead
+Priorita:
+- UI stile WordPress: sidebar sinistra persistente + area dashboard a destra.
+- Accessi e permessi chiari per ogni ruolo.
+- Collaborazioni molti-a-molti: una azienda puo avere piu collaboratori e un collaboratore puo lavorare con piu aziende.
+- Fascicolo azienda unico: social, web design, SEO, Google Ads, Meta Ads, commerciale, domini, ticket, chat, pagamenti, fatture e documenti nello stesso perimetro.
+- Reset mensili/trimestrali e valutazioni collaboratori tracciati in modo storico, non solo azzerati.
+
+### Layout V3
+Struttura consigliata:
+```
+AppShell
+  Sidebar sinistra stile WordPress
+    Dashboard
+    Aziende
+    Collaborazioni
+    Calendario
+    Notebook
+    Lead commerciali
+    Domini
+    Pagamenti
+    Fatturazione collaboratori
+    Ticket
+    Chat
+    Dispense
+    FAQ
+    Operations
+    Notifiche
+    Utenti e permessi
+    Impostazioni agenzia
+  Main panel a destra
+    Header compatto con ricerca globale, notifiche, profilo
+    Contenuto pagina
+```
+
+Note implementative:
+- `Header.jsx` oggi contiene navigazione orizzontale; in V3 va convertito in `AppShell` con sidebar + topbar.
+- La ricerca globale va mantenuta nella topbar.
+- Le voci sidebar devono essere generate da una matrice permessi, non hardcodate per pagina.
+- Ogni pagina deve ricevere contesto ruolo/permessi e mostrare solo azioni consentite.
+
+---
+
+## 17. RUOLI E PERMESSI V3
+
+### Ruoli principali
+| Ruolo V3 | Ruolo attuale/sessione | Tipo | Note |
+|----------|------------------------|------|------|
+| Agenzia | nuovo `agenzia` oppure admin owner | amministratore totale | Puo fare tutto, inclusa gestione agenzia, reset, export, valutazioni |
+| Amministrazione | `amministratore` | amministratore operativo | Puo modificare/cancellare tutto tranne eliminare agenzia |
+| Segreteria | `segretaria` | amministratore limitato | Puo modificare/cancellare record operativi, non elimina agenzia/admin |
+| Collaboratore | `collaboratore` + `subRoles` | operativo | Vede solo collaborazioni assegnate |
+| Azienda | `azienda` | cliente | Vede solo proprio fascicolo, chat, avanzamenti e ticket |
+
+### Sub-ruoli collaboratore
+| Sub-ruolo | Slug consigliato | Stato attuale |
+|-----------|------------------|---------------|
+| Social Media Manager | `smm` | presente |
+| Web Designer | `web_designer` | presente come `"web designer"` |
+| Marketing SEO | `seo` | presente ma da definire |
+| Marketing Google Ads | `google_ads` | presente come `"google ads"` |
+| Marketing Meta Ads | `meta_ads` | presente come `"meta ads"` |
+| Commerciale | `commerciale` | presente |
+
+Nota: normalizzare gli slug eliminando spazi. Mantenere compatibilita in migrazione:
+- `"web designer"` -> `web_designer`
+- `"google ads"` -> `google_ads`
+- `"meta ads"` -> `meta_ads`
+
+### Matrice permessi
+| Azione | Agenzia | Amministrazione | Segreteria | Collaboratore | Azienda |
+|--------|---------|-----------------|------------|----------------|---------|
+| Creare/modificare agenzia | si | no eliminazione | no | no | no |
+| Eliminare agenzia | si | no | no | no | no |
+| Creare/modificare admin | si | si | no eliminazione admin | no | no |
+| Eliminare admin | si | si | no | no | no |
+| Creare aziende | si | si | si | solo commerciale come lead/proposta | no |
+| Modificare aziende | si | si | si | solo campi operativi assegnati | no |
+| Eliminare aziende | si | si | si, esclusi vincoli critici | no | no |
+| Creare collaborazioni | si | si | si | no | no |
+| Spostare collaboratori tra collaborazioni | si | si | si | no | no |
+| Gestire proprie collaborazioni | si | si | si | solo assegnate | sola lettura avanzamento |
+| Gestire pagamenti agenzia | si | si | no o sola lettura | no | no |
+| Gestire fatture collaboratori | si | si | si operativa | proprie fatture | no |
+| Export/download dati | si | si | si limitato | no | no |
+| Reset mensile/trimestrale | si | si | no o solo avvio guidato | no | no |
+| Valutazioni collaboratori | si | si | no o sola lettura | no | no |
+| Chat | si | si | si | solo proprie aziende | solo propri collaboratori |
+| Ticket assistenza | si | si | si | assegnati | propri ticket |
+| Operations | si | si | si limitata | strumenti personali | no |
+
+### Permessi tecnici consigliati
+Usare permessi granulari oltre al ruolo:
+```
+permissions: [
+  "agency.manage",
+  "users.manage",
+  "admins.delete",
+  "companies.manage",
+  "collaborations.manage",
+  "collaborations.assign",
+  "collaborations.export",
+  "collaborations.reset_monthly",
+  "collaborations.reset_quarterly",
+  "evaluations.manage",
+  "payments.manage",
+  "invoices.manage",
+  "domains.manage",
+  "tickets.manage",
+  "chat.use",
+  "knowledge.manage",
+  "operations.use",
+  "notifications.manage"
+]
+```
+
+---
+
+## 18. ENTITA E CAMPI MANCANTI PER V3
+
+### 18.1 Agenzia
+Oggi non esiste un modello agenzia separato: il gestionale e single-agency implicito.
+
+Campi richiesti:
+```
+Agenzia
+  _id
+  nome
+  ragioneSociale
+  partitaIva
+  codiceFiscale
+  codiceUnivoco
+  pec
+  email
+  telefono
+  sitoWeb
+  indirizzo: { via, citta, provincia, cap, nazione }
+  logoUrl
+  impostazioni:
+    timezone
+    valuta
+    resetMensileAbilitato
+    resetTrimestraleAbilitato
+    soglieNotificheDomini
+  billing:
+    iban
+    banca
+    intestatario
+  createdBy, updatedBy
+  createdAt, updatedAt
+```
+
+### 18.2 Utente unificato
+Oggi esistono `Azienda`, `Collaboratore`, `Amministratore`, `Contatto` separati. Per V3 conviene unificare login e profilo.
+
+Campi richiesti:
+```
+User
+  _id
+  agenziaId: ref Agenzia
+  tipo: "agenzia"|"amministrazione"|"segretaria"|"collaboratore"|"azienda"
+  nome
+  cognome
+  displayName
+  email
+  telefono
+  passwordHash
+  avatarUrl
+  stato: "attivo"|"sospeso"|"disattivato"
+  subRoles: ["smm","web_designer","seo","google_ads","meta_ads","commerciale"]
+  permissions: [String]
+  ultimoAccessoAt
+  preferenze:
+    sidebarCollapsed
+    dashboardDefaultView
+    notificheEmail
+    notificheInApp
+  sicurezza:
+    mustChangePassword
+    passwordUpdatedAt
+    twoFactorEnabled
+  createdBy, updatedBy
+  createdAt, updatedAt
+```
+
+Compatibilita:
+- `Collaboratore` puo restare come profilo operativo collegato a `User`.
+- `Azienda` puo restare come anagrafica cliente collegata a uno o piu utenti azienda.
+
+### 18.3 Azienda cliente
+Campi attuali insufficienti per portale cliente, fatturazione, domini, servizi e collaborazioni.
+
+Campi richiesti:
+```
+Azienda
+  _id
+  agenziaId: ref Agenzia
+  ragioneSociale
+  etichetta
+  partitaIva
+  codiceFiscale
+  codiceUnivoco
+  pec
+  email
+  telefono
+  sitoWeb
+  settore
+  descrizioneAttivita
+  indirizzoLegale: { via, citta, provincia, cap, nazione }
+  indirizzoOperativo: { via, citta, provincia, cap, nazione }
+  referenti: [{
+    nome
+    cognome
+    ruolo
+    email
+    telefono
+    principale
+  }]
+  utentiPortale: [ref User]
+  statoCliente: "lead"|"attivo"|"in pausa"|"ex_cliente"
+  origine: "commerciale"|"referal"|"chiamata"|"ricerca"|"social"|"altro"
+  commercialeOwner: ref User
+  tags: [String]
+  noteInterne
+  privacy:
+    consensoMarketing
+    consensoTrattamentoDati
+  createdBy, updatedBy
+  createdAt, updatedAt
+```
+
+### 18.4 Collaboratore
+Campi attuali buoni per base, ma mancano anagrafica completa, disponibilita e valutazioni.
+
+Campi richiesti:
+```
+CollaboratoreProfile
+  _id
+  userId: ref User
+  agenziaId: ref Agenzia
+  partitaIva
+  codiceFiscale
+  iban
+  intestatarioConto
+  indirizzo: { via, citta, provincia, cap, nazione }
+  subRoles
+  competenze: [String]
+  seniority: "junior"|"middle"|"senior"|"lead"
+  disponibilitaSettimanaleOre
+  costoOrario
+  percentualeDefault
+  percentuale_hoon
+  statoOperativo: "attivo"|"non_attivo"|"in pausa"
+  noteAmministratore
+  metriche:
+    tot_fatturato
+    guadagno_da_hoon
+    totale_fatture_terzi
+  createdBy, updatedBy
+  createdAt, updatedAt
+```
+
+### 18.5 Collaborazione unificata
+Oggi le collaborazioni sono separate per SMM, WebDesign V1/V2 e GoogleAds. In V3 serve una collaboration shell comune.
+
+Campi richiesti:
+```
+Collaborazione
+  _id
+  agenziaId: ref Agenzia
+  aziendaId: ref Azienda
+  titolo
+  tipo: "smm"|"web_design"|"seo"|"google_ads"|"meta_ads"|"commerciale"|"mista"
+  stato: "bozza"|"attiva"|"in pausa"|"terminata"|"archiviata"
+  priorita: "bassa"|"media"|"alta"|"critica"
+  dataInizio
+  dataFine
+  contratto:
+    durata
+    dataInizio
+    dataFine
+    rinnovoAutomatico
+    valoreMensile
+    valoreTotale
+  team: [{
+    collaboratoreId: ref User
+    subRole
+    ruoloNelProgetto: "owner"|"operativo"|"supporto"|"reviewer"
+    percentuale
+    cifraFissa
+    dataAssegnazione
+    dataFineAssegnazione
+    attivo
+  }]
+  servizi: [{
+    tipo
+    nome
+    stato
+    budget
+    obiettivi
+  }]
+  avanzamento:
+    percentuale
+    statoSintetico
+    ultimoAggiornamentoAt
+  notebookId: ref Notebook
+  calendarioId: ref CalendarioOperativo
+  chatId: ref ChatThread
+  createdBy, updatedBy
+  createdAt, updatedAt
+```
+
+Relazione richiesta:
+- Un collaboratore puo apparire nel `team` di piu collaborazioni.
+- Una azienda puo avere piu collaborazioni e ogni collaborazione puo avere piu collaboratori.
+- Per query/report conviene anche una collection `CollaborazioneAssegnazione`.
+
+### 18.6 CollaborazioneAssegnazione
+Serve per spostare collaboratori, storico e permessi per singola collaborazione.
+
+Campi richiesti:
+```
+CollaborazioneAssegnazione
+  _id
+  collaborazioneId: ref Collaborazione
+  aziendaId: ref Azienda
+  collaboratoreId: ref User
+  subRole
+  stato: "attiva"|"sospesa"|"terminata"
+  dataInizio
+  dataFine
+  percentuale
+  cifraFissa
+  permessiCollaborazione: [
+    "read",
+    "update_status",
+    "manage_posts",
+    "manage_calendar",
+    "manage_notes",
+    "manage_ads",
+    "reply_chat",
+    "manage_tickets"
+  ]
+  motivoSpostamento
+  assegnatoDa: ref User
+  createdAt, updatedAt
+```
+
+### 18.7 Notebook
+Oggi le note esistono, ma sono divise tra SMM e commerciale. In V3 serve un notebook trasversale.
+
+Campi richiesti:
+```
+NotebookNote
+  _id
+  agenziaId
+  aziendaId
+  collaborazioneId
+  autoreId
+  visibilita: "interna"|"cliente"|"team"
+  tipo: "generale"|"appuntamento"|"problema"|"decisione"|"post_mancante"|"follow_up"
+  titolo
+  contenuto
+  dataAppuntamento
+  statoProblema: "aperto"|"in_lavorazione"|"risolto"
+  feeling: { emoji, nota }
+  allegati: [ref FileAsset]
+  mentions: [ref User]
+  createdAt, updatedAt
+```
+
+### 18.8 Calendario operativo
+Necessario soprattutto per web designer, ma utile per tutti.
+
+Campi richiesti:
+```
+CalendarioOperativo
+  _id
+  agenziaId
+  collaborazioneId
+  items: [{
+    titolo
+    descrizione
+    tipo: "task"|"appuntamento"|"scadenza"|"controllo"|"pubblicazione"
+    dataInizio
+    dataFine
+    giornoOperativo
+    assegnatoA: [ref User]
+    stato: "da_fare"|"in_corso"|"bloccato"|"completato"
+    priorita
+    note
+  }]
+```
+
+### 18.9 Social Media Manager
+Campi specifici servizio:
+```
+SmmService
+  collaborazioneId
+  piattaforme: ["instagram","facebook","tiktok","linkedin"]
+  pianoEditoriale:
+    postPrevistiMese
+    storiesPrevisteMese
+    reelPrevistiMese
+    appuntamentiPrevistiMese
+  contatoriMensili:
+    post_ig_fb_fatti
+    post_tiktok_fatti
+    post_linkedin_fatti
+    appuntamenti_fatti
+  contatoriTrimestrali:
+    instagram_trim_fatti
+    instagram_trim_totali
+    tiktok_trim_fatti
+    tiktok_trim_totali
+    linkedin_trim_fatti
+    linkedin_trim_totali
+    appuntamenti_trimestrale_fatti
+    appuntamenti_trimestrale_totali
+  storicoReset: [ref ResetLog]
+```
+
+### 18.10 Web Designer
+Campi specifici servizio:
+```
+WebDesignService
+  collaborazioneId
+  tipoProgetto: "starter"|"vetrina"|"e-commerce"|"custom"
+  fasi
+  controlli
+  checklistPubblicazione
+  interview
+  dominioId
+  ambiente:
+    cms
+    hosting
+    stagingUrl
+    produzioneUrl
+  consegna:
+    dataPrevista
+    dataEffettiva
+    esito
+```
+
+### 18.11 Marketing SEO
+Ruolo da definire: proposta V3.
+```
+SeoService
+  collaborazioneId
+  audit:
+    dataAudit
+    stato
+    fileUrl
+  keyword: [{
+    parola
+    intento
+    priorita
+    volumeStimato
+    posizioneIniziale
+    posizioneAttuale
+  }]
+  pagineOttimizzate: [{
+    url
+    keywordPrincipale
+    stato
+    dataOttimizzazione
+  }]
+  taskMensili
+  reportMensili
+```
+
+### 18.12 Marketing Google Ads
+Campi attuali troppo sintetici.
+```
+GoogleAdsService
+  collaborazioneId
+  accountId
+  customerId
+  budgetMensile
+  obiettivo: "lead"|"vendite"|"traffico"|"brand"
+  campagne: [{
+    nome
+    tipo
+    budget
+    stato
+    dataAvvio
+    dataFine
+    kpi: { impressions, click, costo, conversioni, cpa }
+  }]
+  statoOperativo: "da_contattare"|"setup"|"attiva"|"in_pausa"|"terminata"
+  note
+```
+
+### 18.13 Marketing Meta Ads
+```
+MetaAdsService
+  collaborazioneId
+  businessManagerId
+  adAccountId
+  pixelId
+  budgetMensile
+  obiettivo
+  campagne
+  creativita: [{
+    titolo
+    formato
+    stato
+    fileAssetId
+  }]
+  statoOperativo
+  note
+```
+
+### 18.14 Commerciale
+Campi lead attuali buoni, ma manca conversione formale in azienda/collaborazione.
+```
+LeadCommerciale V3
+  _id
+  agenziaId
+  commercialeId
+  aziendaId: ref Azienda|null
+  nome_attivita
+  referente
+  contatti: { telefono, secondoTelefono, email }
+  indirizzo
+  fonte
+  stato: "nuovo"|"contattato"|"appuntamento"|"preventivo"|"contratto"|"convertito"|"perso"|"da_richiamare"
+  timeline
+  dataRichiamo
+  valoreStimato
+  serviziProposti: ["smm","web_design","seo","google_ads","meta_ads"]
+  motivoPerso
+  note
+  convertitoInAziendaAt
+  convertitoInCollaborazioneId
+```
+
+### 18.15 Portale azienda
+```
+AziendaPortal
+  aziendaId
+  utenti: [ref User]
+  collaborazioniVisibili: [ref Collaborazione]
+  permessi:
+    canOpenTicket
+    canUseChat
+    canViewProgress
+    canViewDocuments
+  preferenzeNotifiche
+```
+
+Funzioni azienda:
+- Accede alla chat con i collaboratori assegnati.
+- Vede avanzamento progetti e scadenze principali.
+- Apre ticket di assistenza.
+- Consulta dispense/FAQ rese visibili ai clienti.
+
+### 18.16 Chat e ticket
+```
+ChatThread
+  _id
+  aziendaId
+  collaborazioneId
+  partecipanti: [ref User]
+  visibilita: "cliente_team"|"interna"
+  ultimoMessaggioAt
+
+ChatMessage
+  threadId
+  autoreId
+  testo
+  allegati
+  lettoDa: [{ userId, lettoAt }]
+
+Ticket
+  _id
+  aziendaId
+  collaborazioneId
+  apertoDa: ref User
+  assegnatoA: [ref User]
+  titolo
+  descrizione
+  categoria: "assistenza"|"bug"|"contenuti"|"dominio"|"pagamento"|"altro"
+  priorita: "bassa"|"media"|"alta"|"urgente"
+  stato: "aperto"|"in_lavorazione"|"in_attesa_cliente"|"risolto"|"chiuso"
+  messaggi: [ref ChatMessage]
+  createdAt, updatedAt, closedAt
+```
+
+### 18.17 Gestione password
+Da aggiungere solo con cifratura forte lato server.
+```
+CredentialVaultItem
+  _id
+  agenziaId
+  aziendaId
+  collaborazioneId
+  titolo
+  categoria: "dominio"|"hosting"|"wordpress"|"social"|"ads"|"email"|"altro"
+  url
+  username
+  passwordEncrypted
+  noteEncrypted
+  visibileA: [ref User]
+  ultimoAccessoAt
+  createdBy
+  updatedBy
+  createdAt, updatedAt
+```
+
+Regole:
+- Mai salvare password in chiaro.
+- Audit log ogni volta che una credenziale viene visualizzata/modificata.
+- Permesso dedicato `credentials.view` e `credentials.manage`.
+
+### 18.18 Valutazioni collaboratori
+Richieste per amministrazione su SMM e web designer.
+```
+ValutazioneCollaboratore
+  _id
+  agenziaId
+  collaboratoreId
+  periodo:
+    tipo: "mensile"|"trimestrale"
+    anno
+    trimestre
+    mese
+    dataInizio
+    dataFine
+  ruoloValutato: "smm"|"web_designer"|"seo"|"google_ads"|"meta_ads"|"commerciale"
+  valutatoreId
+  metriche:
+    puntualita
+    qualita
+    comunicazione
+    autonomia
+    rispettoObiettivi
+  kpi:
+    previsti
+    completati
+    percentualeCompletamento
+  note
+  esito: "ottimo"|"buono"|"sufficiente"|"critico"
+  azioniRichieste
+  createdAt, updatedAt
+```
+
+### 18.19 Reset e storico dati
+I reset non devono cancellare informazione senza storico.
+```
+ResetLog
+  _id
+  agenziaId
+  tipo: "mensile"|"trimestrale"|"valutazione"
+  periodo
+  target:
+    collaborazioneIds
+    collaboratoreIds
+  snapshotPrima
+  snapshotDopo
+  eseguitoDa
+  eseguitoAt
+  note
+```
+
+### 18.20 Pagamenti e fatture
+Il nuovo sistema pagamenti e la fatturazione collaboratori vanno collegati a collaborazioni/assegnazioni.
+Campi da aggiungere a `PagamentoNuovo`:
+```
+agenziaId
+aziendaId
+collaborazioneId
+assegnazioneId
+numeroDocumento
+dataCompetenzaDa
+dataCompetenzaA
+metodoPagamento
+scadenzaPagamento
+allegati
+createdBy, updatedBy
+```
+
+Campi da aggiungere a `Fatturazione`:
+```
+agenziaId
+collaborazioneIds
+assegnazioneIds
+numeroFattura
+dataEmissione
+dataScadenza
+fileUrl
+noteAdmin
+```
+
+### 18.21 Domini
+Normalizzazione richiesta:
+```
+Dominio
+  agenziaId
+  aziendaId
+  collaborazioneId
+  webDesignerId: ref User
+  registrar
+  urlDominio
+  dataAcquisto
+  dataScadenza
+  rinnovoAutomatico
+  stato: "attivo"|"in_scadenza"|"scaduto"|"trasferito"
+  credenzialeId
+  note
+  alertInviati: [{ soglia, dataInvio }]
+```
+
+### 18.22 Knowledge base: dispense, FAQ, operations
+Campi comuni consigliati:
+```
+KnowledgeItem
+  tipo: "dispensa"|"faq"|"operation"
+  titolo
+  contenuto
+  categoria
+  tags
+  fileUrl
+  visibileA: ["admin","collaboratori","aziende"]
+  subRolesVisibili
+  stato: "bozza"|"pubblicato"|"archiviato"
+  suggeritoDa
+  approvatoDa
+  ordine
+```
+
+Operations V3:
+- QR code generator.
+- Compressore immagini.
+- Google Places no website.
+- Social automation.
+- Strumenti futuri raggruppati per categoria e permesso.
+
+### 18.23 Notifiche
+Campi da aggiungere:
+```
+Notifica
+  agenziaId
+  destinatarioIds: [ref User]
+  canale: "in_app"|"email"|"whatsapp"
+  severita: "info"|"warning"|"critical"
+  azioneLabel
+  azioneUrl
+  lettaDa: [{ userId, lettoAt }]
+  scadenzaAt
+```
+
+### 18.24 Audit log
+Obbligatorio per ruoli admin, reset, export, password e cancellazioni.
+```
+AuditLog
+  agenziaId
+  actorId
+  azione
+  entityType
+  entityId
+  before
+  after
+  ip
+  userAgent
+  createdAt
+```
+
+---
+
+## 19. GAP TRA V2 ATTUALE E V3 RICHIESTA
+
+| Area | Stato attuale | Mancanza V3 | Azione consigliata |
+|------|---------------|-------------|--------------------|
+| Ruoli | `amministratore`, `segretaria`, `collaboratore`, `azienda` | manca `agenzia` owner e permessi granulari | aggiungere RBAC centralizzato |
+| SubRoles | array stringhe con spazi | slug non normalizzati | migrazione slug |
+| Collaborazioni | collection separate per tipo e 1 collaboratore per record | team molti-a-molti e fascicolo unico | introdurre `Collaborazione` + `CollaborazioneAssegnazione` |
+| Azienda | anagrafica minima | referenti, portale, stato cliente, privacy, fatturazione | estendere schema |
+| Portale azienda | login azienda presente ma funzioni limitate | chat, ticket, avanzamento | creare moduli customer portal |
+| SMM | contatori e note presenti | piano editoriale strutturato e storico reset | estrarre servizio SMM |
+| Web design | V2 avanzata presente | calendario operativo comune e dominio normalizzato | collegare a shell collaborazione |
+| SEO | solo subRole | modello operativo assente | creare `SeoService` |
+| Google Ads | booleani base | budget, campagne, KPI | estendere modello |
+| Meta Ads | subRole ma nessun modello dedicato | servizio Meta Ads | creare `MetaAdsService` |
+| Commerciale | lead/timeline presenti | conversione lead -> azienda -> collaborazione | aggiungere workflow conversione |
+| Pagamenti | sistema nuovo buono | collegamento forte a collaboration/assignment | aggiungere ref e competenze |
+| Fatture collaboratori | mensile semplice | file, scadenze, riferimenti collaborazioni | estendere schema |
+| Password | assente | vault cifrato | creare modulo dedicato |
+| Reset | endpoint presenti | audit e snapshot prima/dopo | creare `ResetLog` |
+| Valutazioni | init trimestrale presente | modello valutazione completo | creare `ValutazioneCollaboratore` |
+| Sidebar | header orizzontale | WordPress shell | creare `AppShell` |
+| Audit | assente | log amministrativo | creare `AuditLog` |
+
+---
+
+## 20. ROADMAP IMPLEMENTATIVA V3
+
+### Fase 1 — Fondamenta
+- Creare `Agenzia`.
+- Creare RBAC centralizzato (`roles`, `permissions`, helper `can()`).
+- Normalizzare subRoles con migrazione.
+- Introdurre `AppShell` con sidebar WordPress-style.
+- Proteggere API debug/manutenzione.
+
+### Fase 2 — Collaborazioni molti-a-molti
+- Creare `Collaborazione` shell.
+- Creare `CollaborazioneAssegnazione`.
+- Collegare SMM, WebDesign V2 e GoogleAds alla shell tramite migrazione soft.
+- Aggiungere spostamento collaboratori con storico.
+
+### Fase 3 — Portale azienda
+- Dashboard azienda.
+- Avanzamento progetti.
+- Chat cliente-team.
+- Ticket assistenza.
+- Permessi cliente per collaborazione.
+
+### Fase 4 — Operativita reparti
+- SMM: piano editoriale + notebook unificato.
+- Web designer: calendario operativo per giorni.
+- SEO: audit, keyword, pagine ottimizzate.
+- Google Ads: campagne e KPI.
+- Meta Ads: account, campagne, creativita e KPI.
+- Commerciale: conversione lead in azienda/collaborazione.
+
+### Fase 5 — Amministrazione
+- Pagamenti collegati a collaborazioni e assegnazioni.
+- Fatture collaboratori complete.
+- Valutazioni mensili/trimestrali.
+- Reset con snapshot e audit log.
+- Export dati per periodo, ruolo, azienda, collaborazione.
+
+### Fase 6 — Operations
+- QR code generator consolidato.
+- Compressore immagini consolidato.
+- Gestione notifiche multi-canale.
+- Knowledge base unificata per dispense, FAQ e operation.
+- Password vault cifrato con audit.
+
+---
+
+## 21. MODELLI DA CREARE O MODIFICARE
+
+### Nuovi modelli
+- `Agenzia.js`
+- `UserUnified.js` oppure evoluzione graduale di `User.js`
+- `CollaborazioneV3.js`
+- `CollaborazioneAssegnazione.js`
+- `NotebookNote.js`
+- `CalendarioOperativo.js`
+- `SeoService.js`
+- `MetaAdsService.js`
+- `ChatThread.js`
+- `ChatMessage.js`
+- `Ticket.js`
+- `CredentialVaultItem.js`
+- `ValutazioneCollaboratore.js`
+- `ResetLog.js`
+- `AuditLog.js`
+- `FileAsset.js`
+- `KnowledgeItem.js`
+
+### Modelli da estendere
+- `models/User.js`: aggiungere profili completi, permessi, normalizzazione ruoli.
+- `models/Collaborazioni.js`: collegare a `CollaborazioneV3` o migrare a servizio SMM.
+- `models/CollaborazioniWebDesignV2.js`: collegare a `CollaborazioneV3`, dominio ref, calendario ref.
+- `models/GoogleAds.js`: sostituire booleani con stato operativo, campagne, budget e KPI.
+- `models/PagamentiNuovi.js`: aggiungere riferimenti ad azienda/collaborazione/assegnazione.
+- `models/Fatturazione.js`: aggiungere documento, scadenza, allegato e refs.
+- `models/Dominio.js`: sostituire `webDesigner` stringa con `webDesignerId`.
+- `models/Notifica.js`: destinatari multipli, severita, canale e letture per utente.
+
+### Endpoint V3 consigliati
+```
+/api/v3/agency
+/api/v3/users
+/api/v3/roles
+/api/v3/permissions
+/api/v3/companies
+/api/v3/collaborations
+/api/v3/collaborations/[id]/assignments
+/api/v3/notebook
+/api/v3/calendar
+/api/v3/services/smm
+/api/v3/services/web-design
+/api/v3/services/seo
+/api/v3/services/google-ads
+/api/v3/services/meta-ads
+/api/v3/leads/convert
+/api/v3/tickets
+/api/v3/chat
+/api/v3/domains
+/api/v3/payments
+/api/v3/invoices
+/api/v3/evaluations
+/api/v3/resets
+/api/v3/export
+/api/v3/knowledge
+/api/v3/operations
+/api/v3/notifications
+/api/v3/audit-log
+```
+
+### Regola di migrazione consigliata
+Non eliminare subito le collection V2. Creare V3 in parallelo con campi `legacyRef`:
+```
+legacyRef: {
+  model: "Collaborazione"|"CollaborazioneWebDesignV2"|"GoogleAds",
+  id: ObjectId
+}
+```
+Quando dashboard e API V3 sono stabili, migrare i dati e congelare gli endpoint V2 in sola lettura.

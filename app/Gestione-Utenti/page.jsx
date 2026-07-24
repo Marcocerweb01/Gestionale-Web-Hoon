@@ -2,11 +2,17 @@
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { CheckCircle2, KeyRound, XCircle } from "lucide-react";
 
 const tipoColori = {
   amministratore: "bg-purple-100 text-purple-800",
   collaboratore: "bg-blue-100 text-blue-800",
   azienda: "bg-green-100 text-green-800",
+};
+
+const statusColori = {
+  attivo: "bg-green-100 text-green-800",
+  non_attivo: "bg-red-100 text-red-800",
 };
 
 export default function GestioneUtenti() {
@@ -18,6 +24,8 @@ export default function GestioneUtenti() {
   const [error, setError] = useState("");
   const [cerca, setCerca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("tutti");
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
+  const [statusMsg, setStatusMsg] = useState("");
 
   // Modal reset password
   const [modalOpen, setModalOpen] = useState(false);
@@ -110,6 +118,45 @@ export default function GestioneUtenti() {
     }
   };
 
+  const handleToggleStatus = async (user) => {
+    if (user.tipo !== "collaboratore") return;
+
+    const newStatus = user.status === "attivo" ? "non_attivo" : "attivo";
+    setStatusMsg("");
+
+    try {
+      setUpdatingStatusId(user._id);
+      const res = await fetch(`/api/gestione-utenti/${user._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: user.tipo, status: newStatus }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setStatusMsg(data.error ? `Errore: ${data.error}` : "Errore durante l'aggiornamento dello status");
+        return;
+      }
+
+      setUtenti((current) =>
+        current.map((u) =>
+          u._id === user._id ? { ...u, status: newStatus } : u
+        )
+      );
+      setStatusMsg(
+        `${user.nome} ${user.cognome || ""} ${newStatus === "attivo" ? "riattivato" : "disattivato"} con successo.`
+      );
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("collaboratori-updated"));
+      }
+    } catch (e) {
+      setStatusMsg("Errore di connessione al server");
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
   const utentiFiltrati = utenti.filter((u) => {
     const matchTipo = filtroTipo === "tutti" || u.tipo === filtroTipo;
     const query = cerca.toLowerCase();
@@ -148,7 +195,7 @@ export default function GestioneUtenti() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Gestione Utenti</h1>
             <p className="text-sm text-gray-500">
-              Visualizza e modifica le password degli utenti
+              Visualizza utenti, password e stato collaboratori
             </p>
           </div>
         </div>
@@ -186,10 +233,21 @@ export default function GestioneUtenti() {
             </option>
           </select>
         </div>
+        {statusMsg && (
+          <div
+            className={`mt-3 p-3 border rounded-lg ${
+              statusMsg.includes("Errore")
+                ? "bg-red-50 border-red-200 text-red-700"
+                : "bg-green-50 border-green-200 text-green-700"
+            }`}
+          >
+            <p className="text-sm">{statusMsg}</p>
+          </div>
+        )}
       </div>
 
       {/* Lista utenti */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
         {utentiFiltrati.length === 0 ? (
           <div className="p-8 text-center text-gray-500">Nessun utente trovato.</div>
         ) : (
@@ -199,6 +257,7 @@ export default function GestioneUtenti() {
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">Nome</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">Email</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">Tipo</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-600">Stato</th>
                 <th className="px-4 py-3 text-right font-semibold text-gray-600">Azioni</th>
               </tr>
             </thead>
@@ -216,19 +275,65 @@ export default function GestioneUtenti() {
                       {u.etichetta}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => openModal(u)}
-                      disabled={u._id === session?.user?.id}
-                      title={
-                        u._id === session?.user?.id
-                          ? "Non puoi modificare la tua password da qui"
-                          : "Imposta nuova password"
-                      }
-                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      🔑 Cambia Password
-                    </button>
+                  <td className="px-4 py-3">
+                    {u.tipo === "collaboratore" ? (
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColori[u.status || "attivo"]}`}
+                      >
+                        {(u.status || "attivo") === "attivo" ? (
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        ) : (
+                          <XCircle className="w-3.5 h-3.5" />
+                        )}
+                        {(u.status || "attivo") === "attivo" ? "Attivo" : "Non attivo"}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      {u.tipo === "collaboratore" && (
+                        <button
+                          onClick={() => handleToggleStatus(u)}
+                          disabled={updatingStatusId === u._id}
+                          title={
+                            (u.status || "attivo") === "attivo"
+                              ? "Disattiva collaboratore"
+                              : "Riattiva collaboratore"
+                          }
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                            (u.status || "attivo") === "attivo"
+                              ? "text-red-700 bg-red-50 hover:bg-red-100"
+                              : "text-green-700 bg-green-50 hover:bg-green-100"
+                          }`}
+                        >
+                          {(u.status || "attivo") === "attivo" ? (
+                            <XCircle className="w-3.5 h-3.5" />
+                          ) : (
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          )}
+                          {updatingStatusId === u._id
+                            ? "Salvo..."
+                            : (u.status || "attivo") === "attivo"
+                              ? "Disattiva"
+                              : "Attiva"}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => openModal(u)}
+                        disabled={u._id === session?.user?.id}
+                        title={
+                          u._id === session?.user?.id
+                            ? "Non puoi modificare la tua password da qui"
+                            : "Imposta nuova password"
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <KeyRound className="w-3.5 h-3.5" />
+                        Cambia Password
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
