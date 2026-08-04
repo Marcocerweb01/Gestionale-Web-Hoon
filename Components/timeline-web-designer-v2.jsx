@@ -296,6 +296,23 @@ const formatShortDate = (date) =>
     month: '2-digit',
   });
 
+const formatDateInputValue = (value) => {
+  const date = parseProjectDate(value);
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getOneYearLaterInputValue = (value) => {
+  const date = parseProjectDate(value);
+  if (!date) return '';
+  const next = new Date(date);
+  next.setFullYear(next.getFullYear() + 1);
+  return formatDateInputValue(next);
+};
+
 const getDayDateRange = (giorno, startDate) => {
   const offsets = DAY_OFFSETS[giorno];
   if (!offsets || !startDate) return '';
@@ -582,6 +599,27 @@ const TimelineWebDesignerV2 = ({ userId }) => {
     patchCollaborazione(collabId, { stato: value });
   };
 
+  const handleProjectDetailUpdate = (collabId, field, value) => {
+    setCollaborazioni((prev) =>
+      prev.map((c) => (c._id === collabId ? { ...c, [field]: value } : c))
+    );
+    patchCollaborazione(collabId, { [field]: value });
+  };
+
+  const handleDomainUpdate = (collabId, field, value) => {
+    setCollaborazioni((prev) =>
+      prev.map((c) => {
+        if (c._id !== collabId) return c;
+        const dominio = { ...(c.dominio || {}), [field]: value };
+        if (field === 'dataAcquisto' && value) {
+          dominio.dataScadenza = getOneYearLaterInputValue(value);
+        }
+        return { ...c, dominio };
+      })
+    );
+    patchCollaborazione(collabId, { dominio: { [field]: value } });
+  };
+
   const handleToggleTask = (collabId, faseIndex, taskIndex) => {
     setCollaborazioni((prev) =>
       prev.map((c) => {
@@ -847,6 +885,114 @@ const TimelineWebDesignerV2 = ({ userId }) => {
             {/* ── Body (collassabile) ── */}
             {isOpen && (
               <div className="p-6 space-y-8">
+
+                {/* -- Dettagli modificabili -- */}
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="mb-4">
+                    <h4 className="text-base font-bold text-gray-900">Dettagli progetto</h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <label className="block">
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">
+                        Data inizio
+                      </span>
+                      <input
+                        type="date"
+                        value={formatDateInputValue(collab.dataInizioContratto)}
+                        onChange={(e) =>
+                          handleProjectDetailUpdate(
+                            collab._id,
+                            'dataInizioContratto',
+                            e.target.value
+                          )
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        required
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">
+                        Data fine
+                      </span>
+                      <input
+                        type="date"
+                        value={formatDateInputValue(collab.dataFineContratto)}
+                        onChange={(e) =>
+                          handleProjectDetailUpdate(
+                            collab._id,
+                            'dataFineContratto',
+                            e.target.value
+                          )
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        required
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">
+                        Tipo progetto
+                      </span>
+                      <select
+                        value={collab.tipoProgetto || 'vetrina'}
+                        onChange={(e) =>
+                          handleProjectDetailUpdate(collab._id, 'tipoProgetto', e.target.value)
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      >
+                        <option value="vetrina">Sito vetrina</option>
+                        <option value="e-commerce">E-commerce</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <label className="block">
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">
+                        URL dominio
+                      </span>
+                      <input
+                        type="text"
+                        value={collab.dominio?.urlDominio || ''}
+                        onChange={(e) =>
+                          handleDomainUpdate(collab._id, 'urlDominio', e.target.value)
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        placeholder="www.esempio.it"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">
+                        Data acquisto dominio
+                      </span>
+                      <input
+                        type="date"
+                        value={formatDateInputValue(collab.dominio?.dataAcquisto)}
+                        onChange={(e) =>
+                          handleDomainUpdate(collab._id, 'dataAcquisto', e.target.value || null)
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">
+                        Data scadenza dominio
+                      </span>
+                      <input
+                        type="date"
+                        value={formatDateInputValue(collab.dominio?.dataScadenza)}
+                        onChange={(e) =>
+                          handleDomainUpdate(collab._id, 'dataScadenza', e.target.value || null)
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      />
+                    </label>
+                  </div>
+                </div>
 
                 {/* ── Stepper visivo ── */}
                 <div className="flex items-center justify-center gap-0">
