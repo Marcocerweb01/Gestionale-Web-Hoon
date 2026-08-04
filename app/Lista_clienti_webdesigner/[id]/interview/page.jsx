@@ -13,7 +13,6 @@ import {
   FileJson,
   FileText,
   History,
-  Save,
 } from 'lucide-react';
 
 const STEPS = [
@@ -280,7 +279,8 @@ const InterviewPage = () => {
   const [message, setMessage] = useState('');
   const [historyItems, setHistoryItems] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [tracking, setTracking] = useState(false);
+  const [savedSignature, setSavedSignature] = useState('');
 
   const updateField = (field, value) => {
     setInterview((prev) => ({ ...prev, [field]: value }));
@@ -303,6 +303,10 @@ const InterviewPage = () => {
     }),
     [id, interview, resultText]
   );
+  const currentSignature = useMemo(
+    () => JSON.stringify({ webDesignerId: id, risultatoTxt: resultText, intervista: resultJson.intervista }),
+    [id, resultJson.intervista, resultText]
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -324,7 +328,7 @@ const InterviewPage = () => {
     loadHistory();
   }, [id]);
 
-  const downloadFile = (content, filename, type) => {
+  const downloadFile = (content, filename, type, successMessage) => {
     const blob = new Blob([content], { type });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -334,43 +338,14 @@ const InterviewPage = () => {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
-    setMessage(`Scaricato ${filename}`);
+    setMessage(successMessage || `Scaricato ${filename}`);
   };
 
-  const downloadTxt = () => downloadFile(resultText, `${filenameBase}.txt`, 'text/plain;charset=utf-8');
-  const downloadJson = () =>
-    downloadFile(
-      JSON.stringify(resultJson, null, 2),
-      `${filenameBase}.json`,
-      'application/json;charset=utf-8'
-    );
+  const trackInterview = async () => {
+    if (savedSignature === currentSignature) return true;
 
-  const copyResultText = async () => {
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(resultText);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = resultText;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-        document.execCommand('copy');
-        textarea.remove();
-      }
-      setMessage('Testo copiato');
-    } catch (error) {
-      console.error('Errore copia intervista:', error);
-      setMessage('Copia non riuscita');
-    }
-  };
-
-  const saveInterview = async () => {
-    try {
-      setSaving(true);
-      setMessage('');
+      setTracking(true);
       const response = await fetch('/api/webdesign-interviste', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -385,13 +360,63 @@ const InterviewPage = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data?.message || 'Errore salvataggio');
 
-      setHistoryItems((items) => [data.intervista, ...items]);
-      setMessage('Intervista salvata nello storico');
+      setSavedSignature(currentSignature);
+      setHistoryItems((items) =>
+        data.intervista?._id && !items.some((item) => item._id === data.intervista._id)
+          ? [data.intervista, ...items]
+          : items
+      );
+      return true;
     } catch (error) {
-      console.error('Errore salvataggio intervista:', error);
-      setMessage(error.message || 'Salvataggio non riuscito');
+      console.error('Errore salvataggio automatico intervista:', error);
+      return false;
     } finally {
-      setSaving(false);
+      setTracking(false);
+    }
+  };
+
+  const downloadTxt = async () => {
+    const tracked = await trackInterview();
+    const filename = `${filenameBase}.txt`;
+    downloadFile(
+      resultText,
+      filename,
+      'text/plain;charset=utf-8',
+      tracked ? `Scaricato ${filename} e salvato` : `Scaricato ${filename}, storico non salvato`
+    );
+  };
+  const downloadJson = async () => {
+    const tracked = await trackInterview();
+    const filename = `${filenameBase}.json`;
+    downloadFile(
+      JSON.stringify(resultJson, null, 2),
+      filename,
+      'application/json;charset=utf-8',
+      tracked ? `Scaricato ${filename} e salvato` : `Scaricato ${filename}, storico non salvato`
+    );
+  };
+
+  const copyResultText = async () => {
+    const tracked = await trackInterview();
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(resultText);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = resultText;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+      }
+      setMessage(tracked ? 'Testo copiato e salvato' : 'Testo copiato, storico non salvato');
+    } catch (error) {
+      console.error('Errore copia intervista:', error);
+      setMessage('Copia non riuscita');
     }
   };
 
@@ -693,31 +718,25 @@ const InterviewPage = () => {
                   <button
                     type="button"
                     onClick={copyResultText}
+                    disabled={tracking}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-orange-200 bg-white px-4 py-3 text-sm font-bold text-orange-700 transition hover:bg-orange-50"
                   >
                     <Clipboard className="h-4 w-4" />
-                    Copia testo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveInterview}
-                    disabled={saving}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Save className="h-4 w-4" />
-                    {saving ? 'Salvataggio...' : 'Salva nello storico'}
+                    {tracking ? 'Salvataggio...' : 'Copia testo'}
                   </button>
                   <button
                     type="button"
                     onClick={downloadTxt}
+                    disabled={tracking}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
                   >
                     <FileText className="h-4 w-4" />
-                    Scarica TXT
+                    {tracking ? 'Salvataggio...' : 'Scarica TXT'}
                   </button>
                   <button
                     type="button"
                     onClick={downloadJson}
+                    disabled={tracking}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-gray-800"
                   >
                     <FileJson className="h-4 w-4" />

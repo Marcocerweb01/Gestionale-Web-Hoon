@@ -24,7 +24,7 @@ export async function proxy(req) {
       url.pathname = "/Login";
       return NextResponse.redirect(url);
     }
-  } else if (["/Feed-comm", "/Gestione-Utenti"].includes(pathname)) {
+  } else if (["/Feed-comm", "/Gestione-Utenti", "/Storico-Interviste-Webdesigner"].includes(pathname)) {
     if (token.role !== "amministratore") {
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);

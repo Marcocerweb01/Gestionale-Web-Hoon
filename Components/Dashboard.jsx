@@ -20,6 +20,7 @@ import {
   DollarSign,
   PlusCircle,
   Clock,
+  History,
   MessageSquare,
   Settings,
   Monitor,
@@ -950,7 +951,7 @@ const Dashboard = () => {
               </div>
               
               {/* Gestione Collaborazioni Utente + Gestione Domini + Lista Web Designer */}
-              <div className="grid grid-cols-3 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <Link href="/Gestione-Collaborazioni-Utente">
                   <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
                     <Users className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
@@ -969,6 +970,14 @@ const Dashboard = () => {
                     <span className="font-medium text-sm md:text-base">🖥️ Lista Web Designer</span>
                   </button>
                 </Link>
+                {session?.user?.role === "amministratore" && (
+                  <Link href="/Storico-Interviste-Webdesigner">
+                    <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
+                      <History className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                      <span className="font-medium text-sm md:text-base">Storico Interviste</span>
+                    </button>
+                  </Link>
+                )}
               </div>
             </div>
           )}

@@ -26,18 +26,25 @@ export async function GET(req) {
 
     const { searchParams } = new URL(req.url);
     const webDesignerId = searchParams.get('webDesignerId');
+    const isAdministrator = session.user.role === 'amministratore';
 
-    if (!webDesignerId || !mongoose.Types.ObjectId.isValid(webDesignerId)) {
+    if (webDesignerId && !mongoose.Types.ObjectId.isValid(webDesignerId)) {
       return new Response(JSON.stringify({ message: 'Web designer non valido' }), { status: 400 });
     }
 
-    if (!canAccessWebDesigner(session, webDesignerId)) {
+    if (webDesignerId && !canAccessWebDesigner(session, webDesignerId)) {
       return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
     }
 
-    const interviste = await WebDesignInterview.find({ webDesigner: webDesignerId })
+    if (!webDesignerId && !isAdministrator) {
+      return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
+    }
+
+    const query = webDesignerId ? { webDesigner: webDesignerId } : {};
+    const interviste = await WebDesignInterview.find(query)
       .sort({ createdAt: -1 })
-      .limit(50)
+      .limit(200)
+      .populate('webDesigner', 'nome cognome email')
       .lean();
 
     return new Response(JSON.stringify(interviste), { status: 200 });
