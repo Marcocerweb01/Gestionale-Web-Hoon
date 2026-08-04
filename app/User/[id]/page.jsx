@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import TimelineWebDesignerV2 from "@/Components/timeline-web-designer-v2"; // Dashboard per Web Designer
 import FeedCommerciale from "@/Components/feed-commerciale"; // Dashboard per Commerciali
 import AdminCollaborationsList from "@/Components/edit-collab"; // Dashboard per Social Media Manager
@@ -19,9 +19,16 @@ const UserDetails = ({ params }) => {
   const [fatture, setFatture] = useState([]); // Stato per fatture
   const [loadingFatture, setLoadingFatture] = useState(false); // Loading fatture
   const { data: session, status } = useSession();
-  const router = useRouter();
   const hasCollaboratorRole = Boolean(user?.subRole || user?.subrole || (Array.isArray(user?.subRoles) && user.subRoles.length > 0));
   const canManageStatus = session?.user?.role === "amministratore" && ["collaboratore", "azienda"].includes(user?.tipo);
+  const userRoles = [
+    user?.subRole,
+    user?.subrole,
+    ...(Array.isArray(user?.subRoles) ? user.subRoles : []),
+  ]
+    .filter(Boolean)
+    .map((role) => role.toLowerCase());
+  const userHasRole = (role) => userRoles.includes(role.toLowerCase());
 
   // Funzione per recuperare le fatture del collaboratore
   const fetchFatture = async () => {
@@ -711,9 +718,9 @@ const UserDetails = ({ params }) => {
               <div className="min-w-0 flex-1">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">Dashboard Collaborazioni</h2>
                 <p className="text-gray-600 mt-1 text-sm sm:text-base">
-                  {(user?.subRole === "web designer" || user?.subrole === "web designer") && "Gestisci i tuoi progetti di web design"}
-                  {(user?.subRole === "commerciale" || user?.subrole === "commerciale") && "Monitora le tue attività commerciali"}
-                  {(user?.subRole === "smm" || user?.subrole === "smm") && "Gestisci le campagne social media"}
+                  {userHasRole("web designer") && "Gestisci i tuoi progetti di web design"}
+                  {userHasRole("commerciale") && "Monitora le tue attività commerciali"}
+                  {userHasRole("smm") && "Gestisci le campagne social media"}
                   {user?.ragioneSociale && "Vista collaborazioni aziendali"}
                 </p>
               </div>
@@ -723,15 +730,23 @@ const UserDetails = ({ params }) => {
           {/* Contenuto della dashboard */}
           <div className="p-4 sm:p-6">
             {/* Render condizionale in base al ruolo */}
-            {(user?.subRole === "web designer" || user?.subrole === "web designer") && (
-              <TimelineWebDesignerV2 userId={user._id} />
+            {userHasRole("web designer") && (
+              <>
+                <div className="mb-4 flex justify-end">
+                  <Link
+                    href={`/Lista_clienti_webdesigner/${user._id}/interview`}
+                    className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+                  >
+                    Nuova intervista
+                  </Link>
+                </div>
+                <TimelineWebDesignerV2 userId={user._id} />
+              </>
             )}
-
-            {(user?.subRole === "commerciale" || user?.subrole === "commerciale") && (
+            {userHasRole("commerciale") && (
               <FeedCommerciale id={user._id} />
             )}
-
-            {(user?.subRole === "smm" || user?.subrole === "smm") && (
+            {userHasRole("smm") && (
               <AdminCollaborationsList id={user._id} amministratore={false} />
             )}
 
@@ -740,7 +755,7 @@ const UserDetails = ({ params }) => {
             )}
 
             {/* Messaggio di fallback - Ottimizzato per mobile */}
-            {!["web designer", "commerciale", "smm"].includes(user?.subRole || user?.subrole) && !user?.ragioneSociale && (
+            {!userHasRole("web designer") && !userHasRole("commerciale") && !userHasRole("smm") && !user?.ragioneSociale && (
               <div className="text-center py-8 sm:py-12">
                 <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
                   <span className="text-xl sm:text-2xl">📋</span>

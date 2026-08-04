@@ -545,6 +545,7 @@ const TimelineWebDesignerV2 = ({ userId }) => {
   const [openProjects, setOpenProjects] = useState({});
   const [selectedDays, setSelectedDays] = useState({});
   const [openPublicationChecklist, setOpenPublicationChecklist] = useState({});
+  const isAdministrator = session?.user?.role === 'amministratore';
   const isAdminView =
     session?.user?.role === 'amministratore' || session?.user?.role === 'segretaria';
 
@@ -600,6 +601,13 @@ const TimelineWebDesignerV2 = ({ userId }) => {
   };
 
   const handleProjectDetailUpdate = (collabId, field, value) => {
+    if (
+      !isAdministrator &&
+      (field === 'dataInizioContratto' || field === 'dataFineContratto')
+    ) {
+      return;
+    }
+
     setCollaborazioni((prev) =>
       prev.map((c) => (c._id === collabId ? { ...c, [field]: value } : c))
     );
@@ -607,6 +615,10 @@ const TimelineWebDesignerV2 = ({ userId }) => {
   };
 
   const handleDomainUpdate = (collabId, field, value) => {
+    if (!isAdministrator && (field === 'dataAcquisto' || field === 'dataScadenza')) {
+      return;
+    }
+
     setCollaborazioni((prev) =>
       prev.map((c) => {
         if (c._id !== collabId) return c;
@@ -836,22 +848,10 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                       {new Date(collab.dataInizioContratto).toLocaleDateString('it-IT')} →{' '}
                       {new Date(collab.dataFineContratto).toLocaleDateString('it-IT')}
                     </p>
-                    {collab.interviewPrompt ? (
-                      <p className="text-xs text-emerald-700 mt-1">
-                        Intervista salvata · pronta per GPT
-                      </p>
-                    ) : null}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
-                  <Link
-                    href={`/Lista_clienti_webdesigner/${userId}/interview/${collab._id}`}
-                    className="inline-flex items-center rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
-                  >
-                    Intervista
-                  </Link>
-
                   {/* Progress globale */}
                   <div className="hidden md:flex flex-col items-end">
                     <span className="text-xs text-gray-500 mb-1">Avanzamento</span>
@@ -907,7 +907,12 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                             e.target.value
                           )
                         }
-                        className="w-full px-3 py-2 text-sm border border-gray-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        disabled={!isAdministrator}
+                        className={`w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 ${
+                          isAdministrator
+                            ? 'bg-white'
+                            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        }`}
                         required
                       />
                     </label>
@@ -926,7 +931,12 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                             e.target.value
                           )
                         }
-                        className="w-full px-3 py-2 text-sm border border-gray-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        disabled={!isAdministrator}
+                        className={`w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 ${
+                          isAdministrator
+                            ? 'bg-white'
+                            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        }`}
                         required
                       />
                     </label>
@@ -974,7 +984,12 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                         onChange={(e) =>
                           handleDomainUpdate(collab._id, 'dataAcquisto', e.target.value || null)
                         }
-                        className="w-full px-3 py-2 text-sm border border-gray-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        disabled={!isAdministrator}
+                        className={`w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 ${
+                          isAdministrator
+                            ? 'bg-white'
+                            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        }`}
                       />
                     </label>
 
@@ -988,7 +1003,12 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                         onChange={(e) =>
                           handleDomainUpdate(collab._id, 'dataScadenza', e.target.value || null)
                         }
-                        className="w-full px-3 py-2 text-sm border border-gray-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        disabled={!isAdministrator}
+                        className={`w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 ${
+                          isAdministrator
+                            ? 'bg-white'
+                            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        }`}
                       />
                     </label>
                   </div>

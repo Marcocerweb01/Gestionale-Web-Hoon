@@ -64,6 +64,7 @@ export async function PATCH(req, { params }) {
     const { id } = resolvedParams;
     const body = await req.json();
     const session = await getServerSession(authOptions);
+    const isAdministrator = session?.user?.role === 'amministratore';
 
     if (!id) {
       return new Response(JSON.stringify({ message: 'ID collaborazione mancante' }), {
@@ -84,6 +85,9 @@ export async function PATCH(req, { params }) {
       updatePayload.tipoProgetto = body.tipoProgetto;
     }
     if (body.dataInizioContratto !== undefined) {
+      if (!isAdministrator) {
+        return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
+      }
       const dataInizioContratto = parseDateField(body.dataInizioContratto);
       if (dataInizioContratto === undefined) {
         return new Response(JSON.stringify({ message: 'Data inizio contratto non valida' }), {
@@ -93,6 +97,9 @@ export async function PATCH(req, { params }) {
       updatePayload.dataInizioContratto = dataInizioContratto;
     }
     if (body.dataFineContratto !== undefined) {
+      if (!isAdministrator) {
+        return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
+      }
       const dataFineContratto = parseDateField(body.dataFineContratto);
       if (dataFineContratto === undefined) {
         return new Response(JSON.stringify({ message: 'Data fine contratto non valida' }), {
@@ -126,6 +133,9 @@ export async function PATCH(req, { params }) {
       let resetAlert = false;
 
       if (dominio.dataAcquisto !== undefined) {
+        if (!isAdministrator) {
+          return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
+        }
         const dataAcquisto = parseDateField(dominio.dataAcquisto);
         if (dataAcquisto === undefined) {
           return new Response(JSON.stringify({ message: 'Data acquisto dominio non valida' }), {
@@ -143,6 +153,9 @@ export async function PATCH(req, { params }) {
       }
 
       if (dominio.dataScadenza !== undefined) {
+        if (!isAdministrator) {
+          return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
+        }
         const dataScadenza = parseDateField(dominio.dataScadenza);
         if (dataScadenza === undefined) {
           return new Response(JSON.stringify({ message: 'Data scadenza dominio non valida' }), {

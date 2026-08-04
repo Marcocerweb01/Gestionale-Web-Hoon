@@ -1,6 +1,8 @@
 import CollaborazioneWebDesign from "@/models/Collaborazioniwebdesign";
 import { connectToDB } from "@/utils/database";
 import mongoose from "mongoose";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 const VALID_PROJECT_TYPES = ["e-commerce", "sito vetrina", "sito starter"];
 
@@ -60,6 +62,8 @@ export async function PATCH(req, { params }) {
 
     const { id } = resolvedParams; // ID della collaborazione
     const body = await req.json();
+    const session = await getServerSession(authOptions);
+    const isAdministrator = session?.user?.role === "amministratore";
 
     if (!id) {
       return new Response(JSON.stringify({ message: "ID collaborazione mancante" }), { status: 400 });
@@ -92,6 +96,9 @@ export async function PATCH(req, { params }) {
     }
 
     if (body.dataInizioContratto !== undefined) {
+      if (!isAdministrator) {
+        return new Response(JSON.stringify({ message: "Non autorizzato" }), { status: 403 });
+      }
       const dataInizioContratto = parseDateField(body.dataInizioContratto);
       if (dataInizioContratto === undefined) {
         return new Response(JSON.stringify({ message: "Data inizio contratto non valida" }), { status: 400 });
@@ -100,6 +107,9 @@ export async function PATCH(req, { params }) {
     }
 
     if (body.dataFineContratto !== undefined) {
+      if (!isAdministrator) {
+        return new Response(JSON.stringify({ message: "Non autorizzato" }), { status: 403 });
+      }
       const dataFineContratto = parseDateField(body.dataFineContratto);
       if (dataFineContratto === undefined) {
         return new Response(JSON.stringify({ message: "Data fine contratto non valida" }), { status: 400 });
@@ -111,6 +121,9 @@ export async function PATCH(req, { params }) {
     if (body.dominio !== undefined) {
       // Se viene passata una data di acquisto, calcola automaticamente la scadenza (1 anno dopo)
       if (body.dominio.dataAcquisto) {
+        if (!isAdministrator) {
+          return new Response(JSON.stringify({ message: "Non autorizzato" }), { status: 403 });
+        }
         const dataAcquisto = parseDateField(body.dominio.dataAcquisto);
         if (dataAcquisto === undefined) {
           return new Response(JSON.stringify({ message: "Data acquisto dominio non valida" }), { status: 400 });
@@ -136,6 +149,9 @@ export async function PATCH(req, { params }) {
       } else {
         const dominio = { ...body.dominio };
         if (dominio.dataAcquisto !== undefined) {
+          if (!isAdministrator) {
+            return new Response(JSON.stringify({ message: "Non autorizzato" }), { status: 403 });
+          }
           const dataAcquisto = parseDateField(dominio.dataAcquisto);
           if (dataAcquisto === undefined) {
             return new Response(JSON.stringify({ message: "Data acquisto dominio non valida" }), { status: 400 });
@@ -143,6 +159,9 @@ export async function PATCH(req, { params }) {
           dominio.dataAcquisto = dataAcquisto;
         }
         if (dominio.dataScadenza !== undefined) {
+          if (!isAdministrator) {
+            return new Response(JSON.stringify({ message: "Non autorizzato" }), { status: 403 });
+          }
           const dataScadenza = parseDateField(dominio.dataScadenza);
           if (dataScadenza === undefined) {
             return new Response(JSON.stringify({ message: "Data scadenza dominio non valida" }), { status: 400 });
