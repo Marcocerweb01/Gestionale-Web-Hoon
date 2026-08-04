@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -8,9 +8,12 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Clipboard,
   Download,
   FileJson,
   FileText,
+  History,
+  Save,
 } from 'lucide-react';
 
 const STEPS = [
@@ -82,13 +85,23 @@ const withOther = (values, other) => {
   return list;
 };
 
-const sanitizeFilename = (value) =>
-  (value || 'intervista-web-design')
+const sanitizeFilenamePart = (value) =>
+  (value || 'Senza nome')
     .toString()
     .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'intervista-web-design';
+    .replace(/[\\/:*?"<>|]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim() || 'Senza nome';
+
+const getFilenameBase = (azienda) => `Intervista ${sanitizeFilenamePart(azienda)}`;
+
+const formatHistoryDate = (value) => {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('it-IT', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value));
+};
 
 const buildInterviewText = (interview) => {
   const sezioni = withOther(interview.sezioni, interview.sezioniAltro);
@@ -206,11 +219,68 @@ const OptionGrid = ({ label, options, value, onChange, multiple = false }) => {
   );
 };
 
+const MaterialGroup = ({ label, description, options, value, onChange }) => {
+  const selected = Array.isArray(value) ? value : [];
+
+  const toggleValue = (option) => {
+    onChange(
+      selected.includes(option)
+        ? selected.filter((item) => item !== option)
+        : [...selected, option]
+    );
+  };
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold text-gray-950">{label}</h3>
+          <p className="mt-1 text-xs text-gray-500">{description}</p>
+        </div>
+        <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600">
+          {selected.length}/{options.length}
+        </span>
+      </div>
+      <div className="grid gap-2">
+        {options.map((option) => {
+          const active = selected.includes(option);
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => toggleValue(option)}
+              className={`group flex min-h-12 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
+                active
+                  ? 'border-orange-500 bg-orange-50 text-orange-900 shadow-sm'
+                  : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-orange-300 hover:bg-white'
+              }`}
+            >
+              <span className="leading-snug">{option}</span>
+              <span
+                className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border transition ${
+                  active
+                    ? 'border-orange-500 bg-orange-500 text-white'
+                    : 'border-gray-300 bg-white text-transparent group-hover:border-orange-300'
+                }`}
+              >
+                <Check className="h-3.5 w-3.5" />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const InterviewPage = () => {
   const { id } = useParams();
   const [interview, setInterview] = useState(DEFAULT_INTERVIEW);
   const [currentStep, setCurrentStep] = useState(0);
   const [message, setMessage] = useState('');
+  const [historyItems, setHistoryItems] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const updateField = (field, value) => {
     setInterview((prev) => ({ ...prev, [field]: value }));
@@ -218,6 +288,7 @@ const InterviewPage = () => {
   };
 
   const resultText = useMemo(() => buildInterviewText(interview), [interview]);
+  const filenameBase = useMemo(() => getFilenameBase(interview.azienda), [interview.azienda]);
   const resultJson = useMemo(
     () => ({
       tipo: 'intervista-web-design',
@@ -233,6 +304,26 @@ const InterviewPage = () => {
     [id, interview, resultText]
   );
 
+  useEffect(() => {
+    if (!id) return;
+
+    const loadHistory = async () => {
+      try {
+        setHistoryLoading(true);
+        const response = await fetch(`/api/webdesign-interviste?webDesignerId=${id}`);
+        if (!response.ok) throw new Error('Errore storico');
+        const data = await response.json();
+        setHistoryItems(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Errore caricamento storico interviste:', error);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, [id]);
+
   const downloadFile = (content, filename, type) => {
     const blob = new Blob([content], { type });
     const url = window.URL.createObjectURL(blob);
@@ -246,7 +337,6 @@ const InterviewPage = () => {
     setMessage(`Scaricato ${filename}`);
   };
 
-  const filenameBase = sanitizeFilename(interview.azienda);
   const downloadTxt = () => downloadFile(resultText, `${filenameBase}.txt`, 'text/plain;charset=utf-8');
   const downloadJson = () =>
     downloadFile(
@@ -254,6 +344,64 @@ const InterviewPage = () => {
       `${filenameBase}.json`,
       'application/json;charset=utf-8'
     );
+
+  const copyResultText = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(resultText);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = resultText;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+      }
+      setMessage('Testo copiato');
+    } catch (error) {
+      console.error('Errore copia intervista:', error);
+      setMessage('Copia non riuscita');
+    }
+  };
+
+  const saveInterview = async () => {
+    try {
+      setSaving(true);
+      setMessage('');
+      const response = await fetch('/api/webdesign-interviste', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          webDesignerId: id,
+          azienda: interview.azienda,
+          interview: resultJson.intervista,
+          risultatoTxt: resultText,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.message || 'Errore salvataggio');
+
+      setHistoryItems((items) => [data.intervista, ...items]);
+      setMessage('Intervista salvata nello storico');
+    } catch (error) {
+      console.error('Errore salvataggio intervista:', error);
+      setMessage(error.message || 'Salvataggio non riuscito');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const downloadHistoryTxt = (item) => {
+    downloadFile(
+      item.risultatoTxt || '',
+      `${getFilenameBase(item.azienda)}.txt`,
+      'text/plain;charset=utf-8'
+    );
+  };
 
   const goBack = () => setCurrentStep((step) => Math.max(step - 1, 0));
   const goNext = () => setCurrentStep((step) => Math.min(step + 1, STEPS.length - 1));
@@ -445,28 +593,33 @@ const InterviewPage = () => {
                 placeholder="Font specifici o riferimento stile"
               />
             </div>
-            <div className="grid gap-4 lg:grid-cols-3">
-              <OptionGrid
-                label="Materiali brand"
-                options={OPTIONS.brandAssets}
-                value={interview.brandAssets}
-                onChange={(value) => updateField('brandAssets', value)}
-                multiple
-              />
-              <OptionGrid
-                label="Media disponibili"
-                options={OPTIONS.mediaAssets}
-                value={interview.mediaAssets}
-                onChange={(value) => updateField('mediaAssets', value)}
-                multiple
-              />
-              <OptionGrid
-                label="Testi disponibili"
-                options={OPTIONS.textAssets}
-                value={interview.textAssets}
-                onChange={(value) => updateField('textAssets', value)}
-                multiple
-              />
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-gray-950">Materiali disponibili</h3>
+              </div>
+              <div className="grid gap-4 lg:grid-cols-3">
+                <MaterialGroup
+                  label="Materiali brand"
+                  description="Logo, palette e identità visiva"
+                  options={OPTIONS.brandAssets}
+                  value={interview.brandAssets}
+                  onChange={(value) => updateField('brandAssets', value)}
+                />
+                <MaterialGroup
+                  label="Media disponibili"
+                  description="Foto e video pronti per il sito"
+                  options={OPTIONS.mediaAssets}
+                  value={interview.mediaAssets}
+                  onChange={(value) => updateField('mediaAssets', value)}
+                />
+                <MaterialGroup
+                  label="Testi disponibili"
+                  description="Copy e contenuti gia raccolti"
+                  options={OPTIONS.textAssets}
+                  value={interview.textAssets}
+                  onChange={(value) => updateField('textAssets', value)}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -524,7 +677,7 @@ const InterviewPage = () => {
               placeholder="Vincoli, cose da evitare, richieste particolari"
               rows={3}
             />
-            <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+            <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h3 className="text-sm font-bold text-gray-950">Risultato TXT</h3>
@@ -535,8 +688,25 @@ const InterviewPage = () => {
                 </pre>
               </div>
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <h3 className="text-sm font-bold text-gray-950">Download</h3>
+                <h3 className="text-sm font-bold text-gray-950">Azioni</h3>
                 <div className="mt-4 space-y-3">
+                  <button
+                    type="button"
+                    onClick={copyResultText}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-orange-200 bg-white px-4 py-3 text-sm font-bold text-orange-700 transition hover:bg-orange-50"
+                  >
+                    <Clipboard className="h-4 w-4" />
+                    Copia testo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveInterview}
+                    disabled={saving}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Save className="h-4 w-4" />
+                    {saving ? 'Salvataggio...' : 'Salva nello storico'}
+                  </button>
                   <button
                     type="button"
                     onClick={downloadTxt}
@@ -553,6 +723,51 @@ const InterviewPage = () => {
                     <FileJson className="h-4 w-4" />
                     Scarica JSON
                   </button>
+                </div>
+                <div className="mt-5 border-t border-gray-200 pt-4">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h3 className="inline-flex items-center gap-2 text-sm font-bold text-gray-950">
+                      <History className="h-4 w-4 text-gray-500" />
+                      Storico
+                    </h3>
+                    <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-gray-500">
+                      {historyItems.length}
+                    </span>
+                  </div>
+                  {historyLoading ? (
+                    <p className="text-sm text-gray-500">Caricamento storico...</p>
+                  ) : historyItems.length === 0 ? (
+                    <p className="text-sm leading-5 text-gray-500">
+                      Nessuna intervista salvata per questo web designer.
+                    </p>
+                  ) : (
+                    <div className="max-h-80 space-y-2 overflow-auto pr-1">
+                      {historyItems.map((item) => (
+                        <div
+                          key={item._id}
+                          className="rounded-lg border border-gray-200 bg-white p-3 text-sm"
+                        >
+                          <div className="font-bold text-gray-950">
+                            {item.azienda || 'Senza nome azienda'}
+                          </div>
+                          <div className="mt-1 text-xs leading-5 text-gray-500">
+                            {formatHistoryDate(item.createdAt)} · {item.autoreNome || 'Utente'}
+                          </div>
+                          {item.autoreEmail && (
+                            <div className="text-xs text-gray-400">{item.autoreEmail}</div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => downloadHistoryTxt(item)}
+                            className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-orange-700 hover:text-orange-800"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            TXT
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
