@@ -3,119 +3,83 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import {
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FileJson,
+  FileText,
+} from 'lucide-react';
 
-const STEP_TITLES = [
-  'Dati business',
-  'Sito e contenuti',
-  'Dettagli tecnici',
-  'Riepilogo & Download',
+const STEPS = [
+  { title: 'Business', subtitle: 'Chi e cosa vende' },
+  { title: 'Obiettivi', subtitle: 'Cosa deve ottenere il sito' },
+  { title: 'Struttura', subtitle: 'Pagine, stile e materiali' },
+  { title: 'Export', subtitle: 'Risultato pronto' },
 ];
 
-const checkboxOptions = {
-  serviziSpingere: [
-    'Branding',
-    'Lead generation',
-    'Vendite online',
-    'Servizi professionali',
-    'Portfolio',
+const OPTIONS = {
+  obiettivi: [
+    'Ricevere contatti',
+    'Vendere',
+    'Prenotazioni',
+    'Mostrare portfolio',
+    'Farsi trovare su Google',
   ],
-  provenienzaClienti: ['Instagram', 'Google', 'Ads', 'Passaparola', 'Email marketing'],
-  sezioni: ['Home', 'Chi siamo', 'Servizi', 'Contatti', 'Blog', 'Shop'],
-  pagine: ['Landing', 'Shop', 'Portfolio', 'FAQ', 'Eventi', 'Prenotazione'],
-  stilePreferito: ['Minimal', 'Moderno', 'Elegante', 'Vivace', 'Professionale'],
-  tipoSito: ['Vetrina', 'E-commerce', 'Landing page', 'One page', 'Blog'],
-  animazioni: ['Micro-interazioni', 'Scroll animato', 'Hover effects', 'Nessuna animazione'],
+  tipoSito: ['One Page', 'Sito vetrina', 'Landing page', 'E-commerce', 'Blog'],
+  sezioni: ['Home', 'Chi siamo', 'Servizi', 'Gallery', 'Portfolio', 'Recensioni', 'FAQ', 'Contatti'],
+  stile: ['Minimal', 'Moderno', 'Creativo', 'Elegante', 'Professionale', 'Ricco di animazioni'],
+  animazioni: ['Pulito e statico', 'Micro animazioni', 'Ricco di animazioni'],
+  brandAssets: ['Logo PNG', 'Logo vettoriale AI/SVG/PDF', 'Palette colori', 'Font/linee guida'],
+  mediaAssets: ['Foto HQ', 'Video', 'Foto team', 'Foto sede/prodotti'],
+  textAssets: ['Descrizione azienda', 'Servizi', 'Recensioni', 'FAQ', 'Testi pagine'],
 };
 
-const defaultInterview = {
+const DEFAULT_INTERVIEW = {
   azienda: '',
   descrizioneAzienda: '',
   servizioPrincipale: '',
-  serviziSpingere: [],
+  servizioFocus: '',
   clienteIdeale: '',
-  provenienzaClienti: [],
-  obiettivoSito: '',
-  utenteCosaFare: '',
-  callToAction: '',
-  tipoSito: [],
+  provenienzaClienti: '',
+  obiettivi: [],
+  azioneUtente: '',
+  ctaPrincipale: '',
+  tipoSito: '',
   sezioni: [],
-  pagine: [],
-  serviziEvidenza: '',
-  recensioniClienti: 'no',
-  recensioniClientiDettagli: '',
-  lavoriProgetti: 'no',
-  lavoriProgettiDettagli: '',
-  sitiRiferimento: '',
-  sitiNonPiacciono: '',
-  stilePreferito: [],
-  animazioni: [],
-  videoHomepage: 'no',
-  videoHomepageDettagli: '',
-  preferenzeColori: '',
-  preferenzeFont: '',
-  haLineeGuidaBrand: 'no',
-  lineeGuidaBrand: '',
-  haDominio: 'no',
+  sezioniAltro: '',
+  stile: [],
+  stileAltro: '',
+  animazioni: '',
+  animazioniAltro: '',
+  videoHomepage: 'No',
+  lineeGuidaBrand: 'No',
+  colori: '',
+  font: '',
+  dominioEsistente: 'No',
   dominio: '',
-  servizioDominio: '',
-  mailCollegate: '',
-  accessiDominio: '',
-  noteAccessi: '',
+  providerDominio: '',
+  emailCollegate: '',
   scadenzaDominio: '',
-  branding: '',
-  media: '',
-  testi: '',
-  noteMateriali: '',
-  fileUtili: '',
+  accessiDominio: '',
+  brandAssets: [],
+  mediaAssets: [],
+  textAssets: [],
+  noteFinali: '',
 };
 
-const joinList = (value) => {
+const joinValue = (value) => {
   if (!value) return '-';
   if (Array.isArray(value)) return value.length ? value.join(', ') : '-';
   return String(value).trim() || '-';
 };
 
-const buildInterviewPrompt = (interview) => {
-  return `Intervista web design per la creazione del sito:
-- Azienda: ${joinList(interview.azienda)}
-- Descrizione azienda: ${joinList(interview.descrizioneAzienda)}
-- Servizio/prodotto principale: ${joinList(interview.servizioPrincipale)}
-- Servizi da spingere: ${joinList(interview.serviziSpingere)}
-- Cliente ideale: ${joinList(interview.clienteIdeale)}
-- Provenienza clienti: ${joinList(interview.provenienzaClienti)}
-- Obiettivo principale del sito: ${joinList(interview.obiettivoSito)}
-- Azione utente all'ingresso: ${joinList(interview.utenteCosaFare)}
-- Call to action principale: ${joinList(interview.callToAction)}
-- Tipologia sito: ${joinList(interview.tipoSito)}
-- Sezioni richieste: ${joinList(interview.sezioni)}
-- Pagine richieste: ${joinList(interview.pagine)}
-- Servizi da mettere in evidenza: ${joinList(interview.serviziEvidenza)}
-- Recensioni clienti: ${joinList(interview.recensioniClienti)}
-- Dettagli recensioni: ${joinList(interview.recensioniClientiDettagli)}
-- Lavori/progetti da mostrare: ${joinList(interview.lavoriProgetti)}
-- Dettagli lavori/progetti: ${joinList(interview.lavoriProgettiDettagli)}
-- Siti di riferimento: ${joinList(interview.sitiRiferimento)}
-- Siti da evitare: ${joinList(interview.sitiNonPiacciono)}
-- Stile preferito: ${joinList(interview.stilePreferito)}
-- Animazioni richieste: ${joinList(interview.animazioni)}
-- Video in homepage: ${joinList(interview.videoHomepage)}
-- Note video: ${joinList(interview.videoHomepageDettagli)}
-- Preferenze colori: ${joinList(interview.preferenzeColori)}
-- Preferenze font: ${joinList(interview.preferenzeFont)}
-- Linee guida brand: ${joinList(interview.haLineeGuidaBrand)}
-- Dettagli linee guida: ${joinList(interview.lineeGuidaBrand)}
-- Dominio esistente: ${joinList(interview.haDominio)}
-- Dominio: ${joinList(interview.dominio)}
-- Servizio dominio: ${joinList(interview.servizioDominio)}
-- Mail collegate: ${joinList(interview.mailCollegate)}
-- Accessi dominio: ${joinList(interview.accessiDominio)}
-- Note accessi: ${joinList(interview.noteAccessi)}
-- Scadenza dominio: ${joinList(interview.scadenzaDominio)}
-- Branding: ${joinList(interview.branding)}
-- Media: ${joinList(interview.media)}
-- Testi: ${joinList(interview.testi)}
-- Note materiali: ${joinList(interview.noteMateriali)}
-- File utili: ${joinList(interview.fileUtili)}`;
+const withOther = (values, other) => {
+  const list = Array.isArray(values) ? [...values] : [];
+  if (other?.trim()) list.push(`Altro: ${other.trim()}`);
+  return list;
 };
 
 const sanitizeFilename = (value) =>
@@ -126,44 +90,147 @@ const sanitizeFilename = (value) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'intervista-web-design';
 
+const buildInterviewText = (interview) => {
+  const sezioni = withOther(interview.sezioni, interview.sezioniAltro);
+  const stile = withOther(interview.stile, interview.stileAltro);
+  const animazioni = interview.animazioniAltro?.trim()
+    ? `${joinValue(interview.animazioni)}; Altro: ${interview.animazioniAltro.trim()}`
+    : joinValue(interview.animazioni);
+
+  return `INTERVISTA WEB DESIGN
+
+1. BUSINESS
+- Azienda: ${joinValue(interview.azienda)}
+- Cosa fa/vende: ${joinValue(interview.descrizioneAzienda)}
+- Servizio o prodotto principale: ${joinValue(interview.servizioPrincipale)}
+- Servizio/prodotto da spingere: ${joinValue(interview.servizioFocus)}
+- Cliente ideale: ${joinValue(interview.clienteIdeale)}
+- Da dove arrivano oggi i clienti: ${joinValue(interview.provenienzaClienti)}
+
+2. OBIETTIVI DEL SITO
+- Obiettivi: ${joinValue(interview.obiettivi)}
+- Cosa deve fare l'utente appena entra: ${joinValue(interview.azioneUtente)}
+- CTA principale: ${joinValue(interview.ctaPrincipale)}
+
+3. STRUTTURA E STILE
+- Tipologia sito: ${joinValue(interview.tipoSito)}
+- Sezioni richieste: ${joinValue(sezioni)}
+- Stile desiderato: ${joinValue(stile)}
+- Animazioni: ${animazioni}
+- Video in homepage: ${joinValue(interview.videoHomepage)}
+- Linee guida brand: ${joinValue(interview.lineeGuidaBrand)}
+- Colori preferiti/da evitare: ${joinValue(interview.colori)}
+- Font o riferimenti tipografici: ${joinValue(interview.font)}
+
+4. DOMINIO E ACCESSI
+- Dominio esistente: ${joinValue(interview.dominioEsistente)}
+- Dominio/URL: ${joinValue(interview.dominio)}
+- Provider dominio/hosting: ${joinValue(interview.providerDominio)}
+- Email collegate: ${joinValue(interview.emailCollegate)}
+- Scadenza dominio: ${joinValue(interview.scadenzaDominio)}
+- Accessi dominio/hosting: ${joinValue(interview.accessiDominio)}
+
+5. MATERIALI DISPONIBILI
+- Brand: ${joinValue(interview.brandAssets)}
+- Media: ${joinValue(interview.mediaAssets)}
+- Testi: ${joinValue(interview.textAssets)}
+- Note finali: ${joinValue(interview.noteFinali)}`;
+};
+
+const Field = ({ label, value, onChange, placeholder = '', type = 'text' }) => (
+  <label className="block">
+    <span className="text-sm font-semibold text-gray-800">{label}</span>
+    <input
+      type={type}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+      placeholder={placeholder}
+    />
+  </label>
+);
+
+const TextArea = ({ label, value, onChange, placeholder = '', rows = 4 }) => (
+  <label className="block">
+    <span className="text-sm font-semibold text-gray-800">{label}</span>
+    <textarea
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      rows={rows}
+      className="mt-2 w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+      placeholder={placeholder}
+    />
+  </label>
+);
+
+const OptionGrid = ({ label, options, value, onChange, multiple = false }) => {
+  const selected = multiple && Array.isArray(value) ? value : [];
+
+  const toggleValue = (option) => {
+    if (!multiple) {
+      onChange(option);
+      return;
+    }
+
+    onChange(
+      selected.includes(option)
+        ? selected.filter((item) => item !== option)
+        : [...selected, option]
+    );
+  };
+
+  return (
+    <div>
+      <p className="text-sm font-semibold text-gray-800">{label}</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {options.map((option) => {
+          const active = multiple ? selected.includes(option) : value === option;
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => toggleValue(option)}
+              className={`flex min-h-11 items-center justify-between rounded-lg border px-3 py-2 text-left text-sm font-medium transition ${
+                active
+                  ? 'border-orange-500 bg-orange-50 text-orange-800'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-orange-300'
+              }`}
+            >
+              <span>{option}</span>
+              {active && <Check className="h-4 w-4 flex-shrink-0" />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const InterviewPage = () => {
   const { id } = useParams();
-  const [interview, setInterview] = useState(defaultInterview);
+  const [interview, setInterview] = useState(DEFAULT_INTERVIEW);
   const [currentStep, setCurrentStep] = useState(0);
   const [message, setMessage] = useState('');
 
-  const handleChange = (field, value) => {
+  const updateField = (field, value) => {
     setInterview((prev) => ({ ...prev, [field]: value }));
+    setMessage('');
   };
 
-  const handleToggle = (field, value) => {
-    setInterview((prev) => {
-      const current = Array.isArray(prev[field]) ? prev[field] : [];
-      const hasValue = current.includes(value);
-      return {
-        ...prev,
-        [field]: hasValue ? current.filter((item) => item !== value) : [...current, value],
-      };
-    });
-  };
-
-  const handleOption = (field, value) => {
-    setInterview((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const goBack = () => setCurrentStep((step) => Math.max(step - 1, 0));
-  const goNext = () => setCurrentStep((step) => Math.min(step + 1, STEP_TITLES.length - 1));
-
-  const promptText = useMemo(() => buildInterviewPrompt(interview), [interview]);
-  const jsonResult = useMemo(
+  const resultText = useMemo(() => buildInterviewText(interview), [interview]);
+  const resultJson = useMemo(
     () => ({
       tipo: 'intervista-web-design',
       generatoIl: new Date().toISOString(),
       webDesignerId: id,
-      risultatoTxt: promptText,
-      intervista: interview,
+      risultatoTxt: resultText,
+      intervista: {
+        ...interview,
+        sezioniComplete: withOther(interview.sezioni, interview.sezioniAltro),
+        stileCompleto: withOther(interview.stile, interview.stileAltro),
+      },
     }),
-    [id, interview, promptText]
+    [id, interview, resultText]
   );
 
   const downloadFile = (content, filename, type) => {
@@ -176,483 +243,352 @@ const InterviewPage = () => {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
-    setMessage(`File ${filename} scaricato.`);
+    setMessage(`Scaricato ${filename}`);
   };
 
   const filenameBase = sanitizeFilename(interview.azienda);
-  const downloadTxt = () => downloadFile(promptText, `${filenameBase}.txt`, 'text/plain;charset=utf-8');
+  const downloadTxt = () => downloadFile(resultText, `${filenameBase}.txt`, 'text/plain;charset=utf-8');
   const downloadJson = () =>
     downloadFile(
-      JSON.stringify(jsonResult, null, 2),
+      JSON.stringify(resultJson, null, 2),
       `${filenameBase}.json`,
       'application/json;charset=utf-8'
     );
 
+  const goBack = () => setCurrentStep((step) => Math.max(step - 1, 0));
+  const goNext = () => setCurrentStep((step) => Math.min(step + 1, STEPS.length - 1));
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm text-gray-500">Web Design</p>
-          <h1 className="text-2xl font-semibold text-gray-900">Nuova intervista</h1>
+          <p className="text-sm font-medium text-orange-700">Web Design</p>
+          <h1 className="mt-1 text-2xl font-bold text-gray-950">Nuova intervista cliente</h1>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/Lista_clienti_webdesigner/${id}`}
-            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+        <Link
+          href={`/Lista_clienti_webdesigner/${id}`}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Torna ai clienti
+        </Link>
+      </div>
+
+      <div className="mb-6 grid gap-2 sm:grid-cols-4">
+        {STEPS.map((step, index) => (
+          <button
+            key={step.title}
+            type="button"
+            onClick={() => setCurrentStep(index)}
+            className={`rounded-lg border p-3 text-left transition ${
+              currentStep === index
+                ? 'border-orange-500 bg-orange-50'
+                : 'border-gray-200 bg-white hover:border-orange-200'
+            }`}
           >
-            Torna indietro
-          </Link>
-        </div>
+            <span className="block text-xs font-bold uppercase text-gray-500">Step {index + 1}</span>
+            <span className="block text-sm font-bold text-gray-950">{step.title}</span>
+            <span className="block text-xs text-gray-500">{step.subtitle}</span>
+          </button>
+        ))}
       </div>
 
-      <div className="mb-8 rounded-3xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-800">
-        <p className="font-semibold">Passaggi</p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-4">
-          {STEP_TITLES.map((title, index) => (
-            <div
-              key={title}
-              className={`rounded-2xl border px-3 py-2 text-center ${
-                currentStep === index
-                  ? 'border-violet-500 bg-white text-violet-700'
-                  : 'border-transparent bg-violet-100 text-violet-900/70'
-              }`}
-            >
-              <span className="block text-xs font-semibold uppercase">Step {index + 1}</span>
-              <span className="block text-sm">{title}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-8">
+      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         {currentStep === 0 && (
-          <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Dati business</h2>
-              <p className="mt-2 text-sm text-gray-600">Informazioni principali per definire obiettivi e posizionamento.</p>
+              <h2 className="text-lg font-bold text-gray-950">Business</h2>
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Azienda</span>
-                <input
-                  type="text"
-                  value={interview.azienda}
-                  onChange={(e) => handleChange('azienda', e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                  placeholder="Nome o ragione sociale"
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Descrizione azienda</span>
-                <textarea
-                  value={interview.descrizioneAzienda}
-                  onChange={(e) => handleChange('descrizioneAzienda', e.target.value)}
-                  className="mt-2 h-28 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 resize-none"
-                  placeholder="In una frase, qual è la vostra attività?"
-                />
-              </label>
+              <Field
+                label="Nome azienda"
+                value={interview.azienda}
+                onChange={(value) => updateField('azienda', value)}
+                placeholder="Es. Studio Rossi"
+              />
+              <Field
+                label="Servizio/prodotto principale"
+                value={interview.servizioPrincipale}
+                onChange={(value) => updateField('servizioPrincipale', value)}
+                placeholder="Es. consulenza di vendita"
+              />
             </div>
+            <TextArea
+              label="Cosa fa l'azienda"
+              value={interview.descrizioneAzienda}
+              onChange={(value) => updateField('descrizioneAzienda', value)}
+              placeholder="Descrizione breve e concreta dell'attività"
+            />
             <div className="grid gap-4 lg:grid-cols-2">
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Servizio/prodotto principale</span>
-                <input
-                  type="text"
-                  value={interview.servizioPrincipale}
-                  onChange={(e) => handleChange('servizioPrincipale', e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                  placeholder="Cosa offrite principalmente?"
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Cliente ideale</span>
-                <input
-                  type="text"
-                  value={interview.clienteIdeale}
-                  onChange={(e) => handleChange('clienteIdeale', e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                  placeholder="A chi vi rivolgete?"
-                />
-              </label>
+              <Field
+                label="Cosa vogliamo spingere"
+                value={interview.servizioFocus}
+                onChange={(value) => updateField('servizioFocus', value)}
+                placeholder="Servizio, prodotto o categoria prioritaria"
+              />
+              <Field
+                label="Cliente ideale"
+                value={interview.clienteIdeale}
+                onChange={(value) => updateField('clienteIdeale', value)}
+                placeholder="Es. giovani imprenditori, famiglie, aziende locali"
+              />
             </div>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-gray-700">Provenienza clienti</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {checkboxOptions.provenienzaClienti.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => handleToggle('provenienzaClienti', option)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm ${
-                        interview.provenienzaClienti.includes(option)
-                          ? 'border-violet-500 bg-violet-100 text-violet-800'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-violet-300'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="block">
-                  <span className="text-sm font-semibold text-gray-700">Obiettivo del sito</span>
-                  <textarea
-                    value={interview.obiettivoSito}
-                    onChange={(e) => handleChange('obiettivoSito', e.target.value)}
-                    className="mt-2 h-28 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 resize-none"
-                    placeholder="Esempio: acquisire lead, vendere, presentare team"
-                  />
-                </label>
-              </div>
-            </div>
-          </section>
+            <TextArea
+              label="Da dove arrivano oggi i clienti"
+              value={interview.provenienzaClienti}
+              onChange={(value) => updateField('provenienzaClienti', value)}
+              placeholder="Passaparola, Google, social, ads, partnership..."
+              rows={3}
+            />
+          </div>
         )}
 
         {currentStep === 1 && (
-          <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Sito e contenuti</h2>
-              <p className="mt-2 text-sm text-gray-600">Scegli quali pagine, sezioni e funzioni devono esserci.</p>
+              <h2 className="text-lg font-bold text-gray-950">Obiettivi</h2>
             </div>
+            <OptionGrid
+              label="Cosa deve ottenere il sito"
+              options={OPTIONS.obiettivi}
+              value={interview.obiettivi}
+              onChange={(value) => updateField('obiettivi', value)}
+              multiple
+            />
             <div className="grid gap-4 lg:grid-cols-2">
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Sezioni richieste</span>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {checkboxOptions.sezioni.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => handleToggle('sezioni', option)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm ${
-                        interview.sezioni.includes(option)
-                          ? 'border-violet-500 bg-violet-100 text-violet-800'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-violet-300'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </label>
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Pagine richieste</span>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {checkboxOptions.pagine.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => handleToggle('pagine', option)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm ${
-                        interview.pagine.includes(option)
-                          ? 'border-violet-500 bg-violet-100 text-violet-800'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-violet-300'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </label>
+              <Field
+                label="Cosa deve fare l'utente appena entra"
+                value={interview.azioneUtente}
+                onChange={(value) => updateField('azioneUtente', value)}
+                placeholder="Es. vedere i contatti, prenotare, acquistare"
+              />
+              <Field
+                label="CTA principale"
+                value={interview.ctaPrincipale}
+                onChange={(value) => updateField('ctaPrincipale', value)}
+                placeholder="Es. Contattaci, Prenota, Acquista ora"
+              />
             </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Tipologia sito</span>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {checkboxOptions.tipoSito.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => handleToggle('tipoSito', option)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm ${
-                        interview.tipoSito.includes(option)
-                          ? 'border-violet-500 bg-violet-100 text-violet-800'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-violet-300'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </label>
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Servizi da mettere in evidenza</span>
-                <textarea
-                  value={interview.serviziEvidenza}
-                  onChange={(e) => handleChange('serviziEvidenza', e.target.value)}
-                  className="mt-2 h-28 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 resize-none"
-                  placeholder="Cosa deve essere subito visibile?"
-                />
-              </label>
-            </div>
-
-            <div className="space-y-4">
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Stile preferito</span>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {checkboxOptions.stilePreferito.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => handleToggle('stilePreferito', option)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm ${
-                        interview.stilePreferito.includes(option)
-                          ? 'border-violet-500 bg-violet-100 text-violet-800'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-violet-300'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </label>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Animazioni</span>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {checkboxOptions.animazioni.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => handleToggle('animazioni', option)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm ${
-                        interview.animazioni.includes(option)
-                          ? 'border-violet-500 bg-violet-100 text-violet-800'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-violet-300'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </label>
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Video in homepage</span>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {['no', 'si'].map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => handleOption('videoHomepage', value)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm ${
-                        interview.videoHomepage === value
-                          ? 'border-violet-500 bg-violet-100 text-violet-800'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-violet-300'
-                      }`}
-                    >
-                      {value === 'si' ? 'Sì' : 'No'}
-                    </button>
-                  ))}
-                </div>
-              </label>
-            </div>
-
-            {interview.videoHomepage === 'si' && (
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Dettagli video in homepage</span>
-                <textarea
-                  value={interview.videoHomepageDettagli}
-                  onChange={(e) => handleChange('videoHomepageDettagli', e.target.value)}
-                  className="mt-2 h-28 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 resize-none"
-                  placeholder="Che tipo di video? Che messaggio deve trasmettere?"
-                />
-              </label>
-            )}
-          </section>
+            <OptionGrid
+              label="Tipologia sito"
+              options={OPTIONS.tipoSito}
+              value={interview.tipoSito}
+              onChange={(value) => updateField('tipoSito', value)}
+            />
+          </div>
         )}
 
         {currentStep === 2 && (
-          <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Dettagli tecnici</h2>
-              <p className="mt-2 text-sm text-gray-600">Informazioni necessarie per dominio, accessi e linee guida.</p>
+              <h2 className="text-lg font-bold text-gray-950">Struttura, stile e materiali</h2>
             </div>
+            <OptionGrid
+              label="Sezioni/pagine da includere"
+              options={OPTIONS.sezioni}
+              value={interview.sezioni}
+              onChange={(value) => updateField('sezioni', value)}
+              multiple
+            />
+            <Field
+              label="Altre sezioni"
+              value={interview.sezioniAltro}
+              onChange={(value) => updateField('sezioniAltro', value)}
+              placeholder="Aggiungi sezioni non presenti sopra"
+            />
+            <OptionGrid
+              label="Stile desiderato"
+              options={OPTIONS.stile}
+              value={interview.stile}
+              onChange={(value) => updateField('stile', value)}
+              multiple
+            />
+            <Field
+              label="Altro stile"
+              value={interview.stileAltro}
+              onChange={(value) => updateField('stileAltro', value)}
+              placeholder="Mood, siti simili, dettagli particolari"
+            />
             <div className="grid gap-4 lg:grid-cols-2">
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Linee guida brand disponibili?</span>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {['no', 'si'].map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => handleOption('haLineeGuidaBrand', value)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm ${
-                        interview.haLineeGuidaBrand === value
-                          ? 'border-violet-500 bg-violet-100 text-violet-800'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-violet-300'
-                      }`}
-                    >
-                      {value === 'si' ? 'Sì' : 'No'}
-                    </button>
-                  ))}
-                </div>
-              </label>
-
-              {interview.haLineeGuidaBrand === 'si' && (
-                <label className="block">
-                  <span className="text-sm font-semibold text-gray-700">Dettagli linee guida brand</span>
-                  <textarea
-                    value={interview.lineeGuidaBrand}
-                    onChange={(e) => handleChange('lineeGuidaBrand', e.target.value)}
-                    className="mt-2 h-28 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 resize-none"
-                    placeholder="Palette, mood, immagini, tono di voce"
-                  />
-                </label>
-              )}
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Dominio esistente?</span>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {['no', 'si'].map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => handleOption('haDominio', value)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm ${
-                        interview.haDominio === value
-                          ? 'border-violet-500 bg-violet-100 text-violet-800'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-violet-300'
-                      }`}
-                    >
-                      {value === 'si' ? 'Sì' : 'No'}
-                    </button>
-                  ))}
-                </div>
-              </label>
-
-              {interview.haDominio === 'si' && (
-                <label className="block">
-                  <span className="text-sm font-semibold text-gray-700">Dominio / URL</span>
-                  <input
-                    type="text"
-                    value={interview.dominio}
-                    onChange={(e) => handleChange('dominio', e.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                    placeholder="esempio: azienda.it"
-                  />
-                </label>
-              )}
-            </div>
-
-            {interview.haDominio === 'si' && (
-              <div className="grid gap-4 lg:grid-cols-3">
-                <label className="block">
-                  <span className="text-sm font-semibold text-gray-700">Servizio dominio</span>
-                  <input
-                    type="text"
-                    value={interview.servizioDominio}
-                    onChange={(e) => handleChange('servizioDominio', e.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                    placeholder="Aruba, OVH, GoDaddy..."
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-sm font-semibold text-gray-700">Mail collegate</span>
-                  <input
-                    type="text"
-                    value={interview.mailCollegate}
-                    onChange={(e) => handleChange('mailCollegate', e.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                    placeholder="Email principali collegate"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-sm font-semibold text-gray-700">Data scadenza dominio</span>
-                  <input
-                    type="text"
-                    value={interview.scadenzaDominio}
-                    onChange={(e) => handleChange('scadenzaDominio', e.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                    placeholder="Esempio: 2027-07-01"
-                  />
-                </label>
+              <OptionGrid
+                label="Animazioni"
+                options={OPTIONS.animazioni}
+                value={interview.animazioni}
+                onChange={(value) => updateField('animazioni', value)}
+              />
+              <div className="space-y-4">
+                <OptionGrid
+                  label="Video in homepage"
+                  options={['No', 'Si']}
+                  value={interview.videoHomepage}
+                  onChange={(value) => updateField('videoHomepage', value)}
+                />
+                <OptionGrid
+                  label="Linee guida brand"
+                  options={['No', 'Si']}
+                  value={interview.lineeGuidaBrand}
+                  onChange={(value) => updateField('lineeGuidaBrand', value)}
+                />
               </div>
-            )}
-
-            {interview.haDominio === 'si' && (
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Accessi dominio / hosting</span>
-                <textarea
-                  value={interview.accessiDominio}
-                  onChange={(e) => handleChange('accessiDominio', e.target.value)}
-                  className="mt-2 h-28 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 resize-none"
-                  placeholder="Credenziali o note sugli accessi"
-                />
-              </label>
-            )}
-
-            {interview.haDominio === 'si' && (
-              <label className="block">
-                <span className="text-sm font-semibold text-gray-700">Note accessi</span>
-                <textarea
-                  value={interview.noteAccessi}
-                  onChange={(e) => handleChange('noteAccessi', e.target.value)}
-                  className="mt-2 h-28 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 resize-none"
-                  placeholder="Note su certificati, redirect, account"
-                />
-              </label>
-            )}
-          </section>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Field
+                label="Colori preferiti o da evitare"
+                value={interview.colori}
+                onChange={(value) => updateField('colori', value)}
+                placeholder="Es. blu, marrone, evitare rosso..."
+              />
+              <Field
+                label="Font o riferimenti tipografici"
+                value={interview.font}
+                onChange={(value) => updateField('font', value)}
+                placeholder="Font specifici o riferimento stile"
+              />
+            </div>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <OptionGrid
+                label="Materiali brand"
+                options={OPTIONS.brandAssets}
+                value={interview.brandAssets}
+                onChange={(value) => updateField('brandAssets', value)}
+                multiple
+              />
+              <OptionGrid
+                label="Media disponibili"
+                options={OPTIONS.mediaAssets}
+                value={interview.mediaAssets}
+                onChange={(value) => updateField('mediaAssets', value)}
+                multiple
+              />
+              <OptionGrid
+                label="Testi disponibili"
+                options={OPTIONS.textAssets}
+                value={interview.textAssets}
+                onChange={(value) => updateField('textAssets', value)}
+                multiple
+              />
+            </div>
+          </div>
         )}
 
         {currentStep === 3 && (
-          <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Riepilogo</h2>
+              <h2 className="text-lg font-bold text-gray-950">Dominio e risultato</h2>
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-3xl border border-gray-200 bg-slate-50 p-5">
-                <h3 className="text-sm font-semibold text-gray-900">Testo strutturato</h3>
-                <pre className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-800">{promptText}</pre>
-              </div>
-              <div className="space-y-4 rounded-3xl border border-gray-200 bg-slate-50 p-5">
-                <div>
-                  <p className="text-sm font-semibold text-gray-700">Download</p>
+              <OptionGrid
+                label="Dominio esistente"
+                options={['No', 'Si']}
+                value={interview.dominioEsistente}
+                onChange={(value) => updateField('dominioEsistente', value)}
+              />
+              <Field
+                label="Dominio / URL"
+                value={interview.dominio}
+                onChange={(value) => updateField('dominio', value)}
+                placeholder="azienda.it"
+              />
+            </div>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Field
+                label="Provider dominio/hosting"
+                value={interview.providerDominio}
+                onChange={(value) => updateField('providerDominio', value)}
+                placeholder="Aruba, OVH, SiteGround..."
+              />
+              <Field
+                label="Email collegate"
+                value={interview.emailCollegate}
+                onChange={(value) => updateField('emailCollegate', value)}
+                placeholder="info@azienda.it, amministrazione..."
+              />
+              <Field
+                label="Scadenza dominio"
+                value={interview.scadenzaDominio}
+                onChange={(value) => updateField('scadenzaDominio', value)}
+                placeholder="Data o mese/anno"
+              />
+            </div>
+            <TextArea
+              label="Accessi dominio/hosting"
+              value={interview.accessiDominio}
+              onChange={(value) => updateField('accessiDominio', value)}
+              placeholder="Credenziali o note operative"
+              rows={3}
+            />
+            <TextArea
+              label="Note finali"
+              value={interview.noteFinali}
+              onChange={(value) => updateField('noteFinali', value)}
+              placeholder="Vincoli, cose da evitare, richieste particolari"
+              rows={3}
+            />
+            <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-bold text-gray-950">Risultato TXT</h3>
+                  {message && <span className="text-xs font-semibold text-emerald-700">{message}</span>}
                 </div>
-                {message && <div className="rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">{message}</div>}
-                <div className="grid gap-3 sm:grid-cols-2">
+                <pre className="max-h-[460px] overflow-auto whitespace-pre-wrap text-sm leading-6 text-gray-800">
+                  {resultText}
+                </pre>
+              </div>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="text-sm font-bold text-gray-950">Download</h3>
+                <div className="mt-4 space-y-3">
                   <button
                     type="button"
                     onClick={downloadTxt}
-                    className="w-full rounded-2xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
                   >
+                    <FileText className="h-4 w-4" />
                     Scarica TXT
                   </button>
                   <button
                     type="button"
                     onClick={downloadJson}
-                    className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-gray-800"
                   >
+                    <FileJson className="h-4 w-4" />
                     Scarica JSON
                   </button>
                 </div>
               </div>
             </div>
-          </section>
+          </div>
         )}
       </div>
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={goBack}
           disabled={currentStep === 0}
-          className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
+          <ChevronLeft className="h-4 w-4" />
           Indietro
         </button>
-        <button
-          type="button"
-          onClick={currentStep === STEP_TITLES.length - 1 ? downloadTxt : goNext}
-          className="rounded-full bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
-        >
-          {currentStep === STEP_TITLES.length - 1 ? 'Scarica TXT' : 'Avanti'}
-        </button>
+        {currentStep === STEPS.length - 1 ? (
+          <button
+            type="button"
+            onClick={downloadTxt}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-700"
+          >
+            <Download className="h-4 w-4" />
+            Scarica TXT
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={goNext}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-700"
+          >
+            Avanti
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </div>
   );
