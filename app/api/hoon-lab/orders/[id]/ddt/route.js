@@ -11,7 +11,8 @@ export async function POST(req, { params }) {
     const order = await HoonLabOrderConfirmation.findById(id);
 
     if (!order) return NextResponse.json({ error: "Ordine non trovato" }, { status: 404 });
-    if (order.status === "ddt_generato") {
+    const existingDdt = await HoonLabDeliveryNote.exists({ orderConfirmation: order._id, status: { $ne: "annullato" } });
+    if (existingDdt) {
       return NextResponse.json({ error: "DDT gia generato per questo ordine" }, { status: 409 });
     }
 
@@ -29,7 +30,8 @@ export async function POST(req, { params }) {
       notes: body.notes || ""
     });
 
-    order.status = "ddt_generato";
+    if (["bozza", "confermato", "ddt_generato"].includes(order.status)) order.status = "preparato";
+    order.statusChangedAt = new Date();
     await order.save();
 
     return NextResponse.json(ddt, { status: 201 });

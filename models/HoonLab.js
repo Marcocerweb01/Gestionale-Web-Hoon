@@ -5,7 +5,18 @@ const { Schema, model, models } = mongoose;
 const CUSTOMER_TYPES = ["privato", "team", "azienda"];
 const DOCUMENT_TYPES = ["quote", "order_confirmation", "delivery_note"];
 const QUOTE_STATUSES = ["bozza", "inviato", "accettato", "rifiutato", "scaduto", "convertito"];
-const ORDER_STATUSES = ["bozza", "confermato", "ddt_generato", "annullato"];
+const ORDER_STATUSES = [
+  "bozza",
+  "confermato",
+  "in_preparazione",
+  "preparato",
+  "ddt_generato",
+  "spedito",
+  "consegnato",
+  "annullato"
+];
+const PAYMENT_STATUSES = ["non_pagato", "acconto", "pagato"];
+const PAYMENT_METHODS = ["", "contanti", "bonifico", "carta", "paypal", "altro"];
 const DDT_STATUSES = ["bozza", "emesso", "annullato"];
 const TODO_STATUSES = ["da_fare", "in_lavorazione", "fatta"];
 
@@ -136,6 +147,15 @@ const OrderConfirmationSchema = new Schema({
   discountTotal: MoneySchema,
   increaseTotal: MoneySchema,
   total: MoneySchema,
+  paymentStatus: { type: String, enum: PAYMENT_STATUSES, default: "non_pagato" },
+  paymentMethod: { type: String, enum: PAYMENT_METHODS, default: "" },
+  amountPaid: MoneySchema,
+  balanceDue: MoneySchema,
+  paymentNotes: { type: String, default: "" },
+  paidAt: { type: Date, default: null },
+  statusChangedAt: { type: Date, default: Date.now },
+  shippedAt: { type: Date, default: null },
+  deliveredAt: { type: Date, default: null },
   notes: { type: String, default: "" },
   pdfUrl: { type: String, default: "" }
 }, { timestamps: true });
@@ -230,6 +250,8 @@ export const HOON_LAB = {
   DOCUMENT_TYPES,
   QUOTE_STATUSES,
   ORDER_STATUSES,
+  PAYMENT_STATUSES,
+  PAYMENT_METHODS,
   DDT_STATUSES,
   TODO_STATUSES
 };

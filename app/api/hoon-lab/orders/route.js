@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDB } from "@/utils/database";
-import { HoonLabOrderConfirmation } from "@/models/HoonLab";
+import { HoonLabDeliveryNote, HoonLabOrderConfirmation } from "@/models/HoonLab";
 
 export async function GET(req) {
   try {
@@ -18,7 +18,18 @@ export async function GET(req) {
       .sort({ createdAt: -1 })
       .lean();
 
-    return NextResponse.json(orders);
+    const orderIds = orders.map((order) => order._id);
+    const deliveryNotes = await HoonLabDeliveryNote.find({
+      orderConfirmation: { $in: orderIds },
+      status: { $ne: "annullato" }
+    }).select("orderConfirmation").lean();
+    const ordersWithDdt = new Set(deliveryNotes.map((note) => String(note.orderConfirmation)));
+
+    return NextResponse.json(orders.map((order) => ({
+      ...order,
+      hasDeliveryNote: ordersWithDdt.has(String(order._id)),
+      balanceDue: order.balanceDue ?? Math.max(0, Number(order.total || 0) - Number(order.amountPaid || 0))
+    })));
   } catch (error) {
     console.error("Errore ordini Hoon Lab:", error);
     return NextResponse.json({ error: "Errore caricamento ordini" }, { status: 500 });

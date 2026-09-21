@@ -35,6 +35,9 @@ export async function POST(_req, { params }) {
       discountTotal: quote.discountTotal,
       increaseTotal: quote.increaseTotal,
       total: quote.total,
+      paymentStatus: "non_pagato",
+      amountPaid: 0,
+      balanceDue: quote.total,
       notes: quote.notes
     });
 

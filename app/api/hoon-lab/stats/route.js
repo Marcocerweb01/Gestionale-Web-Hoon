@@ -189,6 +189,21 @@ export async function GET(req) {
       averageQuoteValue: quotes.length ? totalQuotesValue / quotes.length : 0,
       totalDiscounts: quotes.reduce((sum, quote) => sum + Number(quote.discountTotal || 0), 0),
       totalIncreases: quotes.reduce((sum, quote) => sum + Number(quote.increaseTotal || 0), 0),
+      operations: {
+        quotesDraft: quotes.filter((quote) => quote.status === "bozza").length,
+        quotesSent: quotes.filter((quote) => quote.status === "inviato").length,
+        ordersToPrepare: orders.filter((order) => ["bozza", "confermato", "in_preparazione"].includes(order.status)).length,
+        ordersPrepared: orders.filter((order) => ["preparato", "ddt_generato"].includes(order.status)).length,
+        ordersShipped: orders.filter((order) => order.status === "spedito").length,
+        ordersDelivered: orders.filter((order) => order.status === "consegnato").length,
+        unpaidOrders: orders.filter((order) => !order.paymentStatus || order.paymentStatus === "non_pagato").length,
+        depositOrders: orders.filter((order) => order.paymentStatus === "acconto").length,
+        paidOrders: orders.filter((order) => order.paymentStatus === "pagato").length,
+        outstandingValue: orders.reduce((sum, order) => {
+          const paid = order.paymentStatus === "pagato" ? Number(order.total || 0) : Number(order.amountPaid || 0);
+          return sum + Math.max(0, Number(order.total || 0) - paid);
+        }, 0)
+      },
       topProducts: Array.from(productMap.values()).sort((a, b) => b.total - a.total).slice(0, 10),
       topCustomers: Array.from(topCustomersMap.entries())
         .map(([name, total]) => ({ name, total }))
