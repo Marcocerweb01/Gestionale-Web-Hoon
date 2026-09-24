@@ -183,7 +183,9 @@ const Registrazione = () => {
                       { value: "web designer", label: "Web Designer", icon: "🎨" },
                       { value: "seo", label: "SEO", icon: "🔍" },
                       { value: "google ads", label: "Google ADS", icon: "📢" },
-                      { value: "meta ads", label: "Meta ADS", icon: "📱" }
+                      { value: "meta ads", label: "Meta ADS", icon: "📱" },
+                      { value: "fotografo", label: "Fotografo", icon: "📷" },
+                      { value: "videomaker", label: "Videomaker", icon: "🎥" }
                     ].map((ruolo) => (
                       <label
                         key={ruolo.value}

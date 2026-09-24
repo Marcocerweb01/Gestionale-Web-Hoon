@@ -212,6 +212,23 @@ const Lista_collaboratori = ({ collaboratori }) => {
         )}
       </div>
 
+      {/* Accesso Gestione Eventi */}
+      <Link
+        href="/Eventi"
+        className="group flex items-center justify-between overflow-hidden rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-xl text-white shadow-sm">📅</span>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Gestione Eventi</h2>
+            <p className="text-sm text-gray-500">Eventi, responsabili, team e attività</p>
+          </div>
+        </div>
+        <span className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-blue-700">
+          Apri Eventi
+        </span>
+      </Link>
+
       {/* Area Marketing - Contiene SEO, Google ADS, Meta ADS */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-200 p-4">

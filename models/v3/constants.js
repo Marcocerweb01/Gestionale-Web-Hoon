@@ -13,6 +13,8 @@ export const COLLABORATOR_SUB_ROLES = [
   "google_ads",
   "meta_ads",
   "commerciale",
+  "fotografo",
+  "videomaker",
 ];
 
 export const COLLABORATION_TYPES = [

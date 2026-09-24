@@ -30,6 +30,13 @@ export async function proxy(req) {
       return NextResponse.redirect(url);
     }
   } else if (
+    pathname.startsWith("/Eventi")
+  ) {
+    if (token.role !== "amministratore" && token.role !== "collaboratore") {
+      url.pathname = "/unauthorized";
+      return NextResponse.redirect(url);
+    }
+  } else if (
     pathname.startsWith("/Operations/GooglePlacesNoWebsite") ||
     pathname.startsWith("/Operations/SocialAutomation") ||
     pathname.startsWith("/Operations/Analytics")
