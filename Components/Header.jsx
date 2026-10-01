@@ -170,6 +170,7 @@ const Header = () => {
               </div>
             ) : session ? (
               <div className="flex items-center space-x-4">
+                {session.user.role !== "hoon_lab" && (
                 <div className="relative" ref={searchRef}>
                   <div className="flex items-center gap-2">
                     <button
@@ -250,6 +251,7 @@ const Header = () => {
                     </div>
                   )}
                 </div>
+                )}
 
                 {/* Link Fatturazione - Solo per amministratori */}
                 {(session.user.role === "amministratore" || session.user.role === "segretaria") && (
@@ -259,6 +261,16 @@ const Header = () => {
                   >
                     <span className="text-lg">💰</span>
                     <span className="hidden md:block">Fatturazione</span>
+                  </Link>
+                )}
+
+                {["amministratore", "hoon_lab"].includes(session.user.role) && (
+                  <Link
+                    href="/Hoon-Lab"
+                    className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200"
+                  >
+                    <span className="text-lg">🧪</span>
+                    <span className="hidden md:block">Hoon Lab</span>
                   </Link>
                 )}
 

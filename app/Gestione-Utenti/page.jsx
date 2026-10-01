@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, KeyRound, XCircle } from "lucide-react";
+import { CheckCircle2, KeyRound, ShieldCheck, ShieldOff, XCircle } from "lucide-react";
 
 const tipoColori = {
   amministratore: "bg-purple-100 text-purple-800",
@@ -160,6 +160,34 @@ export default function GestioneUtenti() {
     }
   };
 
+  const handleToggleAdmin = async (user) => {
+    if (user.tipo !== "collaboratore") return;
+    setStatusMsg("");
+    try {
+      setUpdatingStatusId(user._id);
+      const res = await fetch(`/api/gestione-utenti/${user._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: user.tipo, isAdmin: !user.isAdmin }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatusMsg(`Errore: ${data.error || "aggiornamento non riuscito"}`);
+        return;
+      }
+      setUtenti((current) => current.map((u) =>
+        u._id === user._id ? { ...u, isAdmin: !u.isAdmin } : u
+      ));
+      setStatusMsg(
+        `${user.nome} ${user.isAdmin ? "non è più amministratore" : "ora è anche amministratore"}. Il nuovo accesso sarà attivo dal prossimo login.`
+      );
+    } catch {
+      setStatusMsg("Errore di connessione al server");
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
   const utentiFiltrati = utenti.filter((u) => {
     const matchTipo = filtroTipo === "tutti" || u.tipo === filtroTipo;
     const query = cerca.toLowerCase();
@@ -275,7 +303,7 @@ export default function GestioneUtenti() {
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tipoColori[u.tipo]}`}
                     >
-                      {u.etichetta}
+                      {u.etichetta}{u.isAdmin ? " · Admin" : ""}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -296,6 +324,21 @@ export default function GestioneUtenti() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
+                      {u.tipo === "collaboratore" && (
+                        <button
+                          onClick={() => handleToggleAdmin(u)}
+                          disabled={updatingStatusId === u._id || u._id === session?.user?.id}
+                          title={u.isAdmin ? "Rimuovi privilegi amministratore" : "Rendi anche amministratore"}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                            u.isAdmin
+                              ? "text-orange-700 bg-orange-50 hover:bg-orange-100"
+                              : "text-purple-700 bg-purple-50 hover:bg-purple-100"
+                          }`}
+                        >
+                          {u.isAdmin ? <ShieldOff className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                          {u.isAdmin ? "Rimuovi Admin" : "Rendi Admin"}
+                        </button>
+                      )}
                       {canToggleStatus(u) && (
                         <button
                           onClick={() => handleToggleStatus(u)}

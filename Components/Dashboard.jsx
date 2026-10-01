@@ -1180,6 +1180,21 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Un collaboratore con privilegi admin mantiene anche la propria area operativa. */}
+      {session?.user?.role === "amministratore" && hasRole("smm") && (
+        <div className="bg-white rounded-xl shadow-sm border border-purple-200">
+          <div className="p-4 md:p-6 border-b border-purple-100">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 flex items-center">
+              <Building2 className="w-5 h-5 md:w-6 md:h-6 mr-2 text-purple-600" />
+              La mia area Social Media Manager
+            </h2>
+          </div>
+          <div className="p-4 md:p-6">
+            <ListaClienti id={session.user.id} amministratore={false} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

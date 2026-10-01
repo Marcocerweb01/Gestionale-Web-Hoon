@@ -31,6 +31,9 @@ const CollaboratoreSchema = new Schema({
     default: [],
     required: true,
   },
+  // Un collaboratore puo mantenere assegnazioni e dashboard operative
+  // ottenendo allo stesso tempo i permessi amministratore.
+  isAdmin: { type: Boolean, default: false },
   status: {
     type: String,
     enum: ["attivo", "non_attivo"],
@@ -69,7 +72,7 @@ const AmministratoreSchema = new Schema({
   cognome: { type: String, required: false },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  ruolo: { type: String, enum: ["amministratore", "segretaria"], default: "amministratore" },
+  ruolo: { type: String, enum: ["amministratore", "segretaria", "hoon_lab"], default: "amministratore" },
 }, { timestamps: true });
 
 const ContattoSchema = new Schema({

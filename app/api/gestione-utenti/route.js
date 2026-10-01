@@ -17,7 +17,7 @@ export async function GET() {
     await connectToDB();
 
     const [collaboratori, amministratori, aziende] = await Promise.all([
-      Collaboratore.find({}, '_id nome cognome email status subRoles').lean(),
+      Collaboratore.find({}, '_id nome cognome email status subRoles isAdmin').lean(),
       Amministratore.find({}, '_id nome cognome email ruolo').lean(),
       Azienda.find({}, '_id nome cognome email ragioneSociale status').lean(),
     ]);
@@ -29,7 +29,11 @@ export async function GET() {
         cognome: u.cognome || '',
         email: u.email,
         tipo: 'amministratore',
-        etichetta: u.ruolo === 'segretaria' ? 'Segretaria' : 'Amministratore',
+        etichetta: u.ruolo === 'segretaria'
+          ? 'Segretaria'
+          : u.ruolo === 'hoon_lab'
+            ? 'Hoon Lab'
+            : 'Amministratore',
       })),
       ...collaboratori.map(u => ({
         _id: u._id,
@@ -40,6 +44,7 @@ export async function GET() {
         etichetta: 'Collaboratore',
         status: u.status,
         subRoles: u.subRoles || [],
+        isAdmin: Boolean(u.isAdmin),
       })),
       ...aziende.map(u => ({
         _id: u._id,

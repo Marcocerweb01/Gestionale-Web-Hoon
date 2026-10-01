@@ -2,9 +2,16 @@ import { Azienda, Collaboratore, Contatto, Amministratore } from "@models/User.j
 import { connectToDB } from "@/utils/database";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(req) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !["amministratore", "segretaria"].includes(session.user?.role)) {
+      return NextResponse.json({ message: "Non autorizzato" }, { status: 403 });
+    }
+
     // Connessione al database
     await connectToDB();
 
@@ -28,21 +35,27 @@ export async function POST(req) {
     }
 
     // Verifica se l'utente esiste già
-    let exists;
-    if (ruolo.nome === "azienda") {
-      exists = await Azienda.findOne({ email });
-    } else if (ruolo.nome === "collaboratore") {
-      exists = await Collaboratore.findOne({ email });
-    } else if (ruolo.nome === "contatto") {
-      exists = await Contatto.findOne({ email });
-    } else if (ruolo.nome === "amministratore" || ruolo.nome === "segretaria") {
-      exists = await Amministratore.findOne({ email });
-    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUsers = await Promise.all([
+      Azienda.findOne({ email: normalizedEmail }),
+      Collaboratore.findOne({ email: normalizedEmail }),
+      Contatto.findOne({ email: normalizedEmail }),
+      Amministratore.findOne({ email: normalizedEmail }),
+    ]);
+    const exists = existingUsers.find(Boolean);
 
     if (exists) {
       return NextResponse.json(
         { message: "Email già in uso" },
         { status: 400 }
+      );
+    }
+
+    const wantsPrivilegedAccess = ["amministratore", "hoon_lab"].includes(ruolo.nome) || Boolean(ruolo.dettagli?.isAdmin);
+    if (wantsPrivilegedAccess && session.user.role !== "amministratore") {
+      return NextResponse.json(
+        { message: "Solo un amministratore può assegnare privilegi amministratore" },
+        { status: 403 }
       );
     }
 
@@ -62,7 +75,7 @@ export async function POST(req) {
       nuovoUtente = await Azienda.create({
         nome,
         cognome,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         numerotelefonico,
         partitaIva,
@@ -84,25 +97,26 @@ export async function POST(req) {
       nuovoUtente = await Collaboratore.create({
         nome,
         cognome,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         partitaIva,
         subRoles: subRoles, // Array di ruoli
+        isAdmin: Boolean(ruolo.dettagli?.isAdmin),
       });
     } else if (ruolo.nome === "contatto") {
       nuovoUtente = await Contatto.create({
         nome,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         ragioneSociale: ruolo.dettagli?.ragioneSociale,
         indirizzo: ruolo.dettagli?.indirizzo,
         notes: ruolo.dettagli?.notes,
       });
-    } else if (ruolo.nome === "amministratore" || ruolo.nome === "segretaria") {
+    } else if (["amministratore", "segretaria", "hoon_lab"].includes(ruolo.nome)) {
       nuovoUtente = await Amministratore.create({
         nome,
         cognome,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         ruolo: ruolo.nome,
       });

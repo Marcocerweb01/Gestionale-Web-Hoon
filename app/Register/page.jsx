@@ -1,9 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const Registrazione = () => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [info, setInfo] = useState({
     nome: "",
     cognome: "",
@@ -114,6 +116,9 @@ const Registrazione = () => {
                 <option value="collaboratore">Collaboratore</option>
                 <option value="amministratore">Amministratore</option>
                 <option value="segretaria">Segretaria</option>
+                {session?.user?.role === "amministratore" && (
+                  <option value="hoon_lab">Hoon Lab</option>
+                )}
               </select>
             </div>
 
@@ -226,6 +231,30 @@ const Registrazione = () => {
                     </div>
                   )}
                 </div>
+
+                {session?.user?.role === "amministratore" && (
+                <label className="flex items-start gap-3 rounded-lg border-2 border-purple-200 bg-white p-4 cursor-pointer hover:border-purple-400 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(info.ruolo.dettagli.isAdmin)}
+                    onChange={(e) => setInfo((prev) => ({
+                      ...prev,
+                      ruolo: {
+                        ...prev.ruolo,
+                        dettagli: {
+                          ...prev.ruolo.dettagli,
+                          isAdmin: e.target.checked,
+                        },
+                      },
+                    }))}
+                    className="mt-0.5 h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold text-purple-900">Anche amministratore</span>
+                    <span className="mt-1 block text-xs text-gray-600">Mostra nello stesso account sia la dashboard operativa sia gli strumenti di amministrazione.</span>
+                  </span>
+                </label>
+                )}
               </div>
             )}
 

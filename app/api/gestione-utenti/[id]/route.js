@@ -17,9 +17,9 @@ export async function PATCH(req, { params }) {
 
     const resolvedParams = await params;
     const { id } = resolvedParams;
-    const { newPassword, tipo, status } = await req.json();
+    const { newPassword, tipo, status, isAdmin } = await req.json();
 
-    if (!newPassword && !status) {
+    if (!newPassword && !status && typeof isAdmin !== 'boolean') {
       return NextResponse.json(
         { error: 'Nessun dato da aggiornare' },
         { status: 400 }
@@ -80,14 +80,20 @@ export async function PATCH(req, { params }) {
       user.status = status;
     }
 
+    if (typeof isAdmin === 'boolean') {
+      if (tipo !== 'collaboratore') {
+        return NextResponse.json(
+          { error: 'I privilegi ibridi sono disponibili solo per i collaboratori' },
+          { status: 400 }
+        );
+      }
+      user.isAdmin = isAdmin;
+    }
+
     await user.save();
 
     return NextResponse.json({
-      message: newPassword && status
-        ? 'Utente aggiornato con successo'
-        : newPassword
-          ? 'Password aggiornata con successo'
-          : 'Status aggiornato con successo',
+      message: 'Utente aggiornato con successo',
       user: {
         _id: user._id,
         nome: user.nome,
@@ -95,6 +101,7 @@ export async function PATCH(req, { params }) {
         email: user.email,
         tipo,
         status: user.status,
+        isAdmin: Boolean(user.isAdmin),
       },
     });
   } catch (error) {
