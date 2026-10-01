@@ -154,6 +154,7 @@ export default function HoonLabClient() {
   const [todoView, setTodoView] = useState("tutte");
   const [todoForm, setTodoForm] = useState({ note: "", dueDate: "", status: "da_fare" });
   const [settingsForm, setSettingsForm] = useState(DEFAULT_HOON_LAB_SETTINGS);
+  const [resettingOperationalData, setResettingOperationalData] = useState(false);
 
   const [customerForm, setCustomerForm] = useState({
     type: "privato",
@@ -445,6 +446,35 @@ export default function HoonLabClient() {
       setMessage("Impostazioni documenti salvate");
     } catch (error) {
       setMessage(error.message);
+    }
+  }
+
+  async function handleResetOperationalData() {
+    const confirmation = window.prompt(
+      "Questa operazione elimina definitivamente clienti, preventivi, ordini, DDT, attivita e numerazioni. Prodotti, listini e impostazioni restano invariati.\n\nScrivi: CANCELLA DATI HOON LAB"
+    );
+    if (confirmation !== "CANCELLA DATI HOON LAB") {
+      if (confirmation !== null) setMessage("Cancellazione annullata: testo di conferma non corretto");
+      return;
+    }
+
+    try {
+      setResettingOperationalData(true);
+      const response = await fetch("/api/hoon-lab/reset-operational-data", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Cancellazione non riuscita");
+
+      const deletedTotal = Object.values(result.deleted || {}).reduce((total, value) => total + Number(value || 0), 0);
+      setMessage(`Pulizia completata: ${deletedTotal} record operativi eliminati. Prodotti e listini conservati.`);
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setResettingOperationalData(false);
     }
   }
 
@@ -1639,7 +1669,8 @@ export default function HoonLabClient() {
                   {[
                     { id: "statistiche", label: "Statistiche", icon: BarChart3 },
                     { id: "setup", label: "Setup", icon: Boxes },
-                    { id: "export", label: "Export", icon: Download }
+                    { id: "export", label: "Export", icon: Download },
+                    { id: "dati", label: "Gestione dati", icon: Trash2 }
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
@@ -1662,6 +1693,26 @@ export default function HoonLabClient() {
               </section>
 
               {settingsTab === "statistiche" && stats && <StatsDashboard stats={stats} />}
+
+              {settingsTab === "dati" && (
+                <section className="rounded-lg border border-red-200 bg-white p-5 shadow-sm">
+                  <div className="max-w-3xl">
+                    <h2 className="text-xl font-bold text-slate-900">Cancella dati operativi</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      Elimina clienti, preventivi, conferme d&apos;ordine, DDT, attività e numerazioni. Prodotti, listini, prezzi, impostazioni e template PDF rimangono invariati.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleResetOperationalData}
+                      disabled={resettingOperationalData}
+                      className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {resettingOperationalData ? "Cancellazione in corso..." : "Cancella dati operativi"}
+                    </button>
+                  </div>
+                </section>
+              )}
 
               {settingsTab === "export" && (
               <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
