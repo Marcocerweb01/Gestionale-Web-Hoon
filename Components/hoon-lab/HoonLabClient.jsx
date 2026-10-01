@@ -155,6 +155,7 @@ export default function HoonLabClient() {
   const [todoForm, setTodoForm] = useState({ note: "", dueDate: "", status: "da_fare" });
   const [settingsForm, setSettingsForm] = useState(DEFAULT_HOON_LAB_SETTINGS);
   const [resettingOperationalData, setResettingOperationalData] = useState(false);
+  const [resetConfirmation, setResetConfirmation] = useState("");
 
   const [customerForm, setCustomerForm] = useState({
     type: "privato",
@@ -450,11 +451,8 @@ export default function HoonLabClient() {
   }
 
   async function handleResetOperationalData() {
-    const confirmation = window.prompt(
-      "Questa operazione elimina definitivamente clienti, preventivi, ordini, DDT, attivita e numerazioni. Prodotti, listini e impostazioni restano invariati.\n\nScrivi: CANCELLA DATI HOON LAB"
-    );
-    if (confirmation !== "CANCELLA DATI HOON LAB") {
-      if (confirmation !== null) setMessage("Cancellazione annullata: testo di conferma non corretto");
+    if (resetConfirmation !== "CANCELLA DATI HOON LAB") {
+      setMessage("Cancellazione annullata: testo di conferma non corretto");
       return;
     }
 
@@ -463,13 +461,14 @@ export default function HoonLabClient() {
       const response = await fetch("/api/hoon-lab/reset-operational-data", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmation })
+        body: JSON.stringify({ confirmation: resetConfirmation })
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Cancellazione non riuscita");
 
       const deletedTotal = Object.values(result.deleted || {}).reduce((total, value) => total + Number(value || 0), 0);
       setMessage(`Pulizia completata: ${deletedTotal} record operativi eliminati. Prodotti e listini conservati.`);
+      setResetConfirmation("");
       await loadData();
     } catch (error) {
       setMessage(error.message);
@@ -1701,10 +1700,20 @@ export default function HoonLabClient() {
                     <p className="mt-2 text-sm leading-6 text-slate-600">
                       Elimina clienti, preventivi, conferme d&apos;ordine, DDT, attività e numerazioni. Prodotti, listini, prezzi, impostazioni e template PDF rimangono invariati.
                     </p>
+                    <label className="mt-4 grid max-w-lg gap-1.5 text-sm font-semibold text-slate-700">
+                      Per confermare scrivi: CANCELLA DATI HOON LAB
+                      <input
+                        value={resetConfirmation}
+                        onChange={(event) => setResetConfirmation(event.target.value)}
+                        className="field font-normal"
+                        placeholder="CANCELLA DATI HOON LAB"
+                        autoComplete="off"
+                      />
+                    </label>
                     <button
                       type="button"
                       onClick={handleResetOperationalData}
-                      disabled={resettingOperationalData}
+                      disabled={resettingOperationalData || resetConfirmation !== "CANCELLA DATI HOON LAB"}
                       className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Trash2 className="h-4 w-4" />
