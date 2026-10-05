@@ -6,6 +6,7 @@ import {
   HoonLabCustomer,
   HoonLabDeliveryNote,
   HoonLabDocumentSequence,
+  HoonLabFinanceEntry,
   HoonLabOrderConfirmation,
   HoonLabQuote,
   HoonLabTodo
@@ -27,13 +28,14 @@ export async function DELETE(req) {
 
     await connectToDB();
 
-    const [deliveryNotes, orders, quotes, customers, todos, sequences] = await Promise.all([
+    const [deliveryNotes, orders, quotes, customers, todos, sequences, financeEntries] = await Promise.all([
       HoonLabDeliveryNote.deleteMany({}),
       HoonLabOrderConfirmation.deleteMany({}),
       HoonLabQuote.deleteMany({}),
       HoonLabCustomer.deleteMany({}),
       HoonLabTodo.deleteMany({}),
-      HoonLabDocumentSequence.deleteMany({})
+      HoonLabDocumentSequence.deleteMany({}),
+      HoonLabFinanceEntry.deleteMany({})
     ]);
 
     return NextResponse.json({
@@ -44,7 +46,8 @@ export async function DELETE(req) {
         quotes: quotes.deletedCount,
         customers: customers.deletedCount,
         todos: todos.deletedCount,
-        sequences: sequences.deletedCount
+        sequences: sequences.deletedCount,
+        financeEntries: financeEntries.deletedCount
       },
       preserved: ["products", "priceLists", "priceListItems", "pdfTemplates", "settings"]
     });

@@ -17,6 +17,7 @@ export async function GET(req) {
         { email: { $regex: search, $options: "i" } },
         { phone: { $regex: search, $options: "i" } },
         { vatNumber: { $regex: search, $options: "i" } },
+        { uniqueCode: { $regex: search, $options: "i" } },
         { "billingAddress.address": { $regex: search, $options: "i" } }
       ] } : {})
     };
@@ -51,6 +52,7 @@ export async function POST(req) {
       phone: body.phone || "",
       vatNumber: body.vatNumber || "",
       taxCode: body.taxCode || "",
+      uniqueCode: type === "azienda" ? body.uniqueCode || "" : "",
       billingAddress: body.billingAddress || {},
       shippingAddress: body.shippingAddress || {},
       defaultPriceList: body.defaultPriceList || null,

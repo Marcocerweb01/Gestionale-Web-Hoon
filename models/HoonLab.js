@@ -19,6 +19,7 @@ const PAYMENT_STATUSES = ["non_pagato", "acconto", "pagato"];
 const PAYMENT_METHODS = ["", "contanti", "bonifico", "carta", "paypal", "altro"];
 const DDT_STATUSES = ["bozza", "emesso", "annullato"];
 const TODO_STATUSES = ["da_fare", "in_lavorazione", "fatta"];
+const FINANCE_ENTRY_TYPES = ["income", "expense"];
 
 export const DEFAULT_HOON_LAB_SETTINGS = {
   companyName: "Hoon Srl",
@@ -48,6 +49,7 @@ const HoonLabCustomerSchema = new Schema({
   phone: { type: String, default: "", trim: true },
   vatNumber: { type: String, default: "", trim: true },
   taxCode: { type: String, default: "", trim: true },
+  uniqueCode: { type: String, default: "", trim: true, uppercase: true },
   billingAddress: { type: AddressSchema, default: () => ({}) },
   shippingAddress: { type: AddressSchema, default: () => ({}) },
   defaultPriceList: { type: Schema.Types.ObjectId, ref: "HoonLabPriceList", default: null },
@@ -69,6 +71,8 @@ const HoonLabPriceListSchema = new Schema({
   name: { type: String, required: true, trim: true },
   customerType: { type: String, enum: [...CUSTOMER_TYPES, "custom"], default: "privato" },
   currency: { type: String, default: "EUR" },
+  pricesNet: { type: Boolean, default: false },
+  pricesNetConvertedAt: { type: Date, default: null },
   active: { type: Boolean, default: true }
 }, { timestamps: true });
 
@@ -91,6 +95,7 @@ const CommercialLineSchema = new Schema({
   quantity: { type: Number, default: 1, min: 0 },
   unit: { type: String, default: "pz" },
   unitPrice: { type: Number, default: 0, min: 0 },
+  pricePending: { type: Boolean, default: false },
   manualUnitPrice: { type: Boolean, default: false },
   discountType: { type: String, enum: ["none", "percent", "fixed"], default: "none" },
   discountValue: MoneySchema,
@@ -225,6 +230,22 @@ const HoonLabTodoSchema = new Schema({
 HoonLabTodoSchema.index({ status: 1, dueDate: 1 });
 HoonLabTodoSchema.index({ active: 1, createdAt: -1 });
 
+const HoonLabFinanceEntrySchema = new Schema({
+  type: { type: String, enum: FINANCE_ENTRY_TYPES, required: true },
+  description: { type: String, required: true, trim: true },
+  category: { type: String, default: "", trim: true },
+  amount: { type: Number, required: true, min: 0 },
+  date: { type: Date, required: true, default: Date.now },
+  recurring: { type: Boolean, default: false },
+  recurrence: { type: String, enum: ["", "monthly"], default: "" },
+  recurrenceEnd: { type: Date, default: null },
+  notes: { type: String, default: "", trim: true },
+  active: { type: Boolean, default: true }
+}, { timestamps: true });
+
+HoonLabFinanceEntrySchema.index({ type: 1, date: -1 });
+HoonLabFinanceEntrySchema.index({ recurring: 1, active: 1 });
+
 const HoonLabSettingsSchema = new Schema({
   key: { type: String, required: true, unique: true, default: "default" },
   companyName: { type: String, default: DEFAULT_HOON_LAB_SETTINGS.companyName },
@@ -243,6 +264,7 @@ export const HoonLabDeliveryNote = models.HoonLabDeliveryNote || model("HoonLabD
 export const HoonLabPdfTemplate = models.HoonLabPdfTemplate || model("HoonLabPdfTemplate", PdfTemplateSchema);
 export const HoonLabDocumentSequence = models.HoonLabDocumentSequence || model("HoonLabDocumentSequence", DocumentSequenceSchema);
 export const HoonLabTodo = models.HoonLabTodo || model("HoonLabTodo", HoonLabTodoSchema);
+export const HoonLabFinanceEntry = models.HoonLabFinanceEntry || model("HoonLabFinanceEntry", HoonLabFinanceEntrySchema);
 export const HoonLabSettings = models.HoonLabSettings || model("HoonLabSettings", HoonLabSettingsSchema);
 
 export const HOON_LAB = {
@@ -253,5 +275,6 @@ export const HOON_LAB = {
   PAYMENT_STATUSES,
   PAYMENT_METHODS,
   DDT_STATUSES,
-  TODO_STATUSES
+  TODO_STATUSES,
+  FINANCE_ENTRY_TYPES
 };

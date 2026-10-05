@@ -84,6 +84,7 @@ export async function POST(req) {
               name: definition.fallbackName,
               customerType: definition.fallbackCustomerType,
               currency: "EUR",
+              pricesNet: true,
               active: true
             }
           },

@@ -42,6 +42,7 @@ export async function POST(req) {
       name: body.name,
       customerType: body.customerType || "privato",
       currency: body.currency || "EUR",
+      pricesNet: true,
       active: body.active !== false
     });
 

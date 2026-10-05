@@ -13,6 +13,7 @@ import {
   FileText,
   ListTodo,
   PackagePlus,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
@@ -21,6 +22,7 @@ import {
   Truck,
   Upload,
   Users,
+  WalletCards,
   X
 } from "lucide-react";
 import {
@@ -39,8 +41,12 @@ import { calculateCommercialLine, calculateDocumentTotals } from "@/lib/hoon-lab
 
 const emptyLine = {
   product: "",
+  description: "",
   quantity: 1,
+  unit: "pz",
   unitPrice: "",
+  pricePending: false,
+  manualUnitPrice: false,
   discountType: "none",
   discountValue: 0,
   notes: ""
@@ -64,6 +70,14 @@ function percent(value) {
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function currentYearStartISO() {
+  return `${new Date().getFullYear()}-01-01`;
+}
+
+function currentYearEndISO() {
+  return `${new Date().getFullYear()}-12-31`;
 }
 
 function formatDate(value) {
@@ -132,6 +146,7 @@ export default function HoonLabClient() {
   const [deliveryNotes, setDeliveryNotes] = useState([]);
   const [todos, setTodos] = useState([]);
   const [stats, setStats] = useState(null);
+  const [finances, setFinances] = useState(null);
   const [settings, setSettings] = useState(DEFAULT_HOON_LAB_SETTINGS);
   const [message, setMessage] = useState("");
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
@@ -156,6 +171,24 @@ export default function HoonLabClient() {
   const [settingsForm, setSettingsForm] = useState(DEFAULT_HOON_LAB_SETTINGS);
   const [resettingOperationalData, setResettingOperationalData] = useState(false);
   const [resetConfirmation, setResetConfirmation] = useState("");
+  const [customLineMode, setCustomLineMode] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState("");
+  const [editingLineIndex, setEditingLineIndex] = useState(null);
+  const [financeRange, setFinanceRange] = useState({
+    from: currentYearStartISO(),
+    to: currentYearEndISO(),
+    group: "month"
+  });
+  const [financeForm, setFinanceForm] = useState({
+    type: "income",
+    description: "",
+    category: "",
+    amount: "",
+    date: todayISO(),
+    recurring: false,
+    recurrenceEnd: "",
+    notes: ""
+  });
 
   const [customerForm, setCustomerForm] = useState({
     type: "privato",
@@ -164,6 +197,7 @@ export default function HoonLabClient() {
     name: "",
     vatNumber: "",
     taxCode: "",
+    uniqueCode: "",
     billingAddress: { address: "" }
   });
   const [productForm, setProductForm] = useState({
@@ -193,6 +227,22 @@ export default function HoonLabClient() {
   });
   const [lineDraft, setLineDraft] = useState(emptyLine);
 
+  function financeUrl(range = financeRange) {
+    const params = new URLSearchParams(range);
+    return `/api/hoon-lab/finances?${params.toString()}`;
+  }
+
+  async function loadFinances(range = financeRange) {
+    try {
+      const response = await fetch(financeUrl(range));
+      const data = await parseApiResponse(response);
+      if (!response.ok) throw new Error(data.error || "Errore caricamento entrate e uscite");
+      setFinances(data);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
   async function loadData() {
     setLoading(true);
     try {
@@ -220,6 +270,7 @@ export default function HoonLabClient() {
       const nextSettings = { ...DEFAULT_HOON_LAB_SETTINGS, ...loadedSettings };
       setSettings(nextSettings);
       setSettingsForm(nextSettings);
+      await loadFinances();
     } catch (error) {
       console.error("Errore caricamento Hoon Lab:", error);
       setMessage("Errore caricamento dati Hoon Lab");
@@ -264,7 +315,8 @@ export default function HoonLabClient() {
         customer.email,
         customer.phone,
         customer.vatNumber,
-        customer.taxCode
+        customer.taxCode,
+        customer.uniqueCode
       ].some((value) => String(value || "").toLowerCase().includes(term));
     });
   }, [customers, customerSearch]);
@@ -377,6 +429,7 @@ export default function HoonLabClient() {
         name: "",
         vatNumber: "",
         taxCode: "",
+        uniqueCode: "",
         billingAddress: { address: "" }
       });
       setMessage("Cliente creato");
@@ -533,6 +586,19 @@ export default function HoonLabClient() {
     }
   }
 
+  async function handleEditProduct(product) {
+    const name = window.prompt("Modifica il nome del prodotto", product.name);
+    if (name === null || !name.trim() || name.trim() === product.name) return;
+
+    try {
+      await patchJson(`/api/hoon-lab/products/${product._id}`, { name: name.trim() });
+      setMessage(`Prodotto rinominato in "${name.trim()}"`);
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
   async function handleDeletePriceList(priceList) {
     const confirmed = window.confirm(`Eliminare il listino "${priceList.name}"? I preventivi gia creati resteranno invariati.`);
     if (!confirmed) return;
@@ -542,6 +608,42 @@ export default function HoonLabClient() {
       setSelectedPriceListView("");
       setPriceItemForm({ priceList: "", product: "", price: "" });
       setMessage(`Listino "${priceList.name}" eliminato`);
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleEditPriceList(priceList) {
+    const name = window.prompt("Modifica il nome del listino", priceList.name);
+    if (name === null || !name.trim() || name.trim() === priceList.name) return;
+
+    try {
+      await patchJson(`/api/hoon-lab/price-lists/${priceList._id}`, { name: name.trim() });
+      setMessage(`Listino rinominato in "${name.trim()}"`);
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleConvertPriceListToNet(priceList) {
+    if (priceList.pricesNet) {
+      setMessage(`Il listino "${priceList.name}" contiene gia prezzi IVA esclusa`);
+      return;
+    }
+    const confirmed = window.confirm(
+      `Scorporare l'IVA al 22% da tutti i prezzi attivi del listino "${priceList.name}"? `
+      + "I prezzi attuali resteranno nello storico e verranno creati i nuovi prezzi IVA esclusa."
+    );
+    if (!confirmed) return;
+
+    try {
+      const result = await patchJson(`/api/hoon-lab/price-lists/${priceList._id}`, {
+        convertPricesToNet: true,
+        vatRate: 22
+      });
+      setMessage(`${result.convertedPrices || 0} prezzi convertiti in IVA esclusa`);
       await loadData();
     } catch (error) {
       setMessage(error.message);
@@ -588,14 +690,14 @@ export default function HoonLabClient() {
   }
 
   function addLine() {
-    if (!lineDraft.product) {
-      const error = "Seleziona un prodotto per aggiungere la riga";
+    if (!lineDraft.product && !String(lineDraft.description || "").trim()) {
+      const error = "Seleziona un prodotto oppure inserisci una dicitura personalizzata";
       setLineError(error);
       setMessage(error);
       return;
     }
 
-    if (lineDraft.unitPrice === "" || lineDraft.unitPrice === null || lineDraft.unitPrice === undefined) {
+    if (lineDraft.product && (lineDraft.unitPrice === "" || lineDraft.unitPrice === null || lineDraft.unitPrice === undefined)) {
       const product = products.find((item) => item._id === lineDraft.product);
       const error = `Manca il prezzo nel listino selezionato per ${product?.name || "questo prodotto"}`;
       setLineError(error);
@@ -603,11 +705,78 @@ export default function HoonLabClient() {
       return;
     }
 
-    setQuoteForm((current) => ({ ...current, lines: [...current.lines, lineDraft] }));
+    const nextLine = {
+      ...lineDraft,
+      description: String(lineDraft.description || "").trim(),
+      unitPrice: lineDraft.unitPrice,
+      pricePending: !lineDraft.product && lineDraft.unitPrice === ""
+    };
+    setQuoteForm((current) => ({
+      ...current,
+      lines: editingLineIndex === null
+        ? [...current.lines, nextLine]
+        : current.lines.map((line, index) => index === editingLineIndex ? nextLine : line)
+    }));
     setLineDraft(emptyLine);
+    setEditingLineIndex(null);
+    setCustomLineMode(false);
     setLineError("");
     setProductSearch("");
     setProductSuggestionsOpen(false);
+  }
+
+  function editQuoteLine(index) {
+    const line = quoteForm.lines[index];
+    const product = products.find((item) => item._id === String(line.product || ""));
+    setLineDraft({ ...emptyLine, ...line, product: line.product ? String(line.product) : "" });
+    setEditingLineIndex(index);
+    setCustomLineMode(!line.product);
+    setProductSearch(product?.name || line.description || "");
+    setLineError("");
+  }
+
+  function resetQuoteEditor() {
+    setQuoteForm({
+      customer: "",
+      priceList: "",
+      status: "bozza",
+      issueDate: todayISO(),
+      validUntil: "",
+      quoteDiscountType: "none",
+      quoteDiscountValue: 0,
+      notes: "",
+      lines: []
+    });
+    setEditingQuoteId("");
+    setEditingLineIndex(null);
+    setLineDraft(emptyLine);
+    setProductSearch("");
+    setCustomLineMode(false);
+  }
+
+  function beginEditQuote(quote) {
+    setEditingQuoteId(quote._id);
+    setQuoteForm({
+      customer: quote.customer?._id || quote.customer || "",
+      priceList: quote.priceList?._id || quote.priceList || "",
+      status: quote.status,
+      issueDate: quote.issueDate ? new Date(quote.issueDate).toISOString().slice(0, 10) : todayISO(),
+      validUntil: quote.validUntil ? new Date(quote.validUntil).toISOString().slice(0, 10) : "",
+      quoteDiscountType: quote.quoteDiscountType || "none",
+      quoteDiscountValue: quote.quoteDiscountValue || 0,
+      notes: quote.notes || "",
+      lines: (quote.lines || []).map((line) => ({
+        ...line,
+        product: line.product ? String(line.product) : "",
+        unitPrice: line.pricePending ? "" : line.unitPrice
+      }))
+    });
+    setEditingLineIndex(null);
+    setLineDraft(emptyLine);
+    setCustomLineMode(false);
+    setProductSearch("");
+    setActiveTab("crea-preventivo");
+    setMessage(`Modifica preventivo ${quote.number}`);
   }
 
   function removeQuoteLine(indexToRemove) {
@@ -624,23 +793,66 @@ export default function HoonLabClient() {
         setMessage("Cliente e almeno una riga sono obbligatori");
         return;
       }
-      await postJson("/api/hoon-lab/quotes", {
+      const payload = {
         ...quoteForm,
         priceList: selectedPriceList?._id || null
-      });
-      setQuoteForm({
-        customer: "",
-        priceList: "",
-        status: "bozza",
-        issueDate: todayISO(),
-        validUntil: "",
-        quoteDiscountType: "none",
-        quoteDiscountValue: 0,
-        notes: "",
-        lines: []
-      });
-      setMessage("Preventivo creato");
+      };
+      if (editingQuoteId) {
+        await patchJson(`/api/hoon-lab/quotes/${editingQuoteId}`, payload);
+      } else {
+        await postJson("/api/hoon-lab/quotes", payload);
+      }
+      setMessage(editingQuoteId ? "Preventivo modificato" : "Preventivo creato");
+      resetQuoteEditor();
       await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function deleteQuote(quote) {
+    const confirmed = window.confirm(`Eliminare definitivamente il preventivo ${quote.number}?`);
+    if (!confirmed) return;
+    try {
+      await deleteJson(`/api/hoon-lab/quotes/${quote._id}`);
+      setMessage(`Preventivo ${quote.number} eliminato`);
+      await loadData();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleCreateFinanceEntry(event) {
+    event.preventDefault();
+    try {
+      await postJson("/api/hoon-lab/finances", financeForm);
+      setFinanceForm({
+        type: "income",
+        description: "",
+        category: "",
+        amount: "",
+        date: todayISO(),
+        recurring: false,
+        recurrenceEnd: "",
+        notes: ""
+      });
+      setMessage("Movimento salvato");
+      await loadFinances();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function deleteFinanceEntry(entry) {
+    if (entry.source !== "manual") return;
+    const confirmed = window.confirm(entry.recurring
+      ? "Eliminare questa uscita ricorrente e tutte le ricorrenze future?"
+      : "Eliminare questo movimento?");
+    if (!confirmed) return;
+    try {
+      await deleteJson(`/api/hoon-lab/finances/${entry.sourceId || entry._id}`);
+      setMessage("Movimento eliminato");
+      await loadFinances();
     } catch (error) {
       setMessage(error.message);
     }
@@ -757,11 +969,12 @@ export default function HoonLabClient() {
     { id: "ddt", label: "Lista DDT", icon: Truck },
     { id: "clienti", label: "Clienti", icon: Users },
     { id: "prodotti", label: "Prodotti", icon: PackagePlus },
-    { id: "listini", label: "Listini", icon: Boxes }
+    { id: "listini", label: "Listini", icon: Boxes },
+    { id: "finanze", label: "Entrate e uscite", icon: WalletCards }
   ];
 
   const currentLinePreview = useMemo(() => {
-    if (!lineDraft.product) return null;
+    if (!lineDraft.product && !String(lineDraft.description || "").trim()) return null;
     return calculateCommercialLine(lineDraft);
   }, [lineDraft]);
 
@@ -776,9 +989,13 @@ export default function HoonLabClient() {
   );
 
   const quoteTotalsWithDraft = useMemo(() => {
-    const lines = currentLinePreview ? [...quoteForm.lines, lineDraft] : quoteForm.lines;
+    const lines = !currentLinePreview
+      ? quoteForm.lines
+      : editingLineIndex === null
+        ? [...quoteForm.lines, lineDraft]
+        : quoteForm.lines.map((line, index) => index === editingLineIndex ? lineDraft : line);
     return calculateDocumentTotals(lines, quoteDiscountOptions);
-  }, [currentLinePreview, lineDraft, quoteDiscountOptions, quoteForm.lines]);
+  }, [currentLinePreview, editingLineIndex, lineDraft, quoteDiscountOptions, quoteForm.lines]);
 
   const searchedQuotes = useMemo(() => {
     const term = quoteSearch.trim().toLowerCase();
@@ -952,6 +1169,7 @@ export default function HoonLabClient() {
       customer.phone,
       customer.vatNumber,
       customer.taxCode,
+      customer.uniqueCode,
       customer.billingAddress?.address,
       customer.defaultPriceList?.name
     ].some((value) => String(value || "").toLowerCase().includes(term)));
@@ -1060,6 +1278,7 @@ export default function HoonLabClient() {
       ...current,
       priceList: priceListId,
       lines: current.lines.map((line) => {
+        if (!line.product) return line;
         const item = nextPriceList?.items?.find((price) => price.product?._id === line.product);
         return {
           ...line,
@@ -1278,7 +1497,12 @@ export default function HoonLabClient() {
               <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-5 flex items-center gap-2">
                   <ClipboardList className="h-5 w-5 text-blue-700" />
-                  <h2 className="text-xl font-bold text-slate-900">Nuovo preventivo</h2>
+                  <h2 className="text-xl font-bold text-slate-900">{editingQuoteId ? "Modifica preventivo" : "Nuovo preventivo"}</h2>
+                  {editingQuoteId && (
+                    <button type="button" onClick={resetQuoteEditor} className="ml-auto rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                      Annulla modifica
+                    </button>
+                  )}
                 </div>
 
                 <form onSubmit={handleCreateQuote} className="space-y-5">
@@ -1386,8 +1610,34 @@ export default function HoonLabClient() {
                   </div>
 
                   <div className="rounded-lg border border-slate-200 p-4">
-                    <h3 className="mb-3 text-sm font-bold uppercase text-slate-600">Righe</h3>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                      <h3 className="text-sm font-bold uppercase text-slate-600">Righe · prezzi IVA esclusa</h3>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => { setCustomLineMode(false); setLineDraft(emptyLine); setEditingLineIndex(null); setProductSearch(""); }}
+                          className={`rounded-lg border px-3 py-2 text-xs font-bold ${!customLineMode ? "border-blue-700 bg-blue-700 text-white" : "border-slate-300 text-slate-700"}`}
+                        >
+                          Da catalogo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setCustomLineMode(true); setLineDraft(emptyLine); setEditingLineIndex(null); setProductSearch(""); setLineError(""); }}
+                          className={`rounded-lg border px-3 py-2 text-xs font-bold ${customLineMode ? "border-blue-700 bg-blue-700 text-white" : "border-slate-300 text-slate-700"}`}
+                        >
+                          Riga personalizzata
+                        </button>
+                      </div>
+                    </div>
                     <div className="grid gap-3 lg:grid-cols-[minmax(220px,1.7fr)_80px_110px_130px_110px]">
+                      {customLineMode ? (
+                        <input
+                          value={lineDraft.description}
+                          onChange={(event) => setLineDraft((current) => ({ ...current, product: "", description: event.target.value }))}
+                          className="rounded-lg border border-slate-300 px-3 py-2"
+                          placeholder="Dicitura personalizzata"
+                        />
+                      ) : (
                       <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                         <input
@@ -1395,7 +1645,7 @@ export default function HoonLabClient() {
                           onChange={(event) => {
                             setProductSearch(event.target.value);
                             setProductSuggestionsOpen(true);
-                            setLineDraft((current) => ({ ...current, product: "", unitPrice: "" }));
+                            setLineDraft((current) => ({ ...current, product: "", description: "", unitPrice: "" }));
                           }}
                           onFocus={() => setProductSuggestionsOpen(true)}
                           onBlur={() => window.setTimeout(() => setProductSuggestionsOpen(false), 120)}
@@ -1429,6 +1679,7 @@ export default function HoonLabClient() {
                           </div>
                         )}
                       </div>
+                      )}
                       <input
                         type="number"
                         min="0"
@@ -1480,7 +1731,13 @@ export default function HoonLabClient() {
                         {lineError}
                       </div>
                     )}
-                    <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_160px_auto]">
+                    <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_1fr_160px_auto]">
+                      <input
+                        value={lineDraft.description}
+                        onChange={(event) => setLineDraft((current) => ({ ...current, description: event.target.value }))}
+                        className="rounded-lg border border-slate-300 px-3 py-2"
+                        placeholder="Nome/dicitura mostrata nel preventivo"
+                      />
                       <input
                         value={lineDraft.notes}
                         onChange={(event) => setLineDraft((current) => ({ ...current, notes: event.target.value }))}
@@ -1497,12 +1754,12 @@ export default function HoonLabClient() {
                         className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
                       >
                         <Plus className="h-4 w-4" />
-                        Riga
+                        {editingLineIndex === null ? "Aggiungi riga" : "Aggiorna riga"}
                       </button>
                     </div>
 
                     <div className="mt-4 rounded-lg border border-slate-200">
-                      <div className="grid grid-cols-[minmax(0,1fr)_56px_86px_82px_92px_76px] gap-2 rounded-t-lg bg-slate-100 px-3 py-2 text-xs font-bold uppercase text-slate-600">
+                      <div className="grid grid-cols-[minmax(0,1fr)_56px_86px_82px_92px_132px] gap-2 rounded-t-lg bg-slate-100 px-3 py-2 text-xs font-bold uppercase text-slate-600">
                         <span>Prodotto</span>
                         <span className="text-right">Qta</span>
                         <span className="text-right">Prezzo</span>
@@ -1516,15 +1773,16 @@ export default function HoonLabClient() {
                           const calculatedLine = calculateCommercialLine(line);
                           return (
                             <div key={`${line.product}-${index}`} className="px-3 py-3">
-                              <div className="grid grid-cols-[minmax(0,1fr)_56px_86px_82px_92px_76px] items-center gap-2 text-sm">
-                                <span className="min-w-0 truncate font-semibold text-slate-900">{product?.name || line.description}</span>
+                              <div className="grid grid-cols-[minmax(0,1fr)_56px_86px_82px_92px_132px] items-center gap-2 text-sm">
+                                <span className="min-w-0 truncate font-semibold text-slate-900">{line.description || product?.name}</span>
                                 <span className="text-right text-slate-700">{line.quantity}</span>
-                                <span className="text-right text-slate-700">{currency(line.unitPrice)}</span>
+                                <span className="text-right text-slate-700">{line.pricePending || line.unitPrice === "" ? "Da definire" : currency(line.unitPrice)}</span>
                                 <span className="text-right text-slate-700">{line.discountType === "none" ? "-" : `${line.discountValue}${line.discountType === "percent" ? "%" : " EUR"}`}</span>
                                 <span className="text-right font-bold text-slate-900">{currency(calculatedLine.lineTotal)}</span>
-                                <button type="button" onClick={() => removeQuoteLine(index)} className="rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">
-                                  Rimuovi
-                                </button>
+                                <span className="flex justify-end gap-1">
+                                  <button type="button" onClick={() => editQuoteLine(index)} className="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Modifica</button>
+                                  <button type="button" onClick={() => removeQuoteLine(index)} className="rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">Rimuovi</button>
+                                </span>
                               </div>
                               {line.notes && (
                                 <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
@@ -1591,7 +1849,7 @@ export default function HoonLabClient() {
 
                   <button className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800">
                     <Send className="h-4 w-4" />
-                    Salva preventivo
+                    {editingQuoteId ? "Salva modifiche" : "Salva preventivo"}
                   </button>
                 </form>
               </section>
@@ -1648,6 +1906,8 @@ export default function HoonLabClient() {
                       defaultOpen={index === 0}
                       onChangeStatus={changeQuoteStatus}
                       onConvert={convertQuote}
+                      onEdit={beginEditQuote}
+                      onDelete={deleteQuote}
                     />
                   ))}
                   {filteredQuotes.length === 0 && (
@@ -1869,6 +2129,7 @@ export default function HoonLabClient() {
                         <th className="px-3 py-2">Ragione sociale</th>
                         <th className="px-3 py-2">Via</th>
                         <th className="px-3 py-2">Partita IVA</th>
+                        <th className="px-3 py-2">Codice univoco</th>
                         <th className="px-3 py-2">Tipo</th>
                         <th className="px-3 py-2">Listino default</th>
                       </tr>
@@ -1879,13 +2140,14 @@ export default function HoonLabClient() {
                           <td className="px-3 py-3 font-semibold text-slate-900">{customer.name}</td>
                           <td className="px-3 py-3 text-slate-700">{customer.billingAddress?.address || "-"}</td>
                           <td className="px-3 py-3 text-slate-700">{customer.vatNumber || "-"}</td>
+                          <td className="px-3 py-3 font-semibold text-slate-700">{customer.uniqueCode || "-"}</td>
                           <td className="px-3 py-3 capitalize text-slate-700">{customer.type}</td>
                           <td className="px-3 py-3 text-slate-700">{customer.defaultPriceList?.name || "-"}</td>
                         </tr>
                       ))}
                       {customers.length === 0 && (
                         <tr>
-                          <td className="px-3 py-4 text-slate-500" colSpan={5}>Nessun cliente inserito.</td>
+                          <td className="px-3 py-4 text-slate-500" colSpan={6}>Nessun cliente inserito.</td>
                         </tr>
                       )}
                     </tbody>
@@ -1922,6 +2184,7 @@ export default function HoonLabClient() {
                       <th className="px-3 py-2">Ragione sociale</th>
                       <th className="px-3 py-2">Via</th>
                       <th className="px-3 py-2">Partita IVA</th>
+                      <th className="px-3 py-2">Codice univoco</th>
                       <th className="px-3 py-2">Tipo</th>
                       <th className="px-3 py-2">Listino default</th>
                       <th className="px-3 py-2">Note</th>
@@ -1933,6 +2196,7 @@ export default function HoonLabClient() {
                         <td className="px-3 py-3 font-semibold text-slate-900">{customer.name}</td>
                         <td className="px-3 py-3 text-slate-700">{customer.billingAddress?.address || "-"}</td>
                         <td className="px-3 py-3 text-slate-700">{customer.vatNumber || "-"}</td>
+                        <td className="px-3 py-3 font-semibold text-slate-700">{customer.uniqueCode || "-"}</td>
                         <td className="px-3 py-3 capitalize text-slate-700">{customer.type}</td>
                         <td className="px-3 py-3 text-slate-700">{customer.defaultPriceList?.name || "-"}</td>
                         <td className="px-3 py-3 text-slate-500">{customer.notes || "-"}</td>
@@ -1940,7 +2204,7 @@ export default function HoonLabClient() {
                     ))}
                     {customerList.length === 0 && (
                       <tr>
-                        <td className="px-3 py-5 text-slate-500" colSpan={6}>Nessun cliente trovato.</td>
+                        <td className="px-3 py-5 text-slate-500" colSpan={7}>Nessun cliente trovato.</td>
                       </tr>
                     )}
                   </tbody>
@@ -1993,8 +2257,8 @@ export default function HoonLabClient() {
                       <th className="px-3 py-2">SKU</th>
                       <th className="px-3 py-2">Categoria</th>
                       <th className="px-3 py-2">Unita</th>
-                      <th className="px-3 py-2 text-right">{visibleProductPriceLists[0]?.name || "Listino principale"}</th>
-                      <th className="px-3 py-2 text-right">{visibleProductPriceLists[1]?.name || "Secondo listino"}</th>
+                      <th className="px-3 py-2 text-right">{visibleProductPriceLists[0]?.name || "Listino principale"} (IVA escl.)</th>
+                      <th className="px-3 py-2 text-right">{visibleProductPriceLists[1]?.name || "Secondo listino"} (IVA escl.)</th>
                       <th className="px-3 py-2">Descrizione</th>
                       <th className="px-3 py-2"></th>
                     </tr>
@@ -2022,14 +2286,14 @@ export default function HoonLabClient() {
                           </td>
                           <td className="px-3 py-3 text-slate-500">{product.description || "-"}</td>
                           <td className="px-3 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteProduct(product)}
-                              className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Elimina
-                            </button>
+                            <div className="flex justify-end gap-2">
+                              <button type="button" onClick={() => handleEditProduct(product)} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                <Pencil className="h-3.5 w-3.5" /> Modifica nome
+                              </button>
+                              <button type="button" onClick={() => handleDeleteProduct(product)} className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50">
+                                <Trash2 className="h-3.5 w-3.5" /> Elimina
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -2087,14 +2351,14 @@ export default function HoonLabClient() {
                       </div>
                     </label>
                     {selectedListView && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeletePriceList(selectedListView)}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Elimina listino
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => handleEditPriceList(selectedListView)} className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                          <Pencil className="h-4 w-4" /> Modifica listino
+                        </button>
+                        <button type="button" onClick={() => handleDeletePriceList(selectedListView)} className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">
+                          <Trash2 className="h-4 w-4" /> Elimina listino
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -2111,7 +2375,19 @@ export default function HoonLabClient() {
 
               {selectedListView && (
                 <section className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <h3 className="mb-3 text-sm font-bold uppercase text-slate-600">Aggiungi o modifica prezzo</h3>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold uppercase text-slate-600">Aggiungi o modifica prezzo · IVA esclusa</h3>
+                      <p className="mt-1 text-xs text-slate-500">Tutti i nuovi prezzi vengono trattati come imponibile, senza IVA.</p>
+                    </div>
+                    {selectedListView.pricesNet ? (
+                      <span className="rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-700">Listino IVA esclusa</span>
+                    ) : (
+                      <button type="button" onClick={() => handleConvertPriceListToNet(selectedListView)} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100">
+                        Scorpora IVA 22% dai prezzi attuali
+                      </button>
+                    )}
+                  </div>
                   <form onSubmit={handleAddPrice} className="grid gap-3 md:grid-cols-[1fr_160px_auto]">
                     <select
                       value={priceItemForm.product}
@@ -2154,7 +2430,7 @@ export default function HoonLabClient() {
                       <th className="px-3 py-2">Prodotto</th>
                       <th className="px-3 py-2">SKU</th>
                       <th className="px-3 py-2">Categoria</th>
-                      <th className="px-3 py-2 text-right">Prezzo listino</th>
+                      <th className="px-3 py-2 text-right">Prezzo IVA esclusa</th>
                       <th className="px-3 py-2">Stato</th>
                       <th className="px-3 py-2"></th>
                     </tr>
@@ -2199,6 +2475,19 @@ export default function HoonLabClient() {
                 </table>
               </div>
             </section>
+          )}
+
+          {activeTab === "finanze" && (
+            <FinanceDashboard
+              finances={finances}
+              form={financeForm}
+              setForm={setFinanceForm}
+              range={financeRange}
+              setRange={setFinanceRange}
+              onApplyRange={() => loadFinances(financeRange)}
+              onCreate={handleCreateFinanceEntry}
+              onDelete={deleteFinanceEntry}
+            />
           )}
 
           {activeTab === "ordini" && (
@@ -2350,6 +2639,136 @@ export default function HoonLabClient() {
           padding: 0.5rem 0.75rem;
         }
       `}</style>
+    </div>
+  );
+}
+
+function FinanceDashboard({ finances, form, setForm, range, setRange, onApplyRange, onCreate, onDelete }) {
+  const current = finances?.current || { summary: {}, series: [], entries: [] };
+  const previous = finances?.previous || { summary: {} };
+  const summary = current.summary || {};
+  const previousSummary = previous.summary || {};
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">Controllo economico</p>
+            <h2 className="text-2xl font-bold text-slate-900">Entrate e uscite</h2>
+            <p className="mt-1 max-w-2xl text-sm text-slate-500">I preventivi accettati sono conteggiati automaticamente come entrate. Puoi aggiungere entrate extra, uscite singole e uscite mensili ricorrenti.</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[150px_150px_140px_auto] xl:grid-cols-[150px_150px_140px_auto]">
+            <input type="date" value={range.from} onChange={(event) => setRange((currentRange) => ({ ...currentRange, from: event.target.value }))} className="field" aria-label="Data iniziale" />
+            <input type="date" value={range.to} onChange={(event) => setRange((currentRange) => ({ ...currentRange, to: event.target.value }))} className="field" aria-label="Data finale" />
+            <select value={range.group} onChange={(event) => setRange((currentRange) => ({ ...currentRange, group: event.target.value }))} className="field">
+              <option value="month">Per mese</option>
+              <option value="year">Per anno</option>
+            </select>
+            <button type="button" onClick={onApplyRange} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800">Analizza</button>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-3">
+        <ComparisonCard label="Entrate vs periodo precedente" current={summary.income} previous={previousSummary.income} />
+        <ComparisonCard label="Uscite vs periodo precedente" current={summary.expenses} previous={previousSummary.expenses} />
+        <ComparisonCard label="Saldo vs periodo precedente" current={summary.balance} previous={previousSummary.balance} />
+      </div>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-slate-900">Andamento {range.group === "year" ? "annuale" : "mensile"}</h3>
+          <p className="text-sm text-slate-500">Entrate, uscite e saldo nel periodo selezionato.</p>
+        </div>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={current.series || []} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#64748b" />
+              <YAxis tickFormatter={(value) => `${Math.round(value / 1000)}k`} tick={{ fontSize: 11 }} stroke="#64748b" />
+              <Tooltip formatter={(value, name) => [currency(value), name]} />
+              <Legend />
+              <Bar dataKey="income" name="Entrate" fill="#16a34a" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="expenses" name="Uscite" fill="#dc2626" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="balance" name="Saldo" fill="#2563eb" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
+
+      <div className="grid gap-6 xl:grid-cols-[.8fr_1.2fr]">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-xl font-bold text-slate-900">Nuovo movimento manuale</h3>
+          <form onSubmit={onCreate} className="mt-4 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+              <select
+                value={form.type}
+                onChange={(event) => setForm((currentForm) => ({ ...currentForm, type: event.target.value, recurring: event.target.value === "expense" ? currentForm.recurring : false }))}
+                className="field"
+              >
+                <option value="income">Entrata extra</option>
+                <option value="expense">Uscita</option>
+              </select>
+              <input type="date" value={form.date} onChange={(event) => setForm((currentForm) => ({ ...currentForm, date: event.target.value }))} className="field" />
+            </div>
+            <input value={form.description} onChange={(event) => setForm((currentForm) => ({ ...currentForm, description: event.target.value }))} className="field" placeholder="Descrizione" required />
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+              <input value={form.category} onChange={(event) => setForm((currentForm) => ({ ...currentForm, category: event.target.value }))} className="field" placeholder="Categoria" />
+              <input type="number" min="0" step="0.01" value={form.amount} onChange={(event) => setForm((currentForm) => ({ ...currentForm, amount: event.target.value }))} className="field" placeholder="Importo IVA inclusa/esclusa secondo contabilità" required />
+            </div>
+            {form.type === "expense" && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <input type="checkbox" checked={form.recurring} onChange={(event) => setForm((currentForm) => ({ ...currentForm, recurring: event.target.checked }))} />
+                  Uscita ricorrente ogni mese
+                </label>
+                {form.recurring && (
+                  <label className="mt-3 grid gap-1 text-xs font-bold uppercase text-slate-500">
+                    Fine ricorrenza (facoltativa)
+                    <input type="date" value={form.recurrenceEnd} onChange={(event) => setForm((currentForm) => ({ ...currentForm, recurrenceEnd: event.target.value }))} className="field bg-white font-normal normal-case" />
+                  </label>
+                )}
+              </div>
+            )}
+            <textarea value={form.notes} onChange={(event) => setForm((currentForm) => ({ ...currentForm, notes: event.target.value }))} className="field min-h-20" placeholder="Note" />
+            <button className="w-full rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-800">Salva movimento</button>
+          </form>
+        </section>
+
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">Movimenti del periodo</h3>
+              <p className="text-sm text-slate-500">{current.entries?.length || 0} movimenti, inclusi i preventivi accettati.</p>
+            </div>
+            <span className={`rounded-full px-3 py-1 text-sm font-bold ${Number(summary.balance || 0) >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>Saldo {currency(summary.balance)}</span>
+          </div>
+          <div className="max-h-[620px] space-y-2 overflow-auto pr-1">
+            {(current.entries || []).map((entry) => (
+              <div key={entry._id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-900">{entry.description}</p>
+                  <p className="mt-1 text-xs text-slate-500">{formatDate(entry.date)} · {entry.category || "Senza categoria"}</p>
+                  <div className="mt-1 flex gap-1">
+                    {entry.source === "quote" && <span className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">Preventivo automatico</span>}
+                    {entry.recurring && <span className="rounded bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-700">Ricorrente mensile</span>}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className={`font-bold ${entry.type === "income" ? "text-green-700" : "text-red-700"}`}>{entry.type === "income" ? "+" : "-"}{currency(entry.amount)}</span>
+                  {entry.source === "manual" && (
+                    <button type="button" onClick={() => onDelete(entry)} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-700" aria-label="Elimina movimento">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {(current.entries || []).length === 0 && <p className="rounded-lg bg-slate-50 p-4 text-sm text-slate-500">Nessun movimento nel periodo selezionato.</p>}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
@@ -2507,7 +2926,8 @@ function CustomerFormFields({ customerForm, setCustomerForm, stacked = false }) 
             placeholder="Via"
           />
       )),
-      wrapField("Partita IVA", <input value={customerForm.vatNumber} onChange={(event) => setCustomerForm((current) => ({ ...current, vatNumber: event.target.value }))} className="field" placeholder="Partita IVA" />)
+      wrapField("Partita IVA", <input value={customerForm.vatNumber} onChange={(event) => setCustomerForm((current) => ({ ...current, vatNumber: event.target.value }))} className="field" placeholder="Partita IVA" />),
+      wrapField("Codice univoco", <input value={customerForm.uniqueCode} onChange={(event) => setCustomerForm((current) => ({ ...current, uniqueCode: event.target.value.toUpperCase() }))} className="field uppercase" maxLength={7} placeholder="Codice univoco / SDI" />)
     );
   }
 
@@ -2692,7 +3112,7 @@ function quoteBoardTabClass(tone, active) {
   return classes[tone] || classes.slate;
 }
 
-function QuoteMonthAccordion({ month, quotes, defaultOpen, onChangeStatus, onConvert }) {
+function QuoteMonthAccordion({ month, quotes, defaultOpen, onChangeStatus, onConvert, onEdit, onDelete }) {
   const [open, setOpen] = useState(defaultOpen);
   const total = quotes.reduce((sum, quote) => sum + Number(quote.total || 0), 0);
 
@@ -2719,6 +3139,8 @@ function QuoteMonthAccordion({ month, quotes, defaultOpen, onChangeStatus, onCon
               quote={quote}
               onChangeStatus={onChangeStatus}
               onConvert={onConvert}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
           ))}
         </div>
@@ -2873,7 +3295,7 @@ function deliveryStatusLabel(status) {
   return status || "Emesso";
 }
 
-function QuoteCard({ quote, onChangeStatus, onConvert }) {
+function QuoteCard({ quote, onChangeStatus, onConvert, onEdit, onDelete }) {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState(quote.rejectionReason || "");
   const products = (quote.lines || [])
@@ -2917,6 +3339,16 @@ function QuoteCard({ quote, onChangeStatus, onConvert }) {
       <div className="mt-3 flex flex-wrap gap-2">
         <Link href={`/api/hoon-lab/pdf/quote/${quote._id}`} target="_blank" className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50">Anteprima PDF</Link>
         <Link href={`/api/hoon-lab/pdf/quote/${quote._id}?download=1`} download className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100">Download PDF</Link>
+        {["bozza", "inviato"].includes(quote.status) && (
+          <button onClick={() => onEdit(quote)} className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+            <Pencil className="h-3.5 w-3.5" /> Modifica
+          </button>
+        )}
+        {["bozza", "inviato"].includes(quote.status) && (
+          <button onClick={() => onDelete(quote)} className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50">
+            <Trash2 className="h-3.5 w-3.5" /> Elimina
+          </button>
+        )}
         {quote.status === "bozza" && (
           <button onClick={() => onChangeStatus(quote, "inviato")} className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50">Conferma invio</button>
         )}
