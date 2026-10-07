@@ -633,10 +633,6 @@ const FeedPage = ({ params }) => {
                   const isProblem = note.tipo === "problema";
                   const isPostMancante = note.tipo === "post_mancante";
                   
-                  // Feeling Report abilitato solo per questi SMM
-                  const FEELING_ENABLED_USERS = ['678e57e508b3d51f4e9466e2', '678e582008b3d51f4e9466e8'];
-                  const isFeelingEnabled = FEELING_ENABLED_USERS.includes(note.autoreId?.toString() || '');
-                  
                   return (
                     <div
                       key={note._id}
@@ -733,8 +729,8 @@ const FeedPage = ({ params }) => {
                           </p>
                         </div>
 
-                        {/* Feeling Report - Se presente e utente abilitato */}
-                        {note.tipo === "appuntamento" && note.feeling_emoji && isFeelingEnabled && (
+                        {/* Feeling Report - Se presente */}
+                        {note.tipo === "appuntamento" && note.feeling_emoji && (
                           <div className={`mb-2 px-2 py-2 rounded-lg ${
                             isOwn ? "bg-white/20" : "bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-300"
                           }`}>
@@ -796,17 +792,12 @@ const EditNoteModal = ({ note, onClose, onUpdateNote }) => {
     note.data_appuntamento ? note.data_appuntamento.split("T")[0] : ""
   );
   
-  // Feeling Report abilitato solo per questi SMM
-  const FEELING_ENABLED_USERS = ['678e57e508b3d51f4e9466e2', '678e582008b3d51f4e9466e8'];
-  const isFeelingEnabled = FEELING_ENABLED_USERS.includes(note.autoreId?.toString() || '');
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
     
-    // Validazione: se il tipo è appuntamento e l'utente ha feeling abilitato, l'emoji è obbligatoria
-    if (tipo === "appuntamento" && isFeelingEnabled && !feelingEmoji) {
+    if (tipo === "appuntamento" && !feelingEmoji) {
       setError("L'emoji del Feeling Report è obbligatoria per gli appuntamenti!");
       setIsLoading(false);
       return;
@@ -822,8 +813,8 @@ const EditNoteModal = ({ note, onClose, onUpdateNote }) => {
             tipo, 
             nota, 
             data_appuntamento,
-            feeling_emoji: tipo === "appuntamento" && isFeelingEnabled ? feelingEmoji : "",
-            feeling_note: tipo === "appuntamento" && isFeelingEnabled ? feelingNote : "",
+            feeling_emoji: tipo === "appuntamento" ? feelingEmoji : "",
+            feeling_note: tipo === "appuntamento" ? feelingNote : "",
           },
         }),
       });
@@ -905,8 +896,7 @@ const EditNoteModal = ({ note, onClose, onUpdateNote }) => {
                 />
               </div>
               
-              {/* Feeling Report - Solo per utenti abilitati */}
-              {isFeelingEnabled && (
+              {/* Feeling Report */}
               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-3 sm:p-4 space-y-3">
                 <div className="flex items-center space-x-2 mb-2">
                   <span className="text-xl">👉</span>
@@ -960,7 +950,6 @@ const EditNoteModal = ({ note, onClose, onUpdateNote }) => {
                   />
                 </div>
               </div>
-              )}
             </>
           )}
 

@@ -7,6 +7,13 @@ export async function PUT(req) {
 
     const { id, updatedData } = await req.json();
 
+    if (updatedData?.tipo === "appuntamento" && !updatedData.feeling_emoji) {
+      return new Response(
+        JSON.stringify({ message: "L'emoji del Feeling Report è obbligatoria per gli appuntamenti" }),
+        { status: 400 }
+      );
+    }
+
     // Aggiorna la nota
     const updatedNote = await Nota.findByIdAndUpdate(
       id,

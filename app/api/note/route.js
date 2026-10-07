@@ -12,6 +12,9 @@ export async function POST(req) {
     if (!nota || !autore || !collaborazione || !tipo) {
       return new Response(JSON.stringify({ message: "Dati mancanti" }), { status: 400 });
     }
+    if (tipo === 'appuntamento' && !feeling_emoji) {
+      return new Response(JSON.stringify({ message: "L'emoji del Feeling Report è obbligatoria per gli appuntamenti" }), { status: 400 });
+    }
 
     const newNote = new Nota({
       nota,

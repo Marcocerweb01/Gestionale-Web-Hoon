@@ -13,17 +13,12 @@ const CreaNota = ({ collaborazioneId, autoreId, autorenome, collaboratoreId }) =
   const [error, setError] = useState("");
   const router = useRouter(); // Inizializza il router
   
-  // Feeling Report abilitato solo per questi SMM
-  const FEELING_ENABLED_USERS = ['678e57e508b3d51f4e9466e2', '678e582008b3d51f4e9466e8'];
-  const isFeelingEnabled = FEELING_ENABLED_USERS.includes(autoreId);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess(false);
 
-    // Validazione: se il tipo è appuntamento e l'utente ha feeling abilitato, l'emoji è obbligatoria
-    if (tipo === "appuntamento" && isFeelingEnabled && !feelingEmoji) {
+    if (tipo === "appuntamento" && !feelingEmoji) {
       setError("L'emoji del Feeling Report è obbligatoria per gli appuntamenti!");
       return;
     }
@@ -40,8 +35,8 @@ const CreaNota = ({ collaborazioneId, autoreId, autorenome, collaboratoreId }) =
           collaborazione: collaborazioneId,
           tipo,
           data_appuntamento: tipo === "appuntamento" ? dataAppuntamento : undefined,
-          feeling_emoji: tipo === "appuntamento" && isFeelingEnabled ? feelingEmoji : undefined,
-          feeling_note: tipo === "appuntamento" && isFeelingEnabled ? feelingNote : undefined,
+          feeling_emoji: tipo === "appuntamento" ? feelingEmoji : undefined,
+          feeling_note: tipo === "appuntamento" ? feelingNote : undefined,
         }),
       });
 
@@ -112,7 +107,7 @@ const CreaNota = ({ collaborazioneId, autoreId, autorenome, collaboratoreId }) =
           />
         </div>
         
-        {tipo === "appuntamento" && isFeelingEnabled && (
+        {tipo === "appuntamento" && (
             <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-4 space-y-4">
               <div className="flex items-center space-x-2 mb-3">
                 <span className="text-2xl">👉</span>
