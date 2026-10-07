@@ -244,7 +244,7 @@ const Lista_collaboratori = ({ collaboratori }) => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-gray-200 p-4">
           <div className="flex justify-between items-center gap-3">
-            <div><h2 className="text-xl font-bold text-gray-900">✓ Disponibilità Eventi & Shooting</h2><p className="mt-1 text-sm text-gray-600">Risposte dei professionisti per date e periodi.</p></div>
+            <h2 className="text-xl font-bold text-gray-900">✓ Disponibilità Eventi & Shooting</h2>
             <Link href="/Disponibilita-Eventi-Shooting" className="inline-flex items-center px-4 py-2 bg-cyan-700 hover:bg-cyan-800 text-white text-sm font-medium rounded-lg transition-colors">Apri Lista</Link>
           </div>
         </div>
