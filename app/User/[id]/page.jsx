@@ -7,6 +7,7 @@ import TimelineWebDesignerV2 from "@/Components/timeline-web-designer-v2"; // Da
 import FeedCommerciale from "@/Components/feed-commerciale"; // Dashboard per Commerciali
 import AdminCollaborationsList from "@/Components/edit-collab"; // Dashboard per Social Media Manager
 import AziendaCollab from "@/Components/azienda-collab"; // Dashboard per Cliente
+import SeoCollaborations from "@/Components/SeoCollaborations";
 
 const UserDetails = ({ params }) => {
   const { id } = use(params); // ID utente dalla route
@@ -749,13 +750,14 @@ const UserDetails = ({ params }) => {
             {userHasRole("smm") && (
               <AdminCollaborationsList id={user._id} amministratore={false} />
             )}
+            {session?.user?.role === "amministratore" && userHasRole("seo") && <SeoCollaborations collaboratorId={id} />}
 
             {user?.ragioneSociale && (
               <AziendaCollab aziendaId={user._id} />
             )}
 
             {/* Messaggio di fallback - Ottimizzato per mobile */}
-            {!userHasRole("web designer") && !userHasRole("commerciale") && !userHasRole("smm") && !user?.ragioneSociale && (
+            {!userHasRole("web designer") && !userHasRole("commerciale") && !userHasRole("smm") && !userHasRole("seo") && !user?.ragioneSociale && (
               <div className="text-center py-8 sm:py-12">
                 <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
                   <span className="text-xl sm:text-2xl">📋</span>

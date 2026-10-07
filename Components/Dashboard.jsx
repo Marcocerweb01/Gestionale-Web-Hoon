@@ -8,6 +8,7 @@ import TimelineWebDesignerV2 from './timeline-web-designer-v2';
 import TimelineLead from './TimelineLead';
 import CreaLead from './CreaLead';
 import VistaGoogleAdsCollaboratore from './VistaGoogleAdsCollaboratore';
+import SeoCollaborations from './SeoCollaborations';
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import { 
@@ -1074,6 +1075,11 @@ const Dashboard = () => {
           ) : (
             <>
               {/* Lead Commerciali */}
+              <Link href="/Disponibilita-Eventi-Shooting" className="mb-8 flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 p-5 transition hover:border-blue-400 hover:bg-blue-100">
+                <div><h3 className="text-lg font-bold text-slate-900">Eventi & Shooting</h3><p className="mt-1 text-sm text-slate-600">Comunica la tua disponibilità: Sì, No oppure Forse.</p></div><span className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Apri</span>
+              </Link>
+
+              {/* Lead Commerciali */}
               {hasRole("commerciale") && (
                 <div className="mb-8">
                   <div className="flex items-center mb-4">
@@ -1163,10 +1169,7 @@ const Dashboard = () => {
                     <Search className="w-6 h-6 mr-2 text-purple-600" />
                     <h3 className="text-xl font-semibold text-gray-900">I miei Progetti SEO</h3>
                   </div>
-                  <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <Search className="w-16 h-16 mx-auto mb-4 text-purple-400" />
-                    <p className="text-gray-600 text-lg">Sezione SEO in arrivo...</p>
-                  </div>
+                  <SeoCollaborations collaboratorId={session?.user?.id} />
                 </div>
               )}
 

@@ -5,7 +5,7 @@ import { connectToDB } from "@/utils/database";
 import Evento from "@/models/Evento";
 import AssegnazioneEvento from "@/models/AssegnazioneEvento";
 import { Collaboratore } from "@/models/User";
-import { assignmentToJSON, eventAccess, isValidId } from "@/lib/eventi";
+import { assignmentToJSON, eventAccess, isEventDay, isValidId } from "@/lib/eventi";
 
 async function authorize(params) {
   const { id, assignmentId } = await params;
@@ -33,6 +33,7 @@ export async function PATCH(req, { params }) {
     if (!allowed || !active) return NextResponse.json({ message: "Collaboratore non autorizzato" }, { status: 400 });
     const dataLavoro = new Date(`${body.dataLavoro}T12:00:00.000Z`);
     if (Number.isNaN(dataLavoro.getTime()) || !String(body.mansione || "").trim()) return NextResponse.json({ message: "Data e mansione obbligatorie" }, { status: 400 });
+    if (!isEventDay(result.event, dataLavoro)) return NextResponse.json({ message: "La giornata di lavoro deve essere una delle date EVENTO" }, { status: 400 });
     Object.assign(result.assignment, {
       collaboratore: body.collaboratore,
       dataLavoro,

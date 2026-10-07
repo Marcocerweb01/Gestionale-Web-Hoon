@@ -4,7 +4,7 @@ const NotificaSchema = new Schema(
   {
     tipo: {
       type: String,
-      enum: ['nota_problema', 'dominio_scadenza', 'fine_mese'],
+      enum: ['nota_problema', 'dominio_scadenza', 'fine_mese', 'evento_disponibilita', 'shooting_disponibilita', 'seo_assegnazione'],
       required: true,
     },
     titolo: { type: String, required: true },
@@ -13,6 +13,7 @@ const NotificaSchema = new Schema(
     link: { type: String, default: '' },
     // Metadati extra per evitare duplicati
     refId: { type: String, default: '' }, // es. id nota o id dominio
+    destinatario: { type: Schema.Types.ObjectId, ref: 'Collaboratore', default: null, index: true },
   },
   { timestamps: true }
 );

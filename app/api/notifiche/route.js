@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'amministratore') {
+    if (!session || !['amministratore', 'collaboratore'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
     }
 
@@ -19,11 +19,14 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '0');
 
-    let query = Notifica.find().sort({ createdAt: -1 });
+    const scope = session.user.role === 'amministratore'
+      ? { $or: [{ destinatario: null }, { destinatario: session.user.id }] }
+      : { destinatario: session.user.id };
+    let query = Notifica.find(scope).sort({ createdAt: -1 });
     if (limit > 0) query = query.limit(limit);
 
     const notifiche = await query.lean();
-    const nonLette = await Notifica.countDocuments({ letta: false });
+    const nonLette = await Notifica.countDocuments({ ...scope, letta: false });
 
     return NextResponse.json({ notifiche, nonLette });
   } catch (error) {
@@ -36,12 +39,13 @@ export async function GET(req) {
 export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'amministratore') {
+    if (!session || !['amministratore', 'collaboratore'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
     }
 
     await connectToDB();
-    const result = await Notifica.deleteMany({ letta: true });
+    const scope = session.user.role === 'amministratore' ? { $or: [{ destinatario: null }, { destinatario: session.user.id }] } : { destinatario: session.user.id };
+    const result = await Notifica.deleteMany({ ...scope, letta: true });
 
     return NextResponse.json({ eliminati: result.deletedCount });
   } catch (error) {

@@ -1,6 +1,8 @@
 import CollaborazioneWebDesign from "@/models/Collaborazioniwebdesign";
 import { connectToDB } from "@/utils/database";
 import { Azienda, Collaboratore } from "@/models/User";
+import { createSeoCollaborationForWebProject, findSeoAssignee } from "@/lib/seo-collaborations";
+import { queueUserNotifications } from "@/lib/user-notifications";
 
 const taskTemplates = {
   "e-commerce": [
@@ -84,6 +86,7 @@ export async function POST(req) {
     }));
 
     // Crea la nuova collaborazione
+    const seo = await findSeoAssignee();
     const nuovaCollaborazione = await CollaborazioneWebDesign.create({
       tipoProgetto,
       cliente: clienteId,
@@ -98,9 +101,17 @@ export async function POST(req) {
       dataFineContratto: dataFineContratto || null,
     });
 
+    try {
+      const seoCollaboration = await createSeoCollaborationForWebProject({ project: nuovaCollaborazione, sourceType: "webdesign", seo });
+      await queueUserNotifications([seo], { tipo: "seo_assegnazione", titolo: `Nuovo servizio SEO: ${azienda.ragioneSociale}`, messaggio: `Ti è stato assegnato il servizio SEO collegato al nuovo progetto web di ${azienda.ragioneSociale}.`, link: "/", refId: String(seoCollaboration._id) }).catch((notificationError) => console.error("Errore accodamento notifica SEO:", notificationError));
+    } catch (seoError) {
+      await CollaborazioneWebDesign.deleteOne({ _id: nuovaCollaborazione._id });
+      throw seoError;
+    }
+
     return new Response(JSON.stringify(nuovaCollaborazione), { status: 201 });
   } catch (error) {
     console.error("Errore durante la creazione della collaborazione:", error);
-    return new Response(JSON.stringify({ message: "Errore interno al server" }), { status: 500 });
+    return new Response(JSON.stringify({ message: error.message || "Errore interno al server" }), { status: 500 });
   }
 }

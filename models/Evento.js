@@ -12,10 +12,12 @@ const TrancheSchema = new Schema({
 }, { _id: true });
 
 const EventoSchema = new Schema({
+  tipo: { type: String, enum: ["evento", "shooting"], default: "evento", index: true },
   nome: { type: String, required: true, trim: true },
   azienda: { type: Schema.Types.ObjectId, ref: "Azienda", default: null, index: true },
   dataInizio: { type: Date, required: true, index: true },
   dataFine: { type: Date, required: true },
+  giornateEvento: [{ type: Date, required: true }],
   luogo: { type: String, required: true, trim: true },
   responsabile: { type: Schema.Types.ObjectId, ref: "Collaboratore", required: true, index: true },
   collaboratori: [{ type: Schema.Types.ObjectId, ref: "Collaboratore" }],
@@ -25,7 +27,9 @@ const EventoSchema = new Schema({
   appuntamentiFatti: { type: Number, min: 0, default: 0 },
   inizioSocial: { type: Date, default: null },
   fineSocial: { type: Date, default: null },
+  socialGestiti: [{ type: String, enum: ["instagram", "facebook", "tiktok", "youtube", "linkedin"] }],
   noteInterne: { type: String, default: "" },
+  noteShooting: { type: String, default: "" },
   pagamentoTotale: { type: Schema.Types.Decimal128, default: "0.00" },
   tranche: { type: [TrancheSchema], default: [] },
   hardDisk: { type: Boolean, default: false },
@@ -36,5 +40,6 @@ const EventoSchema = new Schema({
 
 EventoSchema.index({ collaboratori: 1, dataInizio: 1 });
 EventoSchema.index({ responsabile: 1, dataInizio: 1 });
+EventoSchema.index({ giornateEvento: 1 });
 
 export default models.Evento || model("Evento", EventoSchema);

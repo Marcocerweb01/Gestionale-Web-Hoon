@@ -98,6 +98,7 @@ export async function POST(req) {
         nome,
         cognome,
         email: normalizedEmail,
+        telefono: numerotelefonico || "",
         password: hashedPassword,
         partitaIva,
         subRoles: subRoles, // Array di ruoli

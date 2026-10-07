@@ -23,6 +23,7 @@ const CollaboratoreSchema = new Schema({
   nome: { type: String, required: true },
   cognome: { type: String, required: true },
   email: { type: String, required: true, unique: true },
+  telefono: { type: String, default: "", trim: true },
   password: { type: String, required: true },
   partitaIva: { type: String, required: true },
   subRoles: {

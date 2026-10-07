@@ -9,6 +9,9 @@ const ICONE = {
   nota_problema: '⚠️',
   dominio_scadenza: '🌐',
   fine_mese: '📊',
+  evento_disponibilita: '📅',
+  shooting_disponibilita: '📸',
+  seo_assegnazione: '🔎',
 };
 
 export default function NotificheDropdown() {

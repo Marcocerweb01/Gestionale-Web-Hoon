@@ -5,7 +5,7 @@ import { connectToDB } from "@/utils/database";
 import Evento from "@/models/Evento";
 import AssegnazioneEvento from "@/models/AssegnazioneEvento";
 import { Collaboratore } from "@/models/User";
-import { assignmentToJSON, eventAccess, isValidId } from "@/lib/eventi";
+import { assignmentToJSON, eventAccess, isEventDay, isValidId } from "@/lib/eventi";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +63,9 @@ export async function POST(req, { params }) {
     const dataLavoro = new Date(`${body.dataLavoro}T12:00:00.000Z`);
     if (Number.isNaN(dataLavoro.getTime()) || !String(body.mansione || "").trim()) {
       return NextResponse.json({ message: "Data e mansione sono obbligatorie" }, { status: 400 });
+    }
+    if (!isEventDay(result.event, dataLavoro)) {
+      return NextResponse.json({ message: "La giornata di lavoro deve essere una delle date EVENTO" }, { status: 400 });
     }
     const item = await AssegnazioneEvento.create({
       evento: result.event._id,

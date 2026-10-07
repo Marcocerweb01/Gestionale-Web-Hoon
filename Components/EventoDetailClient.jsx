@@ -20,7 +20,7 @@ export default function EventoDetailClient({ eventId }) {
   };
   useEffect(() => { load().catch((err) => setError(err.message)); }, [eventId]);
   const remove = async () => {
-    if (!window.confirm("Eliminare definitivamente l'evento e tutte le sue attività?")) return;
+    if (!window.confirm(`Eliminare definitivamente ${event?.tipo === "shooting" ? "lo shooting" : "l'evento"} e tutte le sue attività?`)) return;
     const response = await fetch(`/api/eventi/${eventId}`, { method: "DELETE" });
     if (response.ok) router.push("/Eventi"); else setError((await response.json()).message);
   };
@@ -29,14 +29,14 @@ export default function EventoDetailClient({ eventId }) {
 
   return (
     <div className="space-y-6">
-      <Link href="/Eventi" className="text-sm font-semibold text-blue-600 hover:text-blue-800">← Tutti gli eventi</Link>
+      <Link href="/Eventi" className="text-sm font-semibold text-blue-600 hover:text-blue-800">← Eventi & Shooting</Link>
       <header className="rounded-2xl bg-gradient-to-r from-slate-900 to-blue-900 p-6 text-white shadow-lg md:p-8">
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start"><div><span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wide">{event.access === "admin" ? "Amministrazione" : event.access === "responsabile" ? "Responsabile evento" : "La tua assegnazione"}</span><h1 className="mt-3 text-3xl font-bold">{event.nome}</h1><div className="mt-4 flex flex-wrap gap-4 text-sm text-blue-100"><span className="flex items-center gap-2"><CalendarDays className="h-4 w-4" /> {formatRange(event.dataInizio, event.dataFine)}</span><span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {event.luogo}</span><span className="flex items-center gap-2"><UserRound className="h-4 w-4" /> {event.responsabile?.nome} {event.responsabile?.cognome}</span></div></div>{event.access !== "collaboratore" && <div className="flex gap-2"><button onClick={() => setEditing(!editing)} className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-slate-900"><Pencil className="h-4 w-4" /> Modifica</button>{event.access === "admin" && <button onClick={remove} className="rounded-lg bg-red-600 p-2.5 text-white" title="Elimina evento"><Trash2 className="h-4 w-4" /></button>}</div>}</div>
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start"><div><span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wide">{event.access === "admin" ? "Amministrazione" : event.access === "responsabile" ? `Responsabile ${event.tipo || "evento"}` : "La tua assegnazione"}</span><h1 className="mt-3 text-3xl font-bold">{event.nome}</h1><div className="mt-4 flex flex-wrap gap-4 text-sm text-blue-100"><span className="flex items-center gap-2"><CalendarDays className="h-4 w-4" /><strong className="text-white">DATE {event.tipo === "shooting" ? "SHOOTING" : "EVENTO"}:</strong> {formatEventDays(event.giornateEvento)}</span><span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {event.luogo}</span><span className="flex items-center gap-2"><UserRound className="h-4 w-4" /> {event.responsabile?.nome} {event.responsabile?.cognome}</span></div></div>{event.access !== "collaboratore" && <div className="flex gap-2"><button onClick={() => setEditing(!editing)} className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-slate-900"><Pencil className="h-4 w-4" /> Modifica</button>{event.access === "admin" && <button onClick={remove} className="rounded-lg bg-red-600 p-2.5 text-white" title={`Elimina ${event.tipo || "evento"}`}><Trash2 className="h-4 w-4" /></button>}</div>}</div>
       </header>
 
       {editing && <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm md:p-7"><EventForm event={event} access={event.access} onCancel={() => setEditing(false)} onSaved={(updated) => { setEvent(updated); setEditing(false); }} /></div>}
 
-      {event.access !== "collaboratore" && !editing && (
+      {event.access !== "collaboratore" && !editing && event.tipo !== "shooting" && (
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-5 py-4 md:px-6">
             <div className="flex items-center gap-3">
@@ -50,16 +50,18 @@ export default function EventoDetailClient({ eventId }) {
               <Progress label="Appuntamenti" done={event.appuntamentiFatti} total={event.appuntamentiTotali} color="violet" />
             </div>
             <div className="grid grid-cols-2 gap-3 bg-slate-50/70 p-5 lg:grid-cols-1 lg:content-center md:p-6">
-              <SocialDate label="Inizio social" value={event.inizioSocial} />
-              <SocialDate label="Fine social" value={event.fineSocial} />
+              <SocialDate label="GESTIONE SOCIAL · INIZIO" value={event.inizioSocial} />
+              <SocialDate label="GESTIONE SOCIAL · FINE" value={event.fineSocial} />
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">SOCIAL GESTITI</p><div className="mt-2 flex flex-wrap gap-1.5">{event.socialGestiti?.length ? event.socialGestiti.map((social) => <span key={social} className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold capitalize text-blue-700">{social}</span>) : <span className="text-sm text-slate-500">Nessuno selezionato</span>}</div></div>
             </div>
           </div>
         </section>
       )}
+      {event.access !== "collaboratore" && event.tipo === "shooting" && event.noteShooting && <section className="flex gap-4 rounded-2xl border border-blue-200 bg-blue-50/70 p-5 shadow-sm"><span className="h-fit rounded-xl bg-white p-2.5 text-blue-700 shadow-sm"><MessageSquareText className="h-5 w-5" /></span><div className="min-w-0"><h2 className="font-bold text-slate-900">Note Shooting</h2><p className="mt-1 whitespace-pre-wrap leading-relaxed text-slate-700">{event.noteShooting}</p></div></section>}
       {event.access !== "collaboratore" && event.noteInterne && <section className="flex gap-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-5 shadow-sm"><span className="h-fit rounded-xl bg-white p-2.5 text-amber-700 shadow-sm"><MessageSquareText className="h-5 w-5" /></span><div className="min-w-0"><h2 className="font-bold text-slate-900">Note operative interne</h2><p className="mt-1 whitespace-pre-wrap leading-relaxed text-slate-700">{event.noteInterne}</p></div></section>}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm md:p-7"><EventAssignments event={event} /></div>
 
-      {event.access === "admin" && <div className="grid gap-6 lg:grid-cols-2"><section className="rounded-2xl border border-gray-200 bg-white p-5"><h2 className="text-xl font-bold text-gray-900">Amministrazione</h2><p className="mt-4 text-3xl font-bold text-gray-900">€ {event.pagamentoTotale}</p><div className="mt-4 space-y-2">{event.tranche.map((item) => <div key={item._id} className="flex items-center justify-between rounded-lg bg-gray-50 p-3 text-sm"><span><strong>{item.descrizione}</strong><br /><span className="text-gray-500">{formatDate(item.scadenza)}</span></span><span className="text-right"><strong>€ {item.importo}</strong><br /><span className="text-gray-500">{item.stato.replace("_", " ")}</span></span></div>)}</div></section><section className="rounded-2xl border border-gray-200 bg-white p-5"><h2 className="text-xl font-bold text-gray-900">Chiusura evento</h2><div className="mt-5 space-y-3"><Status label="Materiale su Hard Disk" checked={event.hardDisk} /><Status label="Report finale" checked={event.report} /></div></section></div>}
+      {event.access === "admin" && <div className="grid gap-6 lg:grid-cols-2"><section className="rounded-2xl border border-gray-200 bg-white p-5"><h2 className="text-xl font-bold text-gray-900">Amministrazione</h2><p className="mt-4 text-3xl font-bold text-gray-900">€ {event.pagamentoTotale}</p><div className="mt-4 space-y-2">{event.tranche.map((item) => <div key={item._id} className="flex items-center justify-between rounded-lg bg-gray-50 p-3 text-sm"><span><strong>{item.descrizione}</strong><br /><span className="text-gray-500">{formatDate(item.scadenza)}</span></span><span className="text-right"><strong>€ {item.importo}</strong><br /><span className="text-gray-500">{item.stato.replace("_", " ")}</span></span></div>)}</div></section><section className="rounded-2xl border border-gray-200 bg-white p-5"><h2 className="text-xl font-bold text-gray-900">Chiusura {event.tipo || "evento"}</h2><div className="mt-5 space-y-3"><Status label="Materiale su Hard Disk" checked={event.hardDisk} /><Status label="Report finale" checked={event.report} /></div></section></div>}
     </div>
   );
 }
@@ -68,4 +70,4 @@ function Progress({ label, done = 0, total = 0, color = "blue" }) { const percen
 function SocialDate({ label, value }) { return <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm"><span className="rounded-lg bg-slate-100 p-2 text-slate-600"><CalendarRange className="h-4 w-4" /></span><div><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p><p className="font-bold text-slate-900">{formatDate(value)}</p></div></div>; }
 function Status({ label, checked }) { return <div className={`rounded-lg p-4 font-semibold ${checked ? "bg-green-50 text-green-700" : "bg-gray-50 text-gray-500"}`}>{checked ? "✓" : "○"} {label}</div>; }
 function formatDate(value) { return value ? new Date(value).toLocaleDateString("it-IT", { timeZone: "UTC" }) : "—"; }
-function formatRange(start, end) { const a = formatDate(start); const b = formatDate(end); return a === b ? a : `${a} – ${b}`; }
+function formatEventDays(days = []) { if (!days.length) return "—"; const labels = days.map(formatDate); return labels.length <= 4 ? labels.join(" · ") : `${labels.slice(0, 3).join(" · ")} · +${labels.length - 3} giornate`; }

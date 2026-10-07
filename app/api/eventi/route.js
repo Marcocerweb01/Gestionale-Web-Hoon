@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { connectToDB } from "@/utils/database";
 import Evento from "@/models/Evento";
+import { Collaboratore } from "@/models/User";
+import { queueUserNotifications } from "@/lib/user-notifications";
 import {
   eventAccess,
   isAdmin,
@@ -53,6 +55,14 @@ export async function POST(req) {
     await connectToDB();
     const payload = await validateAdminEventPayload(await req.json());
     const created = await Evento.create({ ...payload, createdBy: session.user.id, updatedBy: session.user.id });
+    const recipients = await Collaboratore.find({ status: { $ne: "non_attivo" } }).select("nome email telefono").lean();
+    await queueUserNotifications(recipients, {
+      tipo: payload.tipo === "shooting" ? "shooting_disponibilita" : "evento_disponibilita",
+      titolo: `Nuovo ${payload.tipo === "shooting" ? "shooting" : "evento"}: ${payload.nome}`,
+      messaggio: `Indica la tua disponibilità per “${payload.nome}” nel gestionale.`,
+      link: "/Disponibilita-Eventi-Shooting",
+      refId: String(created._id),
+    }).catch((notificationError) => console.error("Errore accodamento notifiche evento:", notificationError));
     const event = await populateEvent(Evento.findById(created._id)).lean();
     return NextResponse.json(serializeEvent(event, "admin"), { status: 201 });
   } catch (error) {

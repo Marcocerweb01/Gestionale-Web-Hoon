@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import Link from "@node_modules/next/link";
+import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Lista_clienti from "./Lista-clienti";
 import TimelineWebDesignerV2 from "./timeline-web-designer-v2";
 import ListaGoogleAdsCollaboratore from "./ListaGoogleAdsCollaboratore";
+import SeoCollaborations from "./SeoCollaborations";
 
 // Se serve una mappa per modificare l'etichetta dei ruoli
 const roleMap = {
@@ -32,7 +33,6 @@ const Lista_collaboratori = ({ collaboratori }) => {
   }, [searchParams]);
 
   // Stato per tracciare l'apertura delle aree
-  console.log(collaboratori)
   const [openWeb, setOpenWeb] = useState(() => getInitialState("web"));
   const [openSmm, setOpenSmm] = useState(() => getInitialState("smm"));
   const [openComm, setOpenComm] = useState(() => getInitialState("comm"));
@@ -41,6 +41,18 @@ const Lista_collaboratori = ({ collaboratori }) => {
   const [openGoogleAds, setOpenGoogleAds] = useState(() => getInitialState("googleads"));
   const [openMetaAds, setOpenMetaAds] = useState(() => getInitialState("metaads"));
   const [openLists, setOpenLists] = useState(() => getOpenLists());
+  const [eventCount, setEventCount] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/eventi", { cache: "no-store", signal: controller.signal })
+      .then((response) => response.ok ? response.json() : [])
+      .then((events) => setEventCount(Array.isArray(events) ? events.length : 0))
+      .catch((error) => {
+        if (error.name !== "AbortError") setEventCount(0);
+      });
+    return () => controller.abort();
+  }, []);
 
   // ✨ useEffect per aggiornare l'URL quando cambia lo stato
   useEffect(() => {
@@ -212,22 +224,31 @@ const Lista_collaboratori = ({ collaboratori }) => {
         )}
       </div>
 
-      {/* Accesso Gestione Eventi */}
-      <Link
-        href="/Eventi"
-        className="group flex items-center justify-between overflow-hidden rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md"
-      >
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-xl text-white shadow-sm">📅</span>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Gestione Eventi</h2>
-            <p className="text-sm text-gray-500">Eventi, responsabili, team e attività</p>
+      {/* Area Gestione Eventi & Shooting */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 p-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900">
+              📅 Gestione Eventi & Shooting ({eventCount})
+            </h2>
+            <Link
+              href="/Eventi"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Apri Lista
+            </Link>
           </div>
         </div>
-        <span className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-blue-700">
-          Apri Eventi
-        </span>
-      </Link>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-gray-200 p-4">
+          <div className="flex justify-between items-center gap-3">
+            <div><h2 className="text-xl font-bold text-gray-900">✓ Disponibilità Eventi & Shooting</h2><p className="mt-1 text-sm text-gray-600">Risposte dei professionisti per date e periodi.</p></div>
+            <Link href="/Disponibilita-Eventi-Shooting" className="inline-flex items-center px-4 py-2 bg-cyan-700 hover:bg-cyan-800 text-white text-sm font-medium rounded-lg transition-colors">Apri Lista</Link>
+          </div>
+        </div>
+      </div>
 
       {/* Area Marketing - Contiene SEO, Google ADS, Meta ADS */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -503,7 +524,7 @@ const CollaboratoreItem = ({ id, nome, ruolo, tipoLista, status = "attivo", note
             ) : tipoLista === "google ads" ? (
               <ListaGoogleAdsCollaboratore collaboratoreId={id} />
             ) : tipoLista === "seo" ? (
-              <p className="text-gray-500 text-sm italic">Componente SEO in arrivo...</p>
+              <SeoCollaborations collaboratorId={id} />
             ) : tipoLista === "meta ads" ? (
               <p className="text-gray-500 text-sm italic">Componente Meta ADS in arrivo...</p>
             ) : (

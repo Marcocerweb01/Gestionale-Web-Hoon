@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { connectToDB } from "@/utils/database";
 import Evento from "@/models/Evento";
 import AssegnazioneEvento from "@/models/AssegnazioneEvento";
+import DisponibilitaEvento from "@/models/DisponibilitaEvento";
 import {
   eventAccess,
   isAdmin,
@@ -78,6 +79,7 @@ export async function DELETE(req, { params }) {
     if (result.error) return result.error;
     if (!isAdmin(result.session)) return NextResponse.json({ message: "Solo l'amministratore può eliminare eventi" }, { status: 403 });
     await AssegnazioneEvento.deleteMany({ evento: result.event._id });
+    await DisponibilitaEvento.deleteMany({ evento: result.event._id });
     await Evento.deleteOne({ _id: result.event._id });
     return NextResponse.json({ message: "Evento eliminato" });
   } catch (error) {

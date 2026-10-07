@@ -9,12 +9,18 @@ const ICONE = {
   nota_problema: '⚠️',
   dominio_scadenza: '🌐',
   fine_mese: '📊',
+  evento_disponibilita: '📅',
+  shooting_disponibilita: '📸',
+  seo_assegnazione: '🔎',
 };
 
 const LABELS = {
   nota_problema: 'Nota Problema',
   dominio_scadenza: 'Dominio in Scadenza',
   fine_mese: 'Fine Mese',
+  evento_disponibilita: 'Disponibilità Evento',
+  shooting_disponibilita: 'Disponibilità Shooting',
+  seo_assegnazione: 'Assegnazione SEO',
 };
 
 export default function NotifichePage() {
@@ -28,7 +34,7 @@ export default function NotifichePage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/Login');
-    if (status === 'authenticated' && session.user.role !== 'amministratore') router.push('/unauthorized');
+    if (status === 'authenticated' && !['amministratore', 'collaboratore'].includes(session.user.role)) router.push('/unauthorized');
   }, [status]);
 
   const carica = useCallback(async () => {

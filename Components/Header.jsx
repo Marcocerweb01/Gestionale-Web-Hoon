@@ -285,8 +285,8 @@ const Header = () => {
                   </Link>
                 )}
 
-                {/* Campanella notifiche - Solo amministratori */}
-                {session.user.role === "amministratore" && (
+                {/* Campanella notifiche */}
+                {["amministratore", "collaboratore"].includes(session.user.role) && (
                   <NotificheDropdown />
                 )}
                 

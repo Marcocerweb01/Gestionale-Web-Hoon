@@ -10,15 +10,16 @@ export const dynamic = 'force-dynamic';
 export async function PATCH(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'amministratore') {
+    if (!session || !['amministratore', 'collaboratore'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
     }
 
     await connectToDB();
     const { id } = await params;
 
-    const notifica = await Notifica.findByIdAndUpdate(
-      id,
+    const scope = session.user.role === 'amministratore' ? { _id: id, $or: [{ destinatario: null }, { destinatario: session.user.id }] } : { _id: id, destinatario: session.user.id };
+    const notifica = await Notifica.findOneAndUpdate(
+      scope,
       { letta: true },
       { new: true }
     );
@@ -38,14 +39,15 @@ export async function PATCH(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'amministratore') {
+    if (!session || !['amministratore', 'collaboratore'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
     }
 
     await connectToDB();
     const { id } = await params;
 
-    await Notifica.findByIdAndDelete(id);
+    const scope = session.user.role === 'amministratore' ? { _id: id, $or: [{ destinatario: null }, { destinatario: session.user.id }] } : { _id: id, destinatario: session.user.id };
+    await Notifica.findOneAndDelete(scope);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
