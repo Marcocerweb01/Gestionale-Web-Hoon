@@ -57,7 +57,7 @@ const DEFAULT_HOON_LAB_SETTINGS = {
   companyName: "Hoon Srl",
   companyHeader: "Hoon Srl\nVia Buon Pastore 9 d\n01100 Viterbo (VT)\nTel. 3760361046 / Fax\nwww.hoonlab.it / info@hoonlab.it\nP.IVA 02338800564 - Cod. Fiscale 02338800564",
   quoteNoteTitle: "NOTA PREVENTIVO",
-  quoteNote: "Per l’avvio dell’ordine è richiesto un acconto pari al 50% dell’importo totale. Il restante 50% dovrà essere saldato prima della consegna della merce"
+  quoteNote: "Per l’avvio dell’ordine è richiesto un acconto pari al 50% dell’imponibile, IVA esclusa. Il saldo comprenderà l’importo residuo e l’intera IVA e dovrà essere versato prima della consegna della merce"
 };
 
 function currency(value) {
@@ -3229,6 +3229,11 @@ function OrderCard({ order, onGenerateDdt, onUpdateOrder }) {
         <p className="mt-3 line-clamp-2 text-xs text-slate-500">{products.join(" · ")}</p>
       )}
       <p className="mt-3 text-2xl font-bold text-slate-900">{currency(order.total)}</p>
+      {Number(order.vatRate || 0) > 0 && (
+        <p className="mt-1 text-xs font-semibold text-slate-500">
+          Imponibile {currency(order.taxableAmount)} · IVA {order.vatRate}% {currency(order.vatAmount)}
+        </p>
+      )}
       <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="text-[11px] font-bold uppercase text-slate-500">Preventivo</p>
@@ -3264,13 +3269,14 @@ function OrderCard({ order, onGenerateDdt, onUpdateOrder }) {
         <input
           type="number"
           min="0"
-          max={order.total}
+          max={order.taxableAmount ?? order.total}
           step="0.01"
           value={paymentStatus === "pagato" ? order.total : paymentStatus === "non_pagato" ? 0 : amountPaid}
           onChange={(event) => setAmountPaid(event.target.value)}
           disabled={paymentStatus !== "acconto"}
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold disabled:bg-slate-100"
-          placeholder="Importo pagato"
+          placeholder="Acconto IVA esclusa"
+          aria-label="Acconto IVA esclusa"
         />
         <button type="button" onClick={savePayment} disabled={savingPayment} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-60">
           {savingPayment ? "Salvo..." : "Salva pagamento"}
@@ -3686,7 +3692,10 @@ function LiveTotals({ title, totals, previewTotals, hasDraft }) {
   const rows = [
     ["Subtotale", totals.subtotal, previewTotals.subtotal],
     ["Sconti", totals.discountTotal, previewTotals.discountTotal],
-    ["Totale", totals.total, previewTotals.total]
+    ["Aumenti", totals.increaseTotal, previewTotals.increaseTotal],
+    ["Imponibile", totals.taxableAmount, previewTotals.taxableAmount],
+    [`IVA ${previewTotals.vatRate}%`, totals.vatAmount, previewTotals.vatAmount],
+    ["Totale IVA inclusa", totals.total, previewTotals.total]
   ];
 
   return (
@@ -3695,7 +3704,7 @@ function LiveTotals({ title, totals, previewTotals, hasDraft }) {
         <h3 className="text-base font-bold text-slate-900">{title}</h3>
         {hasDraft && <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">anteprima riga corrente</span>}
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {rows.map(([label, savedValue, previewValue]) => {
           const changed = hasDraft && Number(savedValue || 0) !== Number(previewValue || 0);
           return (

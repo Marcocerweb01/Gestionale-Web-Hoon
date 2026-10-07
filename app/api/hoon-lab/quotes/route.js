@@ -70,6 +70,9 @@ export async function POST(req) {
       subtotal: totals.subtotal,
       discountTotal: totals.discountTotal,
       increaseTotal: totals.increaseTotal,
+      taxableAmount: totals.taxableAmount,
+      vatRate: totals.vatRate,
+      vatAmount: totals.vatAmount,
       total: totals.total,
       notes: body.notes || ""
     });

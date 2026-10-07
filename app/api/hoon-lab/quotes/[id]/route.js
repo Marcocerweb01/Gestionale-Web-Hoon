@@ -71,6 +71,9 @@ export async function PATCH(req, { params }) {
       quote.subtotal = totals.subtotal;
       quote.discountTotal = totals.discountTotal;
       quote.increaseTotal = totals.increaseTotal;
+      quote.taxableAmount = totals.taxableAmount;
+      quote.vatRate = totals.vatRate;
+      quote.vatAmount = totals.vatAmount;
       quote.total = totals.total;
     }
 

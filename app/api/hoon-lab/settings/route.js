@@ -2,12 +2,24 @@ import { NextResponse } from "next/server";
 import { connectToDB } from "@/utils/database";
 import { DEFAULT_HOON_LAB_SETTINGS, HoonLabSettings } from "@/models/HoonLab";
 
+const LEGACY_QUOTE_NOTE = "Per l’avvio dell’ordine è richiesto un acconto pari al 50% dell’importo totale. Il restante 50% dovrà essere saldato prima della consegna della merce";
+
 async function getSettings() {
-  return HoonLabSettings.findOneAndUpdate(
+  const settings = await HoonLabSettings.findOneAndUpdate(
     { key: "default" },
     { $setOnInsert: { key: "default", ...DEFAULT_HOON_LAB_SETTINGS } },
     { new: true, upsert: true }
   ).lean();
+
+  if (settings.quoteNote !== LEGACY_QUOTE_NOTE) return settings;
+
+  const updatedSettings = await HoonLabSettings.findOneAndUpdate(
+    { key: "default", quoteNote: LEGACY_QUOTE_NOTE },
+    { $set: { quoteNote: DEFAULT_HOON_LAB_SETTINGS.quoteNote } },
+    { new: true }
+  ).lean();
+
+  return updatedSettings || settings;
 }
 
 export async function GET() {

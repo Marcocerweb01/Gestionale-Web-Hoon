@@ -25,7 +25,7 @@ export const DEFAULT_HOON_LAB_SETTINGS = {
   companyName: "Hoon Srl",
   companyHeader: "Hoon Srl\nVia Buon Pastore 9 d\n01100 Viterbo (VT)\nTel. 3760361046 / Fax\nwww.hoonlab.it / info@hoonlab.it\nP.IVA 02338800564 - Cod. Fiscale 02338800564",
   quoteNoteTitle: "NOTA PREVENTIVO",
-  quoteNote: "Per l’avvio dell’ordine è richiesto un acconto pari al 50% dell’importo totale. Il restante 50% dovrà essere saldato prima della consegna della merce"
+  quoteNote: "Per l’avvio dell’ordine è richiesto un acconto pari al 50% dell’imponibile, IVA esclusa. Il saldo comprenderà l’importo residuo e l’intera IVA e dovrà essere versato prima della consegna della merce"
 };
 
 const MoneySchema = {
@@ -125,6 +125,9 @@ const QuoteSchema = new Schema({
   subtotal: MoneySchema,
   discountTotal: MoneySchema,
   increaseTotal: MoneySchema,
+  taxableAmount: MoneySchema,
+  vatRate: { type: Number, default: null, min: 0, max: 100 },
+  vatAmount: MoneySchema,
   total: MoneySchema,
   notes: { type: String, default: "" },
   pdfUrl: { type: String, default: "" },
@@ -151,6 +154,9 @@ const OrderConfirmationSchema = new Schema({
   subtotal: MoneySchema,
   discountTotal: MoneySchema,
   increaseTotal: MoneySchema,
+  taxableAmount: MoneySchema,
+  vatRate: { type: Number, default: null, min: 0, max: 100 },
+  vatAmount: MoneySchema,
   total: MoneySchema,
   paymentStatus: { type: String, enum: PAYMENT_STATUSES, default: "non_pagato" },
   paymentMethod: { type: String, enum: PAYMENT_METHODS, default: "" },

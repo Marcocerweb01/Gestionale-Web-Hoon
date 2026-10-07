@@ -45,8 +45,9 @@ export async function PATCH(req, { params }) {
     }
     if (order.paymentStatus === "acconto") {
       const total = Number(order.total || 0);
-      if (Number(order.amountPaid || 0) <= 0 || Number(order.amountPaid || 0) >= total) {
-        return NextResponse.json({ error: "L'acconto deve essere maggiore di zero e inferiore al totale" }, { status: 400 });
+      const taxableAmount = Number(order.taxableAmount ?? total);
+      if (Number(order.amountPaid || 0) <= 0 || Number(order.amountPaid || 0) > taxableAmount) {
+        return NextResponse.json({ error: "L'acconto deve essere maggiore di zero e non puo superare l'imponibile IVA esclusa" }, { status: 400 });
       }
     }
 

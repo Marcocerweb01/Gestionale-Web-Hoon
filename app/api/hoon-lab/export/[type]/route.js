@@ -56,7 +56,7 @@ export async function GET(req, { params }) {
     const filter = { ...buildDateFilter(searchParams), ...appendCommonFilters(searchParams) };
 
     if (type === "quotes") {
-      const sheet = setupSheet(workbook, "Preventivi", ["Numero", "Data", "Cliente", "Tipo cliente", "Stato", "Subtotale", "Sconti", "Aumenti", "Totale"]);
+      const sheet = setupSheet(workbook, "Preventivi", ["Numero", "Data", "Cliente", "Tipo cliente", "Stato", "Subtotale", "Sconti", "Aumenti", "Imponibile", "IVA %", "IVA", "Totale"]);
       const quotes = await HoonLabQuote.find(filter).sort({ issueDate: -1 }).lean();
       quotes.forEach((quote) => sheet.addRow({
         Numero: quote.number,
@@ -67,6 +67,9 @@ export async function GET(req, { params }) {
         Subtotale: quote.subtotal,
         Sconti: quote.discountTotal,
         Aumenti: quote.increaseTotal,
+        Imponibile: quote.taxableAmount,
+        "IVA %": quote.vatRate,
+        IVA: quote.vatAmount,
         Totale: quote.total
       }));
     }
@@ -89,7 +92,7 @@ export async function GET(req, { params }) {
     }
 
     if (type === "orders") {
-      const sheet = setupSheet(workbook, "Conferme ordine", ["Numero", "Data", "Cliente", "Tipo cliente", "Stato", "Preventivo", "Totale"]);
+      const sheet = setupSheet(workbook, "Conferme ordine", ["Numero", "Data", "Cliente", "Tipo cliente", "Stato", "Preventivo", "Imponibile", "IVA %", "IVA", "Totale", "Acconto", "Saldo"]);
       const orders = await HoonLabOrderConfirmation.find(filter).populate("quote", "number").sort({ issueDate: -1 }).lean();
       orders.forEach((order) => sheet.addRow({
         Numero: order.number,
@@ -98,7 +101,12 @@ export async function GET(req, { params }) {
         "Tipo cliente": order.customerSnapshot?.type || "",
         Stato: order.status,
         Preventivo: order.quote?.number || "",
-        Totale: order.total
+        Imponibile: order.taxableAmount,
+        "IVA %": order.vatRate,
+        IVA: order.vatAmount,
+        Totale: order.total,
+        Acconto: order.paymentStatus === "acconto" ? order.amountPaid : 0,
+        Saldo: order.balanceDue
       }));
     }
 
