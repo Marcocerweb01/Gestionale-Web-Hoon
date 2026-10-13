@@ -15,12 +15,18 @@ const Detail = ({ label, children, accent = false }) => (
   </div>
 );
 
-export default function SiteStructureDiagram({ pages: rawPages, azienda, filename }) {
+export default function SiteStructureDiagram({
+  pages: rawPages,
+  azienda,
+  siteType,
+  siteTypeReason,
+  filename,
+}) {
   const pages = getSiteStructurePages(rawPages);
   if (!pages.length) return null;
 
   const downloadDiagram = () => {
-    downloadSiteStructureSvg({ pages, azienda, filename });
+    downloadSiteStructureSvg({ pages, azienda, siteType, filename });
   };
 
   return (
@@ -31,6 +37,14 @@ export default function SiteStructureDiagram({ pages: rawPages, azienda, filenam
           <p className="mt-1 text-xs leading-5 text-gray-500">
             Pagine disposte in orizzontale con sezioni, contenuti necessari e call to action.
           </p>
+          <div className="mt-3 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
+            <span className="inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-800">
+              {siteType || 'Tipologia da definire'}
+            </span>
+            {siteTypeReason && (
+              <span className="max-w-2xl text-xs leading-5 text-gray-500">{siteTypeReason}</span>
+            )}
+          </div>
         </div>
         <button
           type="button"

@@ -65,34 +65,46 @@ export async function POST(req, { params }) {
     }
 
     const requestBody = await req.json().catch(() => ({}));
-    const followUpAnswers = normalizeFollowUpAnswers(requestBody.followUpAnswers);
-    const hasFollowUpAnswers = followUpAnswers.some((item) => item.risposta);
+    const requestedStage = requestBody.stage;
+    const normalizedAnswers = normalizeFollowUpAnswers(requestBody.followUpAnswers);
+    const stage =
+      requestedStage === 'final' || requestedStage === 'initial'
+        ? requestedStage
+        : normalizedAnswers.some((item) => item.risposta)
+          ? 'final'
+          : 'initial';
+    const followUpAnswers = stage === 'final' ? normalizedAnswers : [];
     const model = process.env.OPENAI_INTERVIEW_MODEL || DEFAULT_WEB_DESIGN_AI_MODEL;
-    const savedHasFollowUpAnswers = Array.isArray(savedInterview.aiFollowUpAnswers)
-      ? savedInterview.aiFollowUpAnswers.some((item) => item?.risposta)
-      : false;
-
-    if (
-      !hasFollowUpAnswers &&
-      !savedHasFollowUpAnswers &&
-      savedInterview.aiAnalysis &&
-      savedInterview.aiRisultatoTxt &&
-      savedInterview.aiPromptVersion === WEB_DESIGN_AI_PROMPT_VERSION &&
-      savedInterview.aiModel === model
-    ) {
-      return NextResponse.json({
-        message: 'Analisi già aggiornata',
-        cached: true,
-        intervista: savedInterview,
-      });
-    }
-
-    const previousQuestions = Array.isArray(savedInterview.aiAnalysis?.domandeApprofondimento)
-      ? savedInterview.aiAnalysis.domandeApprofondimento.slice(0, 5).map((item) => ({
+    const initialAnalysis = savedInterview.aiInitialAnalysis || savedInterview.aiAnalysis;
+    const savedQuestions = Array.isArray(initialAnalysis?.domandeApprofondimento)
+      ? initialAnalysis.domandeApprofondimento.slice(0, 5).map((item) => ({
           domanda: item.domanda || '',
           motivo: item.motivo || '',
         }))
       : [];
+    const previousQuestions = stage === 'final' ? savedQuestions : [];
+
+    if (stage === 'final' && previousQuestions.length !== 5) {
+      return NextResponse.json(
+        { message: 'Genera prima la prima analisi con le cinque domande.' },
+        { status: 409 }
+      );
+    }
+    if (stage === 'final' && savedInterview.aiInputStale) {
+      return NextResponse.json(
+        { message: 'L’intervista è cambiata: aggiorna prima la prima analisi e le cinque domande.' },
+        { status: 409 }
+      );
+    }
+    if (
+      stage === 'final' &&
+      (followUpAnswers.length !== 5 || followUpAnswers.some((item) => !item.risposta))
+    ) {
+      return NextResponse.json(
+        { message: 'Completa tutte e cinque le risposte prima del risultato finale.' },
+        { status: 400 }
+      );
+    }
     const interviewInput = buildSafeInterviewInput(savedInterview.interview);
     const rawOldWebsiteUrl = savedInterview.interview?.sitoVecchioUrl || '';
     const normalizedOldWebsiteUrl = normalizePublicWebsiteUrl(rawOldWebsiteUrl);
@@ -104,7 +116,7 @@ export async function POST(req, { params }) {
     }
 
     interviewInput.sitoVecchioUrl = normalizedOldWebsiteUrl;
-    const savedSiteAnalysis = savedInterview.aiAnalysis?.analisiSitoEsistente || null;
+    const savedSiteAnalysis = initialAnalysis?.analisiSitoEsistente || null;
     const canReuseSiteAnalysis = Boolean(
       normalizedOldWebsiteUrl &&
         savedSiteAnalysis?.urlAnalizzato === normalizedOldWebsiteUrl &&
@@ -115,22 +127,31 @@ export async function POST(req, { params }) {
     const inputHash = createHash('sha256')
       .update(
         JSON.stringify({
+          stage,
           promptVersion: WEB_DESIGN_AI_PROMPT_VERSION,
           model,
           interview: interviewInput,
           previousQuestions,
           followUpAnswers,
-          previousSiteAnalysis,
-          shouldSearchOldWebsite,
         })
       )
       .digest('hex');
 
-    if (
-      savedInterview.aiInputHash === inputHash &&
-      savedInterview.aiAnalysis &&
-      savedInterview.aiRisultatoTxt
-    ) {
+    const cachedAnalysis =
+      stage === 'final' ? savedInterview.aiFinalAnalysis : savedInterview.aiInitialAnalysis;
+    const cachedText =
+      stage === 'final'
+        ? savedInterview.aiFinalRisultatoTxt
+        : savedInterview.aiInitialRisultatoTxt;
+    const cachedHash =
+      stage === 'final' ? savedInterview.aiFinalInputHash : savedInterview.aiInitialInputHash;
+
+    if (cachedHash === inputHash && cachedAnalysis && cachedText && !savedInterview.aiInputStale) {
+      savedInterview.aiAnalysis = cachedAnalysis;
+      savedInterview.aiRisultatoTxt = cachedText;
+      savedInterview.aiStage = stage === 'final' ? 'finale' : 'prima_analisi';
+      if (stage === 'final') savedInterview.aiFinalStale = false;
+      await savedInterview.save();
       return NextResponse.json({
         message: 'Analisi già aggiornata',
         cached: true,
@@ -253,12 +274,33 @@ export async function POST(req, { params }) {
     savedInterview.aiPromptVersion = WEB_DESIGN_AI_PROMPT_VERSION;
     savedInterview.aiModel = model;
     savedInterview.aiGeneratedAt = generatedAt;
+    savedInterview.aiInputStale = false;
+    savedInterview.aiFinalStale = false;
+
+    if (stage === 'initial') {
+      savedInterview.aiInitialAnalysis = analysis;
+      savedInterview.aiInitialRisultatoTxt = aiRisultatoTxt;
+      savedInterview.aiInitialInputHash = inputHash;
+      savedInterview.aiInitialGeneratedAt = generatedAt;
+      savedInterview.aiFinalAnalysis = null;
+      savedInterview.aiFinalRisultatoTxt = '';
+      savedInterview.aiFinalInputHash = '';
+      savedInterview.aiFinalGeneratedAt = null;
+      savedInterview.aiStage = 'prima_analisi';
+    } else {
+      savedInterview.aiFinalAnalysis = analysis;
+      savedInterview.aiFinalRisultatoTxt = aiRisultatoTxt;
+      savedInterview.aiFinalInputHash = inputHash;
+      savedInterview.aiFinalGeneratedAt = generatedAt;
+      savedInterview.aiStage = 'finale';
+    }
     await savedInterview.save();
 
     return NextResponse.json({
-      message: followUpAnswers.some((item) => item.risposta)
-        ? 'Documento finale aggiornato e salvato'
-        : 'Analisi AI generata e salvata',
+      message:
+        stage === 'final'
+          ? 'Risultato finale generato e salvato'
+          : 'Prima analisi generata: completa ora le cinque domande',
       cached: false,
       intervista: savedInterview,
     });

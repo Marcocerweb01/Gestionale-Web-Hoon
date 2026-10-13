@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 const isWeekend = (date) => date.getDay() === 0 || date.getDay() === 6;
 
@@ -33,10 +34,11 @@ const getDefaultEndDate = (startValue) => {
   if (!startValue) return '';
   const start = new Date(`${startValue}T00:00:00`);
   if (Number.isNaN(start.getTime())) return '';
-  return formatDateInput(addWorkingDays(start, 20));
+  return formatDateInput(addWorkingDays(start, 14));
 };
 
 const AddWebDesignV2Form = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     clienteId: '',
     webDesignerId: '',
@@ -124,17 +126,10 @@ const AddWebDesignV2Form = () => {
         throw new Error(data.message || 'Errore durante la creazione');
       }
 
-      setSuccess('Progetto creato con successo!');
-      setFormData({
-        clienteId: '',
-        webDesignerId: '',
-        tipoProgetto: '',
-        note: '',
-        dataInizioContratto: '',
-        dataFineContratto: '',
-      });
-      setAziendaSearch('');
-      setCollaboratoreSearch('');
+      setSuccess('Collaborazione creata. Apro lo Step 1 dell’intervista...');
+      router.push(
+        `/Lista_clienti_webdesigner/${formData.webDesignerId}/interview/${data._id}`
+      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -179,7 +174,7 @@ const AddWebDesignV2Form = () => {
                 </span>
               </div>
               <p className="text-gray-600 mt-1">
-                3 macro sezioni (Struttura · Design · Consegna), checkbox e note per attività
+                15 giorni lavorativi: Struttura · Design e Sviluppo · Collaudo e Consegna
               </p>
             </div>
           </div>
@@ -278,7 +273,7 @@ const AddWebDesignV2Form = () => {
               >
                 <div className="text-2xl mb-1">🏪</div>
                 <div className="font-semibold text-gray-900">Sito Vetrina</div>
-                <div className="text-xs text-gray-500 mt-1">Macro: Struttura · Design · Consegna</div>
+                <div className="text-xs text-gray-500 mt-1">Timeline Vetrina standard di 15 giorni lavorativi</div>
               </button>
               <button
                 type="button"
@@ -291,7 +286,7 @@ const AddWebDesignV2Form = () => {
               >
                 <div className="text-2xl mb-1">🛒</div>
                 <div className="font-semibold text-gray-900">E-commerce</div>
-                <div className="text-xs text-gray-500 mt-1">Macro: Struttura · Design · Consegna</div>
+                <div className="text-xs text-gray-500 mt-1">Timeline E-commerce standard di 15 giorni lavorativi</div>
               </button>
             </div>
           </div>
@@ -312,7 +307,7 @@ const AddWebDesignV2Form = () => {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                🏁 Data Fine Contratto <span className="text-red-500">*</span>
+                🏁 Consegna contrattuale prevista <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -322,7 +317,7 @@ const AddWebDesignV2Form = () => {
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                Calcolata automaticamente su 21 giorni lavorativi dal kickoff.
+                Stima iniziale sul giorno lavorativo 15. L'avvio operativo scatterà alla ricezione dell'intervista.
               </p>
             </div>
           </div>
@@ -380,7 +375,7 @@ const AddWebDesignV2Form = () => {
               ) : (
                 <>
                   <span className="mr-2">🚀</span>
-                  Crea Progetto V2
+                  Crea collaborazione e avvia intervista
                 </>
               )}
             </button>

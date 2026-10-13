@@ -121,6 +121,11 @@ export default function StoricoIntervisteWebdesignerPage() {
           risultatoTxt: item.risultatoTxt,
           intervista: item.interview,
           analisiAI: item.aiAnalysis || null,
+          primaAnalisiAI: item.aiInitialAnalysis || null,
+          risultatoFinaleAI: item.aiFinalAnalysis || null,
+          faseAI: item.aiStage || 'non_generata',
+          analisiDaAggiornare: Boolean(item.aiInputStale),
+          risultatoFinaleDaAggiornare: Boolean(item.aiFinalStale),
           documentoAiTxt: item.aiRisultatoTxt || '',
           risposteApprofondimento: item.aiFollowUpAnswers || [],
           modelloAi: item.aiModel || '',
@@ -147,6 +152,7 @@ export default function StoricoIntervisteWebdesignerPage() {
     downloadSiteStructureSvg({
       pages: item.aiAnalysis?.strutturaSito,
       azienda: item.azienda,
+      siteType: item.aiAnalysis?.sintesiStrategica?.tipologiaSito,
       filename: `${getFilenameBase(item.azienda)} - Schema sito.svg`,
     });
   };
@@ -223,6 +229,19 @@ export default function StoricoIntervisteWebdesignerPage() {
                     {item.azienda || 'Senza nome azienda'}
                   </div>
                   <div className="mt-1 text-xs text-gray-500">{formatDate(item.createdAt)}</div>
+                  <div className="mt-2 inline-flex rounded-full bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-700">
+                    {item.aiInputStale
+                      ? 'Analisi da aggiornare'
+                      : item.aiFinalStale
+                        ? 'Risultato finale da aggiornare'
+                        : item.aiStage === 'finale'
+                          ? 'Risultato finale pronto'
+                          : item.aiStage === 'prima_analisi' || item.aiGeneratedAt
+                            ? 'Prima analisi pronta'
+                            : item.risultatoTxt
+                              ? 'Intervista in compilazione'
+                              : 'Da compilare'}
+                  </div>
                 </div>
                 <div>
                   <div className="text-xs font-bold uppercase text-gray-400">Web designer</div>
@@ -241,6 +260,14 @@ export default function StoricoIntervisteWebdesignerPage() {
                   {item.autoreEmail && <div className="text-xs text-gray-500">{item.autoreEmail}</div>}
                 </div>
                 <div className="flex flex-wrap gap-2 lg:justify-end">
+                  {item.collaborazione?._id && item.webDesigner?._id && (
+                    <Link
+                      href={`/Lista_clienti_webdesigner/${item.webDesigner._id}/interview/${item.collaborazione._id}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-orange-200 bg-white px-3 py-2 text-xs font-bold text-orange-800 transition hover:bg-orange-50"
+                    >
+                      Apri intervista
+                    </Link>
+                  )}
                   {item.aiRisultatoTxt && (
                     <button
                       type="button"
@@ -261,14 +288,16 @@ export default function StoricoIntervisteWebdesignerPage() {
                       Schema SVG
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => downloadTxt(item)}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-orange-700"
-                  >
-                    <FileText className="h-4 w-4" />
-                    TXT
-                  </button>
+                  {item.risultatoTxt && (
+                    <button
+                      type="button"
+                      onClick={() => downloadTxt(item)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-orange-700"
+                    >
+                      <FileText className="h-4 w-4" />
+                      TXT
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => downloadJson(item)}

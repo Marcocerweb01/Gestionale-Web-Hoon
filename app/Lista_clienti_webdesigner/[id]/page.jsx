@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import TimelineWebDesignerV2 from '@/Components/timeline-web-designer-v2';
-import { Monitor, ArrowLeft, User, PlusCircle } from 'lucide-react';
+import { Monitor, ArrowLeft, User } from 'lucide-react';
 
 const ProgettiWebDesigner = () => {
   const params = useParams();
@@ -58,14 +58,14 @@ const ProgettiWebDesigner = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           {/* Breadcrumb */}
           <div className="mb-8">
             <Link href="/Lista_webdesigner" className="inline-flex items-center text-orange-600 hover:text-orange-800 mb-4 transition-colors">
               <ArrowLeft className="w-5 h-5 mr-2" />
               Torna alla lista Web Designer
             </Link>
-            
+
             {/* Header della pagina */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between">
@@ -98,15 +98,11 @@ const ProgettiWebDesigner = () => {
 
           {/* Progetti del designer */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900">Progetti assegnati</h2>
-              <Link
-                href={`/Lista_clienti_webdesigner/${webDesignerId}/interview`}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
-              >
-                <PlusCircle className="h-4 w-4" />
-                Nuova intervista
-              </Link>
+              <p className="mt-1 text-sm text-gray-500">
+                Ogni intervista e i relativi risultati AI sono collegati alla singola collaborazione.
+              </p>
             </div>
             <TimelineWebDesignerV2 userId={webDesignerId} />
           </div>

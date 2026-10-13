@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { ChevronDown, ChevronRight, CheckSquare, Square } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { createPublicationChecklist } from '@/lib/webdesign-v2-publication-checklist';
+import WebDesignV2StandardWorkflow from '@/Components/webdesign-v2-standard-workflow';
+import { isStandardWorkflowProject } from '@/lib/webdesign-v2-workflow.mjs';
 
 const FASE_CONFIG = {
   struttura: {
@@ -776,6 +778,16 @@ const TimelineWebDesignerV2 = ({ userId }) => {
   return (
     <div className="space-y-4">
       {collaborazioni.map((collab) => {
+        if (isStandardWorkflowProject(collab)) {
+          return (
+            <WebDesignV2StandardWorkflow
+              key={collab._id}
+              initialProject={collab}
+              userId={userId}
+              isStaff={isAdminView}
+            />
+          );
+        }
         const isOpen = openProjects[collab._id];
         const progress = getProjectProgress(collab.fasi);
         const isEcommerce = collab.tipoProgetto === 'e-commerce';
@@ -798,6 +810,19 @@ const TimelineWebDesignerV2 = ({ userId }) => {
         const selectedRowIndex = calendarRows.findIndex((row) =>
           row.some(([giorno]) => giorno === selectedDay)
         );
+        const interviewStatus = collab.interviewWorkflow?.stato || 'da_compilare';
+        const interviewStatusLabel =
+          collab.interviewWorkflow?.aiInputStale
+            ? 'Analisi da aggiornare'
+            : collab.interviewWorkflow?.aiFinalStale
+              ? 'Risultato finale da aggiornare'
+              : interviewStatus === 'finale'
+                ? 'Risultato finale pronto'
+                : interviewStatus === 'prima_analisi'
+                  ? 'Prima analisi pronta'
+                  : interviewStatus === 'in_compilazione'
+                    ? 'Intervista in corso'
+                    : 'Intervista da compilare';
 
         return (
           <div
@@ -852,6 +877,22 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                 </div>
 
                 <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                  <Link
+                    href={`/Lista_clienti_webdesigner/${userId}/interview/${collab._id}`}
+                    className={`hidden rounded-lg px-3 py-2 text-xs font-bold transition sm:inline-flex ${
+                      collab.interviewWorkflow?.aiInputStale
+                        ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                        : collab.interviewWorkflow?.aiFinalStale
+                          ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                          : interviewStatus === 'finale'
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                            : interviewStatus === 'prima_analisi'
+                              ? 'bg-violet-100 text-violet-800 hover:bg-violet-200'
+                              : 'bg-orange-600 text-white hover:bg-orange-700'
+                    }`}
+                  >
+                    {interviewStatusLabel}
+                  </Link>
                   {/* Progress globale */}
                   <div className="hidden md:flex flex-col items-end">
                     <span className="text-xs text-gray-500 mb-1">Avanzamento</span>
@@ -885,6 +926,21 @@ const TimelineWebDesignerV2 = ({ userId }) => {
             {/* ── Body (collassabile) ── */}
             {isOpen && (
               <div className="p-6 space-y-8">
+
+                <div className="flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-orange-950">Intervista della collaborazione</h4>
+                    <p className="mt-1 text-xs text-orange-800/75">
+                      {interviewStatusLabel}. Intervista, domande e risultati AI restano collegati a questo progetto.
+                    </p>
+                  </div>
+                  <Link
+                    href={`/Lista_clienti_webdesigner/${userId}/interview/${collab._id}`}
+                    className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-700"
+                  >
+                    {interviewStatus === 'da_compilare' ? 'Avvia Step 1' : 'Apri intervista e risultati'}
+                  </Link>
+                </div>
 
                 {/* -- Dettagli modificabili -- */}
                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">

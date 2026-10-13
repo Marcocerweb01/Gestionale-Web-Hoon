@@ -1,9 +1,28 @@
 import mongoose, { Schema, model, models } from 'mongoose';
 
 const TaskV2Schema = new Schema({
+  codice: { type: String, default: '' },
   giorno: { type: String, default: '' },
+  giornoLavorativo: { type: Number, default: null },
   nome: { type: String, required: true },
   descrizione: { type: String, default: '' },
+  stato: {
+    type: String,
+    enum: ['da fare', 'in corso', 'in attesa', 'completata', 'non applicabile'],
+    default: 'da fare',
+  },
+  criticita: {
+    type: String,
+    enum: ['regolare', 'attenzione', 'critico'],
+    default: 'regolare',
+  },
+  motivoRitardo: {
+    type: String,
+    enum: ['', 'ritardo interno', 'attesa cliente', 'mancanza contenuti', 'attesa approvazione', 'problema tecnico', 'altro'],
+    default: '',
+  },
+  tipoControllo: { type: String, enum: ['', 'obbligatorio', 'condizionale', 'non applicabile'], default: '' },
+  faseCollegata: { type: String, enum: ['', 'struttura', 'design', 'consegna', 'pubblicazione'], default: '' },
   completata: { type: Boolean, default: false },
   note: { type: String, default: '' },
   appuntamentoTipo: { type: String, enum: ['', 'fisico', 'online'], default: '' },
@@ -12,6 +31,21 @@ const TaskV2Schema = new Schema({
 
 const FaseV2Schema = new Schema({
   nome: { type: String, enum: ['struttura', 'stile', 'design', 'consegna'], required: true },
+  giornoInizio: { type: Number, default: null },
+  giornoFine: { type: Number, default: null },
+  dataInizioPrevista: { type: Date, default: null },
+  dataFinePrevista: { type: Date, default: null },
+  controlloTipo: { type: String, default: '' },
+  stato: {
+    type: String,
+    enum: ['da fare', 'in corso', 'in attesa', 'completata', 'non applicabile'],
+    default: 'da fare',
+  },
+  criticita: {
+    type: String,
+    enum: ['regolare', 'attenzione', 'critico'],
+    default: 'regolare',
+  },
   tasks: [TaskV2Schema],
   note: { type: String, default: '' }
 }, { _id: false });
@@ -27,16 +61,64 @@ const FaseControlloV2Schema = new Schema({
   giornoPrevisto: { type: Number, default: null },
   dataPrevista: { type: Date, default: null },
   data: { type: Date, default: null },
-  stato: { type: String, enum: ['', 'da fare', 'in corso', 'ok', 'attenzione', 'critico'], default: '' },
+  stato: { type: String, enum: ['', 'da fare', 'in corso', 'completato', 'ok', 'attenzione', 'critico', 'non applicabile'], default: '' },
+  esito: { type: String, enum: ['', 'superato', 'non superato', 'con riserva', 'non applicabile'], default: '' },
   note: { type: String, default: '' },
   spuntiMiglioramento: { type: String, default: '' },
-  completata: { type: Boolean, default: false }
+  anomalie: { type: String, default: '' },
+  problemiBloccanti: { type: String, default: '' },
+  completata: { type: Boolean, default: false },
+  checkboxCompletamento: { type: Boolean, default: false },
+  condizionale: { type: Boolean, default: false },
+  eccezioneAutorizzata: { type: Boolean, default: false },
+  eccezioneAutorizzataDa: { type: String, default: '' },
+  eccezioneMotivo: { type: String, default: '' },
+  eccezioneData: { type: Date, default: null }
 }, { _id: false });
 
 const ChecklistPubblicazioneV2Schema = new Schema({
   categoria: { type: String, required: true },
   items: [TaskV2Schema],
   note: { type: String, default: '' }
+}, { _id: false });
+
+const AppuntamentoV2Schema = new Schema({
+  tipo: { type: String, enum: ['iniziale', 'intermedio', 'finale'], required: true },
+  obbligatorio: { type: Boolean, default: false },
+  stato: { type: String, enum: ['da pianificare', 'programmato', 'effettuato', 'saltato', 'facoltativo'], default: 'da pianificare' },
+  data: { type: Date, default: null },
+  modalita: { type: String, enum: ['', 'presenza', 'videocall', 'telefono', 'altro'], default: '' },
+  esito: { type: String, default: '' },
+  note: { type: String, default: '' },
+}, { _id: false });
+
+const ApprovazioneV2Schema = new Schema({
+  tipo: { type: String, enum: ['struttura', 'design', 'consegna'], required: true },
+  stato: { type: String, enum: ['da richiedere', 'richiesta', 'approvata', 'respinta', 'non applicabile'], default: 'da richiedere' },
+  modalita: { type: String, enum: ['', 'asincrona', 'presenza', 'videocall', 'altro'], default: '' },
+  data: { type: Date, default: null },
+  approvatoDa: { type: String, default: '' },
+  note: { type: String, default: '' },
+}, { _id: false });
+
+const ConsegnaV2Schema = new Schema({
+  stato: { type: String, enum: ['non consegnato', 'pronta', 'bloccata', 'consegnato'], default: 'non consegnato' },
+  dataPrevista: { type: Date, default: null },
+  dataEffettiva: { type: Date, default: null },
+  confermata: { type: Boolean, default: false },
+  note: { type: String, default: '' },
+}, { _id: false });
+
+const PubblicazioneV2Schema = new Schema({
+  stato: {
+    type: String,
+    enum: ['non prevista', 'da pianificare', 'programmata', 'in corso', 'pubblicata', 'bloccata'],
+    default: 'da pianificare',
+  },
+  dataPrevista: { type: Date, default: null },
+  dataEffettiva: { type: Date, default: null },
+  urlPubblico: { type: String, default: '' },
+  note: { type: String, default: '' },
 }, { _id: false });
 
 const InterviewV2Schema = new Schema({
@@ -81,6 +163,10 @@ const InterviewV2Schema = new Schema({
 
 const CollaborazioneWebDesignV2Schema = new Schema(
   {
+    workflowVersion: { type: String, default: null },
+    workflowTimezone: { type: String, default: 'Europe/Rome' },
+    dataAvvioOperativo: { type: Date, default: null },
+    intervistaRicevutaAt: { type: Date, default: null },
     tipoProgetto: {
       type: String,
       enum: ['vetrina', 'e-commerce'],
@@ -95,6 +181,10 @@ const CollaborazioneWebDesignV2Schema = new Schema(
     controlli: [ControlloV2Schema],
     fasiControllo: [FaseControlloV2Schema],
     checklistPubblicazione: [ChecklistPubblicazioneV2Schema],
+    appuntamenti: [AppuntamentoV2Schema],
+    approvazioni: [ApprovazioneV2Schema],
+    consegna: { type: ConsegnaV2Schema, default: () => ({}) },
+    pubblicazione: { type: PubblicazioneV2Schema, default: () => ({}) },
     interview: InterviewV2Schema,
     interviewPrompt: { type: String, default: '' },
     note: { type: String, default: '' },

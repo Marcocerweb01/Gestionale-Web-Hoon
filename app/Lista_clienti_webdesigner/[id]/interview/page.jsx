@@ -19,6 +19,7 @@ import {
   FileText,
   History,
   Loader2,
+  Save,
   Sparkles,
 } from 'lucide-react';
 
@@ -303,8 +304,11 @@ const MaterialGroup = ({ label, description, options, value, onChange }) => {
 };
 
 const InterviewPage = () => {
-  const { id } = useParams();
+  const { id, collabId } = useParams();
   const [interview, setInterview] = useState(DEFAULT_INTERVIEW);
+  const [collaboration, setCollaboration] = useState(null);
+  const [contextLoading, setContextLoading] = useState(Boolean(collabId));
+  const [contextError, setContextError] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
   const [message, setMessage] = useState('');
   const [historyItems, setHistoryItems] = useState([]);
@@ -319,6 +323,8 @@ const InterviewPage = () => {
   const [aiError, setAiError] = useState('');
   const [aiStale, setAiStale] = useState(false);
   const [aiAnswersDirty, setAiAnswersDirty] = useState(false);
+  const [aiStage, setAiStage] = useState('non_generata');
+  const [aiFinalStale, setAiFinalStale] = useState(false);
 
   const updateField = (field, value) => {
     setInterview((prev) => ({ ...prev, [field]: value }));
@@ -334,6 +340,7 @@ const InterviewPage = () => {
       tipo: 'intervista-web-design',
       generatoIl: new Date().toISOString(),
       webDesignerId: id,
+      collaborationId: collabId || null,
       risultatoTxt: resultText,
       intervista: {
         ...interview,
@@ -341,32 +348,105 @@ const InterviewPage = () => {
         stileCompleto: withOther(interview.stile, interview.stileAltro),
       },
     }),
-    [id, interview, resultText]
+    [collabId, id, interview, resultText]
   );
   const currentSignature = useMemo(
-    () => JSON.stringify({ webDesignerId: id, risultatoTxt: resultText, intervista: resultJson.intervista }),
-    [id, resultJson.intervista, resultText]
+    () =>
+      JSON.stringify({
+        collaborationId: collabId || null,
+        webDesignerId: id,
+        risultatoTxt: resultText,
+        intervista: resultJson.intervista,
+        risposte: aiAnswers,
+      }),
+    [aiAnswers, collabId, id, resultJson.intervista, resultText]
   );
 
   useEffect(() => {
     if (!id) return;
 
-    const loadHistory = async () => {
+    const loadInterviewContext = async () => {
       try {
-        setHistoryLoading(true);
-        const response = await fetch(`/api/webdesign-interviste?webDesignerId=${id}`);
-        if (!response.ok) throw new Error('Errore storico');
+        if (collabId) setContextLoading(true);
+        else setHistoryLoading(true);
+        const endpoint = collabId
+          ? `/api/webdesign-interviste?collaborationId=${collabId}`
+          : `/api/webdesign-interviste?webDesignerId=${id}`;
+        const response = await fetch(endpoint);
         const data = await response.json();
-        setHistoryItems(Array.isArray(data) ? data : []);
+        if (!response.ok) throw new Error(data?.message || 'Errore caricamento intervista');
+
+        if (!collabId) {
+          setHistoryItems(Array.isArray(data) ? data : []);
+          return;
+        }
+
+        const saved = data.intervista;
+        const collaborationData = data.collaborazione;
+        const companyName =
+          collaborationData?.cliente?.etichetta ||
+          collaborationData?.cliente?.ragioneSociale ||
+          collaborationData?.cliente?.nome ||
+          collaborationData?.aziendaRagioneSociale ||
+          '';
+        const mergedInterview = {
+          ...DEFAULT_INTERVIEW,
+          azienda: companyName,
+          tipoSito:
+            collaborationData?.tipoProgetto === 'e-commerce' ? 'E-commerce' : 'Sito vetrina',
+          ...(saved?.interview || {}),
+        };
+        const displayAnalysis =
+          saved?.aiFinalAnalysis || saved?.aiInitialAnalysis || saved?.aiAnalysis || null;
+        const displayText =
+          saved?.aiFinalRisultatoTxt ||
+          saved?.aiInitialRisultatoTxt ||
+          saved?.aiRisultatoTxt ||
+          '';
+        const questions =
+          saved?.aiInitialAnalysis?.domandeApprofondimento ||
+          displayAnalysis?.domandeApprofondimento ||
+          [];
+        const savedAnswers = Array.isArray(saved?.aiFollowUpAnswers)
+          ? saved.aiFollowUpAnswers
+          : [];
+
+        setCollaboration(collaborationData);
+        setInterview(mergedInterview);
+        setSavedInterviewId(saved?._id || '');
+        setAiAnalysis(displayAnalysis);
+        setAiResultText(displayText);
+        setAiStage(
+          saved?.aiStage ||
+            (saved?.aiFinalGeneratedAt
+              ? 'finale'
+              : saved?.aiInitialGeneratedAt || saved?.aiGeneratedAt
+                ? 'prima_analisi'
+                : 'non_generata')
+        );
+        setAiStale(Boolean(saved?.aiInputStale));
+        setAiFinalStale(Boolean(saved?.aiFinalStale));
+        setAiAnswers(
+          Object.fromEntries(
+            questions.slice(0, 5).map((item, index) => [
+              index,
+              savedAnswers[index]?.risposta || item.rispostaRicevuta || '',
+            ])
+          )
+        );
+        setHistoryItems(saved ? [saved] : []);
+        if (displayAnalysis) setCurrentStep(STEPS.length - 1);
       } catch (error) {
         console.error('Errore caricamento storico interviste:', error);
+        if (collabId) setContextError(error.message || 'Impossibile caricare la collaborazione');
       } finally {
+        setContextLoading(false);
         setHistoryLoading(false);
       }
     };
 
-    loadHistory();
-  }, [id]);
+    loadInterviewContext();
+  }, [collabId, id]);
 
   const downloadFile = (content, filename, type, successMessage) => {
     const blob = new Blob([content], { type });
@@ -381,8 +461,8 @@ const InterviewPage = () => {
     setMessage(successMessage || `Scaricato ${filename}`);
   };
 
-  const trackInterview = async () => {
-    if (savedSignature === currentSignature && savedInterviewId) {
+  const trackInterview = async ({ force = false, showSuccess = false } = {}) => {
+    if (!force && savedSignature === currentSignature && savedInterviewId) {
       return { interviewId: savedInterviewId, saved: true };
     }
 
@@ -392,10 +472,17 @@ const InterviewPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          collaborationId: collabId || undefined,
           webDesignerId: id,
           azienda: interview.azienda,
           interview: resultJson.intervista,
           risultatoTxt: resultText,
+          followUpAnswers: (aiAnalysis?.domandeApprofondimento || []).slice(0, 5).map(
+            (item, index) => ({
+              domanda: item.domanda,
+              risposta: aiAnswers[index] || '',
+            })
+          ),
         }),
       });
 
@@ -404,9 +491,18 @@ const InterviewPage = () => {
 
       setSavedSignature(currentSignature);
       setSavedInterviewId(data.intervista?._id || '');
+      setAiFinalStale(Boolean(data.intervista?.aiFinalStale));
+      if (showSuccess) {
+        setAiAnswersDirty(false);
+        setMessage('Intervista e risposte salvate. Il risultato finale può essere generato anche dopo.');
+      }
       setHistoryItems((items) =>
-        data.intervista?._id && !items.some((item) => item._id === data.intervista._id)
-          ? [data.intervista, ...items]
+        data.intervista?._id
+          ? items.some((item) => item._id === data.intervista._id)
+            ? items.map((item) =>
+                item._id === data.intervista._id ? data.intervista : item
+              )
+            : [data.intervista, ...items]
           : items
       );
       return { interviewId: data.intervista?._id, saved: true };
@@ -479,9 +575,25 @@ const InterviewPage = () => {
     );
   };
 
-  const generateAiAnalysis = async () => {
+  const generateAiAnalysis = async (stage = 'initial') => {
     if (!interview.azienda.trim() || !interview.descrizioneAzienda.trim()) {
       setAiError('Completa almeno il nome azienda e la descrizione dell’attività prima di generare.');
+      return;
+    }
+
+    const questions = Array.isArray(aiAnalysis?.domandeApprofondimento)
+      ? aiAnalysis.domandeApprofondimento.slice(0, 5)
+      : [];
+    const followUpAnswers = questions.map((item, index) => ({
+      domanda: item.domanda,
+      risposta: aiAnswers[index] || '',
+    }));
+
+    if (
+      stage === 'final' &&
+      (questions.length !== 5 || followUpAnswers.some((item) => !item.risposta.trim()))
+    ) {
+      setAiError('Completa tutte e cinque le risposte prima di generare il risultato finale.');
       return;
     }
 
@@ -490,26 +602,20 @@ const InterviewPage = () => {
     setMessage('');
 
     try {
-      const trackedInterview = await trackInterview();
+      const trackedInterview = await trackInterview({ force: true });
       if (!trackedInterview?.interviewId) {
         throw new Error('Non è stato possibile salvare l’intervista prima dell’analisi.');
       }
 
-      const questions = Array.isArray(aiAnalysis?.domandeApprofondimento)
-        ? aiAnalysis.domandeApprofondimento
-        : [];
-      const followUpAnswers = aiStale
-        ? []
-        : questions.map((item, index) => ({
-            domanda: item.domanda,
-            risposta: aiAnswers[index] || '',
-          }));
       const response = await fetch(
         `/api/webdesign-interviste/${trackedInterview.interviewId}/analisi-ai`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ followUpAnswers }),
+          body: JSON.stringify({
+            stage,
+            followUpAnswers: stage === 'final' ? followUpAnswers : [],
+          }),
         }
       );
       const data = await response.json();
@@ -518,8 +624,10 @@ const InterviewPage = () => {
       const saved = data.intervista;
       setAiAnalysis(saved.aiAnalysis || null);
       setAiResultText(saved.aiRisultatoTxt || '');
+      setAiStage(saved.aiStage || (stage === 'final' ? 'finale' : 'prima_analisi'));
       setSavedInterviewId(saved._id || trackedInterview.interviewId);
       setAiStale(false);
+      setAiFinalStale(false);
       setAiAnswersDirty(false);
       setAiAnswers(
         Object.fromEntries(
@@ -544,6 +652,12 @@ const InterviewPage = () => {
     }
   };
 
+  const saveAnswersForLater = async () => {
+    setAiError('');
+    const saved = await trackInterview({ force: true, showSuccess: true });
+    if (!saved) setAiError('Non è stato possibile salvare le risposte. Riprova.');
+  };
+
   const copyAiResult = async () => {
     if (!aiResultText) return;
     try {
@@ -566,14 +680,57 @@ const InterviewPage = () => {
   };
 
   const goBack = () => setCurrentStep((step) => Math.max(step - 1, 0));
-  const goNext = () => setCurrentStep((step) => Math.min(step + 1, STEPS.length - 1));
+  const goNext = async () => {
+    const saved = await trackInterview();
+    if (collabId && !saved) {
+      setMessage('Salvataggio non riuscito: riprova prima di proseguire.');
+      return;
+    }
+    setCurrentStep((step) => Math.min(step + 1, STEPS.length - 1));
+  };
+
+  if (contextLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center gap-3 text-gray-600">
+        <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+        Caricamento collaborazione e intervista...
+      </div>
+    );
+  }
+
+  if (contextError) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-10">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-700">
+          {contextError}
+        </div>
+        <Link
+          href={`/Lista_clienti_webdesigner/${id}`}
+          className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-orange-700"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Torna ai progetti
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium text-orange-700">Web Design</p>
-          <h1 className="mt-1 text-2xl font-bold text-gray-950">Nuova intervista cliente</h1>
+          <h1 className="mt-1 text-2xl font-bold text-gray-950">
+            {savedInterviewId ? 'Intervista e risultati' : 'Nuova intervista cliente'}
+          </h1>
+          {collaboration && (
+            <p className="mt-2 text-sm text-gray-600">
+              {interview.azienda} · {collaboration.tipoProgetto === 'e-commerce' ? 'E-commerce' : 'Sito vetrina'} · assegnata a{' '}
+              {[collaboration.webDesigner?.nome, collaboration.webDesigner?.cognome]
+                .filter(Boolean)
+                .join(' ') || 'Web designer'}
+            </p>
+          )}
         </div>
         <Link
           href={`/Lista_clienti_webdesigner/${id}`}
@@ -602,6 +759,19 @@ const InterviewPage = () => {
           </button>
         ))}
       </div>
+
+      {message && (
+        <div
+          aria-live="polite"
+          className={`mb-4 rounded-lg border px-4 py-3 text-sm font-semibold ${
+            message.toLowerCase().includes('non riuscito')
+              ? 'border-red-200 bg-red-50 text-red-800'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          }`}
+        >
+          {message}
+        </div>
+      )}
 
       <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         {currentStep === 0 && (
@@ -932,23 +1102,25 @@ const InterviewPage = () => {
                     per Codex.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={generateAiAnalysis}
-                  disabled={aiGenerating || tracking}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {aiGenerating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  {aiGenerating
-                    ? 'Analisi in corso...'
-                    : aiAnalysis
-                      ? 'Aggiorna documento'
-                      : 'Genera analisi AI'}
-                </button>
+                {(!aiAnalysis || aiStale) && (
+                  <button
+                    type="button"
+                    onClick={() => generateAiAnalysis('initial')}
+                    disabled={aiGenerating || tracking}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {aiGenerating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    {aiGenerating
+                      ? 'Prima analisi in corso...'
+                      : aiStale
+                        ? 'Aggiorna prima analisi'
+                        : 'Genera prima analisi + 5 domande'}
+                  </button>
+                )}
               </div>
 
               {aiError && (
@@ -985,8 +1157,14 @@ const InterviewPage = () => {
 
                   {!aiStale && aiAnswersDirty && (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-                      Le nuove risposte non sono ancora nel documento. Premi “Rigenera con le
-                      risposte”.
+                      Le nuove risposte non sono ancora salvate né integrate nel risultato finale.
+                    </div>
+                  )}
+
+                  {!aiStale && !aiAnswersDirty && aiFinalStale && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                      Le risposte sono salvate, ma il risultato finale mostra ancora la versione
+                      precedente. Puoi rigenerarlo ora o più avanti.
                     </div>
                   )}
 
@@ -995,6 +1173,8 @@ const InterviewPage = () => {
                   <SiteStructureDiagram
                     pages={aiAnalysis.strutturaSito}
                     azienda={interview.azienda}
+                    siteType={aiAnalysis.sintesiStrategica?.tipologiaSito}
+                    siteTypeReason={aiAnalysis.sintesiStrategica?.motivazioneTipologia}
                     filename={`${filenameBase} - Schema sito.svg`}
                   />
 
@@ -1005,8 +1185,8 @@ const InterviewPage = () => {
                       Domande per completare i testi
                     </h4>
                     <p className="mt-1 text-sm leading-6 text-violet-950/70">
-                      Inserisci le risposte disponibili e premi “Rigenera con le risposte”. Le domande
-                      rimarranno identiche e nello stesso ordine.
+                      Raccogli le cinque risposte durante l’intervista. Puoi salvarle e generare il
+                      risultato finale subito oppure in un secondo momento.
                     </p>
                     <div className="mt-4 space-y-4">
                       {(aiAnalysis.domandeApprofondimento || []).map((item, index) => (
@@ -1025,6 +1205,7 @@ const InterviewPage = () => {
                                   [index]: event.target.value,
                                 }));
                                 setAiAnswersDirty(true);
+                                if (aiStage === 'finale') setAiFinalStale(true);
                               }}
                               rows={3}
                               placeholder="Scrivi qui la risposta del cliente..."
@@ -1034,22 +1215,40 @@ const InterviewPage = () => {
                         </div>
                       ))}
                     </div>
-                    <button
-                      type="button"
-                      onClick={generateAiAnalysis}
-                      disabled={aiGenerating || tracking}
-                      className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <Sparkles className="h-4 w-4" aria-hidden="true" />
-                      Rigenera con le risposte
-                    </button>
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={saveAnswersForLater}
+                        disabled={aiGenerating || tracking}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-violet-300 bg-white px-4 py-3 text-sm font-bold text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Save className="h-4 w-4" aria-hidden="true" />
+                        Salva e completa dopo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => generateAiAnalysis('final')}
+                        disabled={aiGenerating || tracking || aiStale}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Sparkles className="h-4 w-4" aria-hidden="true" />
+                        {aiStage === 'finale' ? 'Rigenera risultato finale' : 'Genera risultato finale'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="rounded-lg bg-white p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h4 className="text-sm font-bold text-gray-950">Documento salvato</h4>
+                        <h4 className="text-sm font-bold text-gray-950">
+                          {aiStage === 'finale'
+                            ? aiFinalStale
+                              ? 'Risultato finale precedente'
+                              : 'Risultato finale salvato'
+                            : 'Prima analisi salvata'}
+                        </h4>
                         <p className="mt-1 text-xs text-gray-500">
+                          {aiAnalysis.sintesiStrategica?.tipologiaSito || 'Tipologia da definire'} ·{' '}
                           {(aiAnalysis.strutturaSito || []).length} pagine organizzate · formato stabile
                         </p>
                       </div>
@@ -1057,7 +1256,7 @@ const InterviewPage = () => {
                         <button
                           type="button"
                           onClick={copyAiResult}
-                          disabled={aiStale || aiAnswersDirty}
+                          disabled={aiStale || aiAnswersDirty || aiFinalStale}
                           className="inline-flex items-center justify-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-800 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Clipboard className="h-4 w-4" aria-hidden="true" />
@@ -1066,7 +1265,7 @@ const InterviewPage = () => {
                         <button
                           type="button"
                           onClick={downloadAiResult}
-                          disabled={aiStale || aiAnswersDirty}
+                          disabled={aiStale || aiAnswersDirty || aiFinalStale}
                           className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 py-2 text-xs font-bold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Download className="h-4 w-4" aria-hidden="true" />
@@ -1201,7 +1400,7 @@ const InterviewPage = () => {
         {currentStep === STEPS.length - 1 ? (
           <button
             type="button"
-            onClick={generateAiAnalysis}
+            onClick={() => generateAiAnalysis(aiAnalysis && !aiStale ? 'final' : 'initial')}
             disabled={aiGenerating || tracking}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -1210,15 +1409,22 @@ const InterviewPage = () => {
             ) : (
               <Sparkles className="h-4 w-4" aria-hidden="true" />
             )}
-            {aiGenerating ? 'Analisi in corso...' : aiAnalysis ? 'Aggiorna analisi AI' : 'Genera analisi AI'}
+            {aiGenerating
+              ? 'Analisi in corso...'
+              : aiAnalysis && !aiStale
+                ? aiStage === 'finale'
+                  ? 'Rigenera risultato finale'
+                  : 'Genera risultato finale'
+                : 'Genera prima analisi + 5 domande'}
           </button>
         ) : (
           <button
             type="button"
             onClick={goNext}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-700"
+            disabled={tracking}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Avanti
+            {tracking ? 'Salvataggio...' : 'Avanti'}
             <ChevronRight className="h-4 w-4" />
           </button>
         )}
