@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import SiteStructureDiagram from '@/Components/SiteStructureDiagram';
@@ -325,6 +325,15 @@ const InterviewPage = () => {
   const [aiAnswersDirty, setAiAnswersDirty] = useState(false);
   const [aiStage, setAiStage] = useState('non_generata');
   const [aiFinalStale, setAiFinalStale] = useState(false);
+  const stepContentRef = useRef(null);
+
+  const goToStep = (step) => {
+    const nextStep = Math.max(0, Math.min(step, STEPS.length - 1));
+    setCurrentStep(nextStep);
+    window.requestAnimationFrame(() => {
+      stepContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const updateField = (field, value) => {
     setInterview((prev) => ({ ...prev, [field]: value }));
@@ -679,14 +688,14 @@ const InterviewPage = () => {
     );
   };
 
-  const goBack = () => setCurrentStep((step) => Math.max(step - 1, 0));
+  const goBack = () => goToStep(currentStep - 1);
   const goNext = async () => {
     const saved = await trackInterview();
     if (collabId && !saved) {
       setMessage('Salvataggio non riuscito: riprova prima di proseguire.');
       return;
     }
-    setCurrentStep((step) => Math.min(step + 1, STEPS.length - 1));
+    goToStep(currentStep + 1);
   };
 
   if (contextLoading) {
@@ -746,7 +755,7 @@ const InterviewPage = () => {
           <button
             key={step.title}
             type="button"
-            onClick={() => setCurrentStep(index)}
+            onClick={() => goToStep(index)}
             className={`rounded-lg border p-3 text-left transition ${
               currentStep === index
                 ? 'border-orange-500 bg-orange-50'
@@ -773,7 +782,10 @@ const InterviewPage = () => {
         </div>
       )}
 
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <div
+        ref={stepContentRef}
+        className="scroll-mt-6 rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+      >
         {currentStep === 0 && (
           <div className="space-y-5">
             <div>
