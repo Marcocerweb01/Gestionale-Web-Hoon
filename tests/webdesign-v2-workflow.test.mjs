@@ -8,6 +8,7 @@ import {
   isStandardWorkflowProject,
   isWorkflowPhaseUnlocked,
   normalizeProjectType,
+  rescheduleWebDesignWorkflow,
   scheduleExistingWorkflow,
   validateDeliveryConfirmation,
 } from '../lib/webdesign-v2-workflow.mjs';
@@ -120,4 +121,35 @@ test('ritardi cliente e progetti storici restano rappresentabili senza migrazion
   assert.equal(workflow.fasi[0].tasks[0].motivoRitardo, 'attesa cliente');
   assert.equal(isStandardWorkflowProject({ workflowVersion: null }), false);
   assert.equal(isStandardWorkflowProject({ workflowVersion: WEB_DESIGN_WORKFLOW_VERSION }), true);
+});
+
+test('spostare il giorno 1 ricalcola le previsioni senza perdere dati operativi', () => {
+  const workflow = createWebDesignWorkflow({
+    projectType: 'vetrina',
+    operationalStart: '2026-10-19',
+  });
+  workflow.fasi[0].tasks[2].stato = 'completata';
+  workflow.fasi[0].tasks[2].completata = true;
+  workflow.fasi[0].tasks[2].note = 'Obiettivi verificati';
+  workflow.fasiControllo[0].data = new Date('2026-10-23T12:00:00.000Z');
+  workflow.fasiControllo[0].esito = 'superato';
+  workflow.fasiControllo[0].completata = true;
+  workflow.consegna.stato = 'pronta';
+  workflow.consegna.note = 'Consegna concordata';
+
+  const rescheduled = rescheduleWebDesignWorkflow(
+    { tipoProgetto: 'vetrina', ...workflow },
+    '2026-10-26'
+  );
+
+  assert.equal(rescheduled.dataAvvioOperativo.toISOString().slice(0, 10), '2026-10-26');
+  assert.equal(rescheduled.fasi[0].dataFinePrevista.toISOString().slice(0, 10), '2026-10-30');
+  assert.equal(rescheduled.fasi[2].dataFinePrevista.toISOString().slice(0, 10), '2026-11-13');
+  assert.equal(rescheduled.dataFineContratto.toISOString().slice(0, 10), '2026-11-13');
+  assert.equal(rescheduled.fasi[0].tasks[2].stato, 'completata');
+  assert.equal(rescheduled.fasi[0].tasks[2].note, 'Obiettivi verificati');
+  assert.equal(rescheduled.fasiControllo[0].data.toISOString(), '2026-10-23T12:00:00.000Z');
+  assert.equal(rescheduled.fasiControllo[0].esito, 'superato');
+  assert.equal(rescheduled.consegna.stato, 'pronta');
+  assert.equal(rescheduled.consegna.note, 'Consegna concordata');
 });

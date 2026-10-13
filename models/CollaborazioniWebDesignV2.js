@@ -121,6 +121,17 @@ const PubblicazioneV2Schema = new Schema({
   note: { type: String, default: '' },
 }, { _id: false });
 
+const ModificaTimelineV2Schema = new Schema({
+  dataPrecedente: { type: Date, default: null },
+  dataNuova: { type: Date, required: true },
+  dataFinePrecedente: { type: Date, default: null },
+  dataFineNuova: { type: Date, required: true },
+  modificataIl: { type: Date, required: true },
+  modificataDaId: { type: String, default: '' },
+  modificataDaNome: { type: String, default: '' },
+  motivo: { type: String, default: '' },
+}, { _id: false });
+
 const InterviewV2Schema = new Schema({
   azienda: { type: String, default: '' },
   descrizioneAzienda: { type: String, default: '' },
@@ -185,6 +196,7 @@ const CollaborazioneWebDesignV2Schema = new Schema(
     approvazioni: [ApprovazioneV2Schema],
     consegna: { type: ConsegnaV2Schema, default: () => ({}) },
     pubblicazione: { type: PubblicazioneV2Schema, default: () => ({}) },
+    modificheTimeline: [ModificaTimelineV2Schema],
     interview: InterviewV2Schema,
     interviewPrompt: { type: String, default: '' },
     note: { type: String, default: '' },

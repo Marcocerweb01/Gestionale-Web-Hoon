@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Building2,
@@ -81,6 +81,10 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
   const [message, setMessage] = useState('');
   const [messageScope, setMessageScope] = useState('global');
   const [saving, setSaving] = useState(false);
+  const [newStartDate, setNewStartDate] = useState(
+    dateInput(initialProject.dataAvvioOperativo || initialProject.dataInizioContratto)
+  );
+  const [rescheduleReason, setRescheduleReason] = useState('');
   const requestQueueRef = useRef(Promise.resolve());
   const editVersionRef = useRef(0);
   const pendingRequestsRef = useRef(0);
@@ -108,6 +112,10 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
     const items = checklist.flatMap((group) => group.items || []);
     return { done: items.filter(isDone).length, total: items.length, pct: progressOf(items) };
   }, [checklist]);
+
+  useEffect(() => {
+    setNewStartDate(dateInput(project.dataAvvioOperativo || project.dataInizioContratto));
+  }, [project.dataAvvioOperativo, project.dataInizioContratto]);
 
   const patch = (payload, optimisticProject, scope = 'global') => {
     const previous = project;
@@ -248,6 +256,23 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
     urlPubblico: '',
     note: '',
   };
+  const currentStartDate = dateInput(project.dataAvvioOperativo || project.dataInizioContratto);
+  const latestTimelineChange = project.modificheTimeline?.at(-1);
+
+  const handleReschedule = async () => {
+    if (!newStartDate || newStartDate === currentStartDate || saving) return;
+    const confirmed = window.confirm(
+      `Spostare l'avvio al ${formatDate(`${newStartDate}T12:00:00.000Z`)}? ` +
+        'Tutte le date previste fino alla consegna verranno ricalcolate.'
+    );
+    if (!confirmed) return;
+    await patch(
+      { spostaTimeline: { dataAvvio: newStartDate, motivo: rescheduleReason } },
+      undefined,
+      'schedule'
+    );
+    setRescheduleReason('');
+  };
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -294,6 +319,65 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
               </span>
             )}
           </div>
+          {isStaff && project.dataAvvioOperativo && (
+            <section className="rounded-xl border border-violet-200 bg-violet-50 p-4">
+              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+                <div className="max-w-xl">
+                  <h4 className="font-bold text-violet-950">Sposta timeline</h4>
+                  <p className="text-sm text-violet-800">
+                    Ricalcola tutte le date previste delle fasi, dei controlli e della consegna.
+                    Stati, note, appuntamenti, pubblicazione e date effettive non cambiano.
+                  </p>
+                </div>
+                <div className="grid flex-1 gap-2 sm:grid-cols-[minmax(150px,0.7fr)_minmax(220px,1.3fr)_auto]">
+                  <label className="text-xs font-bold text-violet-900">
+                    Nuovo giorno 1
+                    <input
+                      type="date"
+                      value={newStartDate}
+                      onChange={(event) => setNewStartDate(event.target.value)}
+                      className={`${inputClass} mt-1`}
+                    />
+                  </label>
+                  <label className="text-xs font-bold text-violet-900">
+                    Motivo (facoltativo)
+                    <input
+                      value={rescheduleReason}
+                      onChange={(event) => setRescheduleReason(event.target.value)}
+                      className={`${inputClass} mt-1`}
+                      placeholder="Es. avvio contratto posticipato"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={!newStartDate || newStartDate === currentStartDate || saving}
+                    onClick={handleReschedule}
+                    className="self-end rounded-lg bg-violet-700 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Ricalcola date
+                  </button>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-violet-800">
+                <span>Avvio attuale: <strong>{formatDate(project.dataAvvioOperativo)}</strong></span>
+                <span>Consegna prevista: <strong>{formatDate(delivery.dataPrevista)}</strong></span>
+                {latestTimelineChange && (
+                  <span>
+                    Ultimo spostamento: {formatDate(latestTimelineChange.dataPrecedente)} →{' '}
+                    {formatDate(latestTimelineChange.dataNuova)}
+                    {latestTimelineChange.modificataDaNome
+                      ? ` · ${latestTimelineChange.modificataDaNome}`
+                      : ''}
+                  </span>
+                )}
+              </div>
+              {messageScope === 'schedule' && message && !saving && (
+                <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-emerald-700' : 'mt-2 text-sm font-semibold text-red-700'}>
+                  {message === 'Salvato' ? 'Timeline riprogrammata' : message}
+                </p>
+              )}
+            </section>
+          )}
           {!project.dataAvvioOperativo ? (
             <div className="flex flex-col justify-between gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 sm:flex-row sm:items-center">
               <div>

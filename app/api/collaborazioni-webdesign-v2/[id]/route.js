@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth';
 import {
   WEB_DESIGN_WORKFLOW_VERSION,
   isWorkflowPhaseUnlocked,
+  rescheduleWebDesignWorkflow,
   validateDeliveryConfirmation,
 } from '@/lib/webdesign-v2-workflow.mjs';
 
@@ -143,6 +144,49 @@ export async function PATCH(req, { params }) {
 
     const updatePayload = {};
 
+    if (body.spostaTimeline !== undefined) {
+      if (!isStaff(session)) {
+        return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
+      }
+      if (collaborationToUpdate.workflowVersion !== WEB_DESIGN_WORKFLOW_VERSION) {
+        return new Response(
+          JSON.stringify({ message: 'La riprogrammazione automatica è disponibile sui nuovi workflow.' }),
+          { status: 400 }
+        );
+      }
+
+      const nuovaData = body.spostaTimeline?.dataAvvio;
+      let rescheduled;
+      try {
+        rescheduled = rescheduleWebDesignWorkflow(collaborationToUpdate, nuovaData);
+      } catch (error) {
+        return new Response(JSON.stringify({ message: error.message }), { status: 400 });
+      }
+
+      const actorName =
+        [session.user.nome, session.user.cognome].filter(Boolean).join(' ').trim() ||
+        session.user.name ||
+        session.user.email ||
+        'Utente';
+      Object.assign(updatePayload, rescheduled, {
+        modificheTimeline: [
+          ...(collaborationToUpdate.modificheTimeline || []),
+          {
+            dataPrecedente:
+              collaborationToUpdate.dataAvvioOperativo || collaborationToUpdate.dataInizioContratto,
+            dataNuova: rescheduled.dataAvvioOperativo,
+            dataFinePrecedente:
+              collaborationToUpdate.consegna?.dataPrevista || collaborationToUpdate.dataFineContratto,
+            dataFineNuova: rescheduled.consegna.dataPrevista,
+            modificataIl: new Date(),
+            modificataDaId: session.user.id || '',
+            modificataDaNome: actorName,
+            motivo: String(body.spostaTimeline?.motivo || '').trim(),
+          },
+        ],
+      });
+    }
+
     if (body.note !== undefined) updatePayload.note = body.note;
     if (body.stato !== undefined) updatePayload.stato = body.stato;
     if (body.tipoProgetto !== undefined) {
@@ -162,6 +206,12 @@ export async function PATCH(req, { params }) {
         return new Response(JSON.stringify({ message: 'Data inizio contratto non valida' }), {
           status: 400,
         });
+      }
+      if (collaborationToUpdate.workflowVersion === WEB_DESIGN_WORKFLOW_VERSION) {
+        return new Response(
+          JSON.stringify({ message: "Usa l'azione Sposta timeline per modificare l'avvio di questo progetto." }),
+          { status: 400 }
+        );
       }
       updatePayload.dataInizioContratto = dataInizioContratto;
     }
