@@ -5,7 +5,7 @@ import CollaborazioneWebDesignV2 from '@/models/CollaborazioniWebDesignV2';
 import WebDesignInterview from '@/models/WebDesignInterview';
 import { connectToDB } from '@/utils/database';
 import {
-  WEB_DESIGN_WORKFLOW_VERSION,
+  isStandardWorkflowProject,
   scheduleExistingWorkflow,
 } from '@/lib/webdesign-v2-workflow.mjs';
 
@@ -178,7 +178,7 @@ export async function POST(req) {
 
       let workflowStarted = false;
       if (
-        collaborazione.workflowVersion === WEB_DESIGN_WORKFLOW_VERSION &&
+        isStandardWorkflowProject(collaborazione) &&
         !collaborazione.intervistaRicevutaAt &&
         hasReceivedInterviewContent(interview, risultatoTxt)
       ) {

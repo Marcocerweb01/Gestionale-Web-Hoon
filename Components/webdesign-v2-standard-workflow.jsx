@@ -14,7 +14,10 @@ import {
   Store,
 } from 'lucide-react';
 import { createPublicationChecklist } from '@/lib/webdesign-v2-publication-checklist';
-import { isWorkflowPhaseUnlocked } from '@/lib/webdesign-v2-workflow.mjs';
+import {
+  WEB_DESIGN_WORKFLOW_VERSION,
+  isWorkflowPhaseUnlocked,
+} from '@/lib/webdesign-v2-workflow.mjs';
 
 const PHASE_META = {
   struttura: { label: 'Struttura', period: 'Giorni 1-5', Icon: Building2 },
@@ -28,6 +31,12 @@ const CONTROL_META = {
   'giorno-15-collaudo': ['Collaudo finale', 'Giorno 15'],
   'consegna-effettiva': ['Controllo consegna', 'Alla consegna'],
   'pubblicazione-effettiva': ['Controllo pubblicazione', 'Alla pubblicazione'],
+};
+
+const WEEKLY_CONTROL_META = {
+  'giorno-5-struttura': ['Controllo fine Struttura', 'Fine settimana 1'],
+  'giorno-10-design': ['Controllo fine Design e Sviluppo', 'Fine settimana 2'],
+  'giorno-15-collaudo': ['Controllo fine Collaudo e Consegna', 'Fine settimana 3'],
 };
 
 const TASK_STATES = ['da fare', 'in corso', 'in attesa', 'completata', 'non applicabile'];
@@ -91,6 +100,7 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
 
   const fasi = project.fasi || [];
   const controls = project.fasiControllo || [];
+  const isWeeklyWorkflow = project.workflowVersion === WEB_DESIGN_WORKFLOW_VERSION;
   const checklist = project.checklistPubblicazione?.length
     ? project.checklistPubblicazione
     : createPublicationChecklist();
@@ -258,6 +268,13 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
   };
   const currentStartDate = dateInput(project.dataAvvioOperativo || project.dataInizioContratto);
   const latestTimelineChange = project.modificheTimeline?.at(-1);
+  const productionStatus = !delivery.confermata
+    ? 'In lavorazione'
+    : publication.stato === 'pubblicata'
+      ? 'Consegnato e pubblicato'
+      : publication.stato === 'programmata'
+        ? 'Consegnato, pubblicazione programmata'
+        : 'Consegnato, non pubblicato';
 
   const handleReschedule = async () => {
     if (!newStartDate || newStartDate === currentStartDate || saving) return;
@@ -272,6 +289,72 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
       'schedule'
     );
     setRescheduleReason('');
+  };
+
+  const renderControl = (control, controlIndex, weekly = false) => {
+    const metadata = weekly ? WEEKLY_CONTROL_META : CONTROL_META;
+    const [label, timing] = metadata[control.tipo] || CONTROL_META[control.tipo] || [control.tipo, ''];
+    return (
+      <div key={control.tipo} className="rounded-lg border border-sky-100 bg-white p-4">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h5 className="font-bold text-gray-900">{label}</h5>
+            <p className="text-xs text-sky-700">{timing} · previsto {formatDate(control.dataPrevista)}</p>
+          </div>
+          <button
+            type="button"
+            aria-label={`${control.completata ? 'Riapri' : 'Completa'} controllo: ${label}`}
+            onClick={() => updateControl(controlIndex, {
+              completata: !control.completata,
+              checkboxCompletamento: !control.completata,
+              stato: !control.completata ? 'completato' : 'da fare',
+            })}
+            className={control.completata ? 'text-emerald-500' : 'text-gray-300'}
+          >
+            {control.completata ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
+          </button>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="text-xs font-bold text-gray-600">Data effettiva
+            <input type="date" value={dateInput(control.data)} onChange={(event) => updateControl(controlIndex, { data: event.target.value || null })} className={`${inputClass} mt-1`} />
+          </label>
+          <label className="text-xs font-bold text-gray-600">Esito
+            <select value={control.esito || ''} onChange={(event) => updateControl(controlIndex, { esito: event.target.value })} className={`${inputClass} mt-1`}>
+              {CONTROL_RESULTS.map((value) => <option key={value} value={value}>{value || 'Da valutare'}</option>)}
+            </select>
+          </label>
+        </div>
+        {['note', 'spuntiMiglioramento', 'anomalie', 'problemiBloccanti'].map((field) => (
+          <textarea
+            key={field}
+            aria-label={`${field === 'note' ? 'Note' : field === 'spuntiMiglioramento' ? 'Spunti di miglioramento' : field === 'anomalie' ? 'Anomalie' : 'Problemi bloccanti'} — ${label}`}
+            value={control[field] || ''}
+            onChange={(event) => updateControl(controlIndex, { [field]: event.target.value }, false)}
+            onBlur={(event) => updateControl(controlIndex, { [field]: event.target.value })}
+            className={`${inputClass} mt-2`}
+            rows={2}
+            placeholder={field === 'note' ? 'Note' : field === 'spuntiMiglioramento' ? 'Spunti di miglioramento' : field === 'anomalie' ? 'Eventuali anomalie' : 'Problemi bloccanti'}
+          />
+        ))}
+        {control.tipo === 'giorno-15-collaudo' && isStaff && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <label className="flex items-center gap-2 text-xs font-bold text-amber-900">
+              <input type="checkbox" checked={Boolean(control.eccezioneAutorizzata)} onChange={(event) => updateControl(controlIndex, { eccezioneAutorizzata: event.target.checked })} />
+              Eccezione autorizzata e tracciata
+            </label>
+            {control.eccezioneAutorizzata && (
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <input aria-label="Responsabile che autorizza l'eccezione" value={control.eccezioneAutorizzataDa || ''} onChange={(event) => updateControl(controlIndex, { eccezioneAutorizzataDa: event.target.value }, false)} onBlur={(event) => updateControl(controlIndex, { eccezioneAutorizzataDa: event.target.value })} className={inputClass} placeholder="Autorizzata da" />
+                <input aria-label="Motivo dell'eccezione" value={control.eccezioneMotivo || ''} onChange={(event) => updateControl(controlIndex, { eccezioneMotivo: event.target.value }, false)} onBlur={(event) => updateControl(controlIndex, { eccezioneMotivo: event.target.value })} className={inputClass} placeholder="Motivo" />
+              </div>
+            )}
+          </div>
+        )}
+        {messageScope === `control-${controlIndex}` && message && !saving && (
+          <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-emerald-700' : 'mt-2 text-sm font-semibold text-red-700'}>{message}</p>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -295,16 +378,14 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
               {project.cliente?.etichetta || project.aziendaRagioneSociale}
             </h3>
             <p className="text-xs text-gray-600">
-              Workflow 15 giorni · avvio operativo {formatDate(project.dataAvvioOperativo)}
+              {isWeeklyWorkflow ? '3 settimane · 45 attività' : 'Workflow 15 giorni'} · avvio operativo {formatDate(project.dataAvvioOperativo)}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {delivery.confermata && publication.stato !== 'pubblicata' && (
-            <span className="hidden rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 sm:inline">
-              Consegnato, non pubblicato
-            </span>
-          )}
+          <span className={`hidden rounded-full px-3 py-1 text-xs font-bold sm:inline ${delivery.confermata ? 'bg-amber-100 text-amber-800' : 'bg-violet-100 text-violet-800'}`}>
+            {productionStatus}
+          </span>
           <span className="text-sm font-bold text-violet-700">{projectProgress}%</span>
         </div>
       </button>
@@ -398,7 +479,9 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
               <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 md:col-span-2">
                 <p className="text-xs font-bold uppercase tracking-wide text-violet-600">Prossima attività</p>
                 <p className="mt-1 font-semibold text-gray-900">
-                  {nextTask ? `${nextTask.giorno}: ${nextTask.nome}` : 'Tutte le attività risultano completate'}
+                  {nextTask
+                    ? `${nextTask.giorno ? `${nextTask.giorno}: ` : ''}${nextTask.nome}`
+                    : 'Tutte le attività risultano completate'}
                 </p>
               </div>
               <Link
@@ -426,6 +509,10 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
                 const unlocked = phaseUnlocked(phase.nome);
                 const isPhaseOpen = Boolean(openPhases[phase.nome]);
                 const PhaseIcon = meta.Icon;
+                const phaseControlIndex = controls.findIndex(
+                  (control) => control.tipo === phase.controlloTipo
+                );
+                const phaseControl = controls[phaseControlIndex];
                 return (
                   <div key={phase.nome} className="overflow-hidden rounded-xl border border-gray-200">
                     <button
@@ -442,7 +529,7 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
                         <div>
                           <h5 className="font-bold text-gray-900">{meta.label}</h5>
                           <p className="text-xs text-gray-500">
-                            {meta.period} · {formatDate(phase.dataInizioPrevista)} – {formatDate(phase.dataFinePrevista)}
+                            {isWeeklyWorkflow ? `Settimana ${phaseIndex + 1}` : meta.period} · {formatDate(phase.dataInizioPrevista)} – {formatDate(phase.dataFinePrevista)}
                           </p>
                         </div>
                       </div>
@@ -499,7 +586,9 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
                                 </button>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-gray-600">{task.giorno}</span>
+                                    {task.giorno && (
+                                      <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-gray-600">{task.giorno}</span>
+                                    )}
                                     <p className={`text-sm font-semibold ${isDone(task) ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{task.nome}</p>
                                   </div>
                                   <div className="mt-3 grid gap-2 md:grid-cols-3">
@@ -546,6 +635,14 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
                             </div>
                           ))}
                         </div>
+                        {isWeeklyWorkflow && phaseControl && (
+                          <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+                            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-sky-800">
+                              Controllo obbligatorio di fine fase
+                            </p>
+                            {renderControl(phaseControl, phaseControlIndex, true)}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -554,76 +651,17 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
             </div>
           </section>
 
-          <section className="rounded-xl border border-sky-200 bg-sky-50 p-4">
-            <h4 className="text-lg font-bold text-gray-900">Controlli obbligatori</h4>
-            <p className="mb-4 text-sm text-gray-600">Collaudo e consegna restano verifiche distinte anche nello stesso giorno.</p>
-            <div className="grid gap-3 lg:grid-cols-2">
-              {controls.map((control, controlIndex) => {
-                const [label, timing] = CONTROL_META[control.tipo] || [control.tipo, ''];
-                return (
-                  <div key={control.tipo} className="rounded-lg border border-sky-100 bg-white p-4">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        <h5 className="font-bold text-gray-900">{label}</h5>
-                        <p className="text-xs text-sky-700">{timing} · previsto {formatDate(control.dataPrevista)}</p>
-                      </div>
-                      <button
-                        type="button"
-                        aria-label={`${control.completata ? 'Riapri' : 'Completa'} controllo: ${label}`}
-                        onClick={() => updateControl(controlIndex, {
-                          completata: !control.completata,
-                          checkboxCompletamento: !control.completata,
-                          stato: !control.completata ? 'completato' : 'da fare',
-                        })}
-                        className={control.completata ? 'text-emerald-500' : 'text-gray-300'}
-                      >
-                        {control.completata ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <label className="text-xs font-bold text-gray-600">Data effettiva
-                        <input type="date" value={dateInput(control.data)} onChange={(event) => updateControl(controlIndex, { data: event.target.value || null })} className={`${inputClass} mt-1`} />
-                      </label>
-                      <label className="text-xs font-bold text-gray-600">Esito
-                        <select value={control.esito || ''} onChange={(event) => updateControl(controlIndex, { esito: event.target.value })} className={`${inputClass} mt-1`}>
-                          {CONTROL_RESULTS.map((value) => <option key={value} value={value}>{value || 'Da valutare'}</option>)}
-                        </select>
-                      </label>
-                    </div>
-                    {['note', 'spuntiMiglioramento', 'anomalie', 'problemiBloccanti'].map((field) => (
-                      <textarea
-                        key={field}
-                        aria-label={`${field === 'note' ? 'Note' : field === 'spuntiMiglioramento' ? 'Spunti di miglioramento' : field === 'anomalie' ? 'Anomalie' : 'Problemi bloccanti'} — ${label}`}
-                        value={control[field] || ''}
-                        onChange={(event) => updateControl(controlIndex, { [field]: event.target.value }, false)}
-                        onBlur={(event) => updateControl(controlIndex, { [field]: event.target.value })}
-                        className={`${inputClass} mt-2`}
-                        rows={2}
-                        placeholder={field === 'note' ? 'Note' : field === 'spuntiMiglioramento' ? 'Spunti di miglioramento' : field === 'anomalie' ? 'Eventuali anomalie' : 'Problemi bloccanti'}
-                      />
-                    ))}
-                    {control.tipo === 'giorno-15-collaudo' && isStaff && (
-                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                        <label className="flex items-center gap-2 text-xs font-bold text-amber-900">
-                          <input type="checkbox" checked={Boolean(control.eccezioneAutorizzata)} onChange={(event) => updateControl(controlIndex, { eccezioneAutorizzata: event.target.checked })} />
-                          Eccezione autorizzata e tracciata
-                        </label>
-                        {control.eccezioneAutorizzata && (
-                          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                            <input aria-label="Responsabile che autorizza l'eccezione" value={control.eccezioneAutorizzataDa || ''} onChange={(event) => updateControl(controlIndex, { eccezioneAutorizzataDa: event.target.value }, false)} onBlur={(event) => updateControl(controlIndex, { eccezioneAutorizzataDa: event.target.value })} className={inputClass} placeholder="Autorizzata da" />
-                            <input aria-label="Motivo dell'eccezione" value={control.eccezioneMotivo || ''} onChange={(event) => updateControl(controlIndex, { eccezioneMotivo: event.target.value }, false)} onBlur={(event) => updateControl(controlIndex, { eccezioneMotivo: event.target.value })} className={inputClass} placeholder="Motivo" />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {messageScope === `control-${controlIndex}` && message && !saving && (
-                      <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-emerald-700' : 'mt-2 text-sm font-semibold text-red-700'}>{message}</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+          {!isWeeklyWorkflow && (
+            <section className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+              <h4 className="text-lg font-bold text-gray-900">Controlli obbligatori</h4>
+              <p className="mb-4 text-sm text-gray-600">
+                I controlli storici restano separati per preservare il workflow originale.
+              </p>
+              <div className="grid gap-3 lg:grid-cols-2">
+                {controls.map((control, controlIndex) => renderControl(control, controlIndex))}
+              </div>
+            </section>
+          )}
 
           <section className="grid gap-4 xl:grid-cols-2">
             <div className="rounded-xl border border-gray-200 p-4">
@@ -700,14 +738,30 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
               <h4 className="text-lg font-bold text-indigo-950">Stato pubblicazione</h4>
               <p className="mb-3 text-sm text-indigo-800">Indipendente dalla consegna e gestibile anche in seguito.</p>
               {publication.dataEffettiva && <p className="mb-3 text-sm font-semibold text-indigo-900">Pubblicato il {formatDate(publication.dataEffettiva)}</p>}
-              <select aria-label="Stato pubblicazione" value={publication.stato || 'da pianificare'} onChange={(event) => patch({ pubblicazione: { stato: event.target.value } }, { ...project, pubblicazione: { ...publication, stato: event.target.value } }, 'publication')} className={inputClass}>
-                {PUBLICATION_STATES.map((value) => <option key={value}>{value}</option>)}
+              <select aria-label="Stato pubblicazione" disabled={publication.stato === 'pubblicata'} value={publication.stato || 'da pianificare'} onChange={(event) => patch({ pubblicazione: { stato: event.target.value } }, { ...project, pubblicazione: { ...publication, stato: event.target.value } }, 'publication')} className={inputClass}>
+                {PUBLICATION_STATES.map((value) => (
+                  <option key={value} disabled={value === 'pubblicata' && publication.stato !== 'pubblicata'}>
+                    {value}
+                  </option>
+                ))}
               </select>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 <input aria-label="Data prevista pubblicazione" type="date" value={dateInput(publication.dataPrevista)} onChange={(event) => patch({ pubblicazione: { dataPrevista: event.target.value || null } }, { ...project, pubblicazione: { ...publication, dataPrevista: event.target.value || null } }, 'publication')} className={inputClass} />
                 <input aria-label="URL pubblico del sito" value={publication.urlPubblico || ''} onChange={(event) => setDraftProject({ ...project, pubblicazione: { ...publication, urlPubblico: event.target.value } })} onBlur={(event) => patch({ pubblicazione: { urlPubblico: event.target.value } }, project, 'publication')} className={inputClass} placeholder="https://sito.it" />
               </div>
               <textarea aria-label="Note pubblicazione" value={publication.note || ''} onChange={(event) => setDraftProject({ ...project, pubblicazione: { ...publication, note: event.target.value } })} onBlur={(event) => patch({ pubblicazione: { note: event.target.value } }, project, 'publication')} className={`${inputClass} mt-2`} rows={2} placeholder="Note pubblicazione" />
+              <button
+                type="button"
+                disabled={publication.stato === 'pubblicata' || !publication.urlPubblico?.trim() || saving}
+                onClick={() => patch(
+                  { pubblicazione: { stato: 'pubblicata', urlPubblico: publication.urlPubblico } },
+                  { ...project, pubblicazione: { ...publication, stato: 'pubblicata' } },
+                  'publication'
+                )}
+                className="mt-3 w-full rounded-lg bg-indigo-700 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {publication.stato === 'pubblicata' ? 'Sito pubblicato' : 'Segna come pubblicato'}
+              </button>
               {messageScope === 'publication' && message && !saving && (
                 <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-indigo-800' : 'mt-2 text-sm font-semibold text-red-700'}>{message}</p>
               )}

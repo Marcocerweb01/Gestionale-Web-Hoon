@@ -23,10 +23,10 @@ export async function POST(req) {
       return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
     }
 
-    const { tipoProgetto, clienteId, webDesignerId, note, dataInizioContratto, dataFineContratto } =
+    const { tipoProgetto, clienteId, webDesignerId, note, dataInizioContratto } =
       await req.json();
 
-    if (!tipoProgetto || !clienteId || !webDesignerId || !dataInizioContratto || !dataFineContratto) {
+    if (!tipoProgetto || !clienteId || !webDesignerId || !dataInizioContratto) {
       return new Response(JSON.stringify({ message: 'Dati mancanti' }), { status: 400 });
     }
     if (!VALID_PROJECT_TYPES.includes(tipoProgetto)) {
@@ -63,7 +63,7 @@ export async function POST(req) {
       checklistPubblicazione: createPublicationChecklist(),
       note: note || '',
       dataInizioContratto,
-      dataFineContratto,
+      dataFineContratto: workflow.consegna.dataPrevista,
     });
 
     const nomeAutore =

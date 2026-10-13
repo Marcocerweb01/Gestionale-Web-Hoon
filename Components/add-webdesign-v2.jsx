@@ -307,17 +307,16 @@ const AddWebDesignV2Form = () => {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                🏁 Consegna contrattuale prevista <span className="text-red-500">*</span>
+                🏁 Consegna prevista calcolata automaticamente
               </label>
               <input
                 type="date"
                 value={formData.dataFineContratto}
-                onChange={(e) => setFormData((prev) => ({ ...prev, dataFineContratto: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-                required
+                readOnly
+                className="w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-100 px-4 py-3 text-gray-600"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Il giorno 1 coincide con la data di avvio scelta. Sabato e domenica non vengono conteggiati.
+                È il giorno lavorativo 15. Sabato e domenica non vengono conteggiati.
               </p>
             </div>
           </div>

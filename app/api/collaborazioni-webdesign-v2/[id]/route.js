@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import {
-  WEB_DESIGN_WORKFLOW_VERSION,
+  isStandardWorkflowProject,
   isWorkflowPhaseUnlocked,
   rescheduleWebDesignWorkflow,
   validateDeliveryConfirmation,
@@ -141,6 +141,7 @@ export async function PATCH(req, { params }) {
     ) {
       return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
     }
+    const standardWorkflow = isStandardWorkflowProject(collaborationToUpdate);
 
     const updatePayload = {};
 
@@ -148,7 +149,7 @@ export async function PATCH(req, { params }) {
       if (!isStaff(session)) {
         return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
       }
-      if (collaborationToUpdate.workflowVersion !== WEB_DESIGN_WORKFLOW_VERSION) {
+      if (!standardWorkflow) {
         return new Response(
           JSON.stringify({ message: 'La riprogrammazione automatica è disponibile sui nuovi workflow.' }),
           { status: 400 }
@@ -207,7 +208,7 @@ export async function PATCH(req, { params }) {
           status: 400,
         });
       }
-      if (collaborationToUpdate.workflowVersion === WEB_DESIGN_WORKFLOW_VERSION) {
+      if (standardWorkflow) {
         return new Response(
           JSON.stringify({ message: "Usa l'azione Sposta timeline per modificare l'avvio di questo progetto." }),
           { status: 400 }
@@ -232,7 +233,7 @@ export async function PATCH(req, { params }) {
         (collaborationToUpdate.fasi || []).map((phase) => [phase.nome, phase])
       );
       if (
-        collaborationToUpdate.workflowVersion === WEB_DESIGN_WORKFLOW_VERSION &&
+        standardWorkflow &&
         (body.fasi.length !== currentPhaseByName.size || body.fasi.some((phase) => !currentPhaseByName.has(phase.nome)))
       ) {
         return new Response(JSON.stringify({ message: 'Struttura delle fasi non valida' }), {
@@ -250,7 +251,7 @@ export async function PATCH(req, { params }) {
               : Boolean(task.completata),
           })),
         };
-        if (collaborationToUpdate.workflowVersion !== WEB_DESIGN_WORKFLOW_VERSION) return normalized;
+        if (!standardWorkflow) return normalized;
         return {
           ...normalized,
           giornoInizio: currentPhase.giornoInizio,
@@ -263,7 +264,7 @@ export async function PATCH(req, { params }) {
     }
     if (body.controlli !== undefined) updatePayload.controlli = body.controlli;
     if (body.fasiControllo !== undefined) {
-      if (!isStaff(session) && collaborationToUpdate.workflowVersion !== WEB_DESIGN_WORKFLOW_VERSION) {
+      if (!isStaff(session) && !standardWorkflow) {
         return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
       }
       const asksForException = body.fasiControllo.some((control) => {
@@ -277,7 +278,7 @@ export async function PATCH(req, { params }) {
           status: 403,
         });
       }
-      if (collaborationToUpdate.workflowVersion === WEB_DESIGN_WORKFLOW_VERSION) {
+      if (standardWorkflow) {
         const currentControlByType = new Map(
           (collaborationToUpdate.fasiControllo || []).map((control) => [control.tipo, control])
         );
@@ -312,7 +313,7 @@ export async function PATCH(req, { params }) {
     const nextControls = updatePayload.fasiControllo || collaborationToUpdate.fasiControllo || [];
     if (
       updatePayload.fasi &&
-      collaborationToUpdate.workflowVersion === WEB_DESIGN_WORKFLOW_VERSION
+      standardWorkflow
     ) {
       for (const phase of updatePayload.fasi) {
         if (
@@ -340,7 +341,7 @@ export async function PATCH(req, { params }) {
     const nextChecklist =
       updatePayload.checklistPubblicazione || collaborationToUpdate.checklistPubblicazione || [];
     if (body.consegna !== undefined) {
-      if (collaborationToUpdate.workflowVersion !== WEB_DESIGN_WORKFLOW_VERSION) {
+      if (!standardWorkflow) {
         return new Response(JSON.stringify({ message: 'La consegna separata è disponibile sui nuovi workflow.' }), {
           status: 400,
         });
@@ -368,7 +369,7 @@ export async function PATCH(req, { params }) {
     }
 
     if (body.pubblicazione !== undefined) {
-      if (collaborationToUpdate.workflowVersion !== WEB_DESIGN_WORKFLOW_VERSION) {
+      if (!standardWorkflow) {
         return new Response(JSON.stringify({ message: 'La pubblicazione separata è disponibile sui nuovi workflow.' }), {
           status: 400,
         });
@@ -393,10 +394,13 @@ export async function PATCH(req, { params }) {
         if (!pubblicazione.urlPubblico?.trim()) {
           return new Response(JSON.stringify({ message: 'Inserisci URL pubblico prima di registrare la pubblicazione.' }), { status: 409 });
         }
-        if (!publicationCheck?.completata || !['superato', 'ok'].includes(publicationCheck?.esito)) {
+        if (
+          publicationCheck &&
+          (!publicationCheck.completata || !['superato', 'ok'].includes(publicationCheck.esito))
+        ) {
           return new Response(JSON.stringify({ message: 'Completa il controllo pubblicazione prima di segnare il sito come pubblicato.' }), { status: 409 });
         }
-        if (!publicationCheck?.data) {
+        if (publicationCheck && !publicationCheck.data) {
           return new Response(JSON.stringify({ message: 'Registra la data effettiva del controllo pubblicazione.' }), { status: 409 });
         }
         const pendingRequiredChecks = nextChecklist
