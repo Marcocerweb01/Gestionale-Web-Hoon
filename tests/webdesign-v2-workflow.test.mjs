@@ -33,14 +33,22 @@ test('One Page, Landing Page e Blog usano la timeline Vetrina', () => {
   assert.equal(normalizeProjectType('blog'), 'vetrina');
 });
 
-test("l'intervista ricevuta fissa l'avvio operativo senza perdere i task", () => {
+test("l'intervista ricevuta mantiene l'avvio contrattuale e completa il relativo task", () => {
   const collaboration = {
     tipoProgetto: 'vetrina',
-    ...createWebDesignWorkflow({ projectType: 'vetrina' }),
+    dataInizioContratto: new Date('2026-10-19T00:00:00.000Z'),
+    ...createWebDesignWorkflow({ projectType: 'vetrina', operationalStart: '2026-10-19' }),
   };
   collaboration.fasi[0].tasks[0].note = 'Dato già inserito';
-  const scheduled = scheduleExistingWorkflow(collaboration, '2026-10-19');
+  const receivedAt = new Date('2026-10-21T09:30:00.000Z');
+  const scheduled = scheduleExistingWorkflow(
+    collaboration,
+    collaboration.dataInizioContratto,
+    null,
+    receivedAt
+  );
   assert.equal(scheduled.dataAvvioOperativo.toISOString().slice(0, 10), '2026-10-19');
+  assert.equal(scheduled.intervistaRicevutaAt.toISOString(), receivedAt.toISOString());
   assert.equal(scheduled.fasi[0].tasks[0].note, 'Dato già inserito');
   assert.equal(scheduled.fasi[0].tasks[0].stato, 'completata');
   assert.equal(scheduled['consegna.dataPrevista'].toISOString().slice(0, 10), '2026-11-06');

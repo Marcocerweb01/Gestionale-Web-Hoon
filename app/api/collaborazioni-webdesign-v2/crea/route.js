@@ -47,7 +47,10 @@ export async function POST(req) {
     // One Page, Landing Page e Blog confluiscono nella timeline Vetrina finché
     // non verranno introdotti workflow dedicati.
     const normalizedProjectType = normalizeProjectType(tipoProgetto);
-    const workflow = createWebDesignWorkflow({ projectType: normalizedProjectType });
+    const workflow = createWebDesignWorkflow({
+      projectType: normalizedProjectType,
+      operationalStart: dataInizioContratto,
+    });
     const seo = await findSeoAssignee();
     const nuovaCollaborazione = await CollaborazioneWebDesignV2.create({
       ...workflow,

@@ -297,9 +297,9 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
           {!project.dataAvvioOperativo ? (
             <div className="flex flex-col justify-between gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 sm:flex-row sm:items-center">
               <div>
-                <h4 className="font-bold text-orange-950">In attesa dell'intervista</h4>
+                <h4 className="font-bold text-orange-950">Data di avvio non disponibile</h4>
                 <p className="text-sm text-orange-800">
-                  Il primo salvataggio dell'intervista ricevuta avvierà automaticamente il giorno 1.
+                  Verifica la data di avvio della collaborazione. L'intervista non modifica la timeline contrattuale.
                 </p>
               </div>
               <Link

@@ -295,7 +295,7 @@ const AddWebDesignV2Form = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                📅 Data Inizio Contratto <span className="text-red-500">*</span>
+                📅 Avvio collaborazione (firma contratto) <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -317,7 +317,7 @@ const AddWebDesignV2Form = () => {
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                Stima iniziale sul giorno lavorativo 15. L'avvio operativo scatterà alla ricezione dell'intervista.
+                Il giorno 1 coincide con la data di avvio scelta. Sabato e domenica non vengono conteggiati.
               </p>
             </div>
           </div>
@@ -375,7 +375,7 @@ const AddWebDesignV2Form = () => {
               ) : (
                 <>
                   <span className="mr-2">🚀</span>
-                  Crea collaborazione e avvia intervista
+                  Crea collaborazione e apri intervista
                 </>
               )}
             </button>

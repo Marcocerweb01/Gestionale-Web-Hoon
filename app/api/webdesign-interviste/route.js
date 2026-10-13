@@ -179,16 +179,15 @@ export async function POST(req) {
       let workflowStarted = false;
       if (
         collaborazione.workflowVersion === WEB_DESIGN_WORKFLOW_VERSION &&
-        !collaborazione.dataAvvioOperativo &&
+        !collaborazione.intervistaRicevutaAt &&
         hasReceivedInterviewContent(interview, risultatoTxt)
       ) {
         const schedule = scheduleExistingWorkflow(
           collaborazione,
-          new Date(),
-          process.env.WEB_DESIGN_WORKDAY_END_TIME || null
+          collaborazione.dataInizioContratto || new Date()
         );
         await CollaborazioneWebDesignV2.updateOne(
-          { _id: collaborationId, dataAvvioOperativo: null },
+          { _id: collaborationId, intervistaRicevutaAt: null },
           { $set: schedule }
         );
         workflowStarted = true;
