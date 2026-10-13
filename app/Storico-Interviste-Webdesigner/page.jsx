@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Download, FileText, History, Search } from 'lucide-react';
+import { ArrowLeft, Download, FileText, History, Search, Sparkles } from 'lucide-react';
+import { downloadSiteStructureSvg } from '@/lib/site-structure-diagram';
 
 const sanitizeFilenamePart = (value) =>
   (value || 'Senza nome')
@@ -119,6 +120,12 @@ export default function StoricoIntervisteWebdesignerPage() {
           },
           risultatoTxt: item.risultatoTxt,
           intervista: item.interview,
+          analisiAI: item.aiAnalysis || null,
+          documentoAiTxt: item.aiRisultatoTxt || '',
+          risposteApprofondimento: item.aiFollowUpAnswers || [],
+          modelloAi: item.aiModel || '',
+          versionePromptAi: item.aiPromptVersion || '',
+          generataIl: item.aiGeneratedAt || null,
         },
         null,
         2
@@ -126,6 +133,22 @@ export default function StoricoIntervisteWebdesignerPage() {
       `${getFilenameBase(item.azienda)}.json`,
       'application/json;charset=utf-8'
     );
+  };
+
+  const downloadAiTxt = (item) => {
+    downloadFile(
+      item.aiRisultatoTxt || '',
+      `${getFilenameBase(item.azienda)} - Documento AI.txt`,
+      'text/plain;charset=utf-8'
+    );
+  };
+
+  const downloadAiDiagram = (item) => {
+    downloadSiteStructureSvg({
+      pages: item.aiAnalysis?.strutturaSito,
+      azienda: item.azienda,
+      filename: `${getFilenameBase(item.azienda)} - Schema sito.svg`,
+    });
   };
 
   if (status === 'loading' || loading) {
@@ -217,7 +240,27 @@ export default function StoricoIntervisteWebdesignerPage() {
                   </div>
                   {item.autoreEmail && <div className="text-xs text-gray-500">{item.autoreEmail}</div>}
                 </div>
-                <div className="flex gap-2 lg:justify-end">
+                <div className="flex flex-wrap gap-2 lg:justify-end">
+                  {item.aiRisultatoTxt && (
+                    <button
+                      type="button"
+                      onClick={() => downloadAiTxt(item)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-violet-800"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      TXT AI
+                    </button>
+                  )}
+                  {item.aiAnalysis?.strutturaSito?.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => downloadAiDiagram(item)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-800 transition hover:bg-violet-50"
+                    >
+                      <Download className="h-4 w-4" />
+                      Schema SVG
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => downloadTxt(item)}

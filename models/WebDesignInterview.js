@@ -20,6 +20,34 @@ const WebDesignInterviewSchema = new Schema(
       type: String,
       default: '',
     },
+    aiAnalysis: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
+    aiRisultatoTxt: {
+      type: String,
+      default: '',
+    },
+    aiFollowUpAnswers: {
+      type: [Schema.Types.Mixed],
+      default: [],
+    },
+    aiInputHash: {
+      type: String,
+      default: '',
+    },
+    aiPromptVersion: {
+      type: String,
+      default: '',
+    },
+    aiModel: {
+      type: String,
+      default: '',
+    },
+    aiGeneratedAt: {
+      type: Date,
+      default: null,
+    },
     autoreId: {
       type: String,
       default: '',

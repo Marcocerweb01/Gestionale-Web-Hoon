@@ -1,9 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, RefreshCw, Building2, Users, ExternalLink } from "lucide-react";
+import {
+  Search,
+  RefreshCw,
+  Building2,
+  Users,
+  ExternalLink,
+  Download,
+  Loader2,
+} from "lucide-react";
 
 const ListaClienti = () => {
   const [clienti, setClienti] = useState([]);
@@ -11,6 +18,8 @@ const ListaClienti = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState("");
   const [loadingClienti, setLoadingClienti] = useState(true);
+  const [exportingActiveClients, setExportingActiveClients] = useState(false);
+  const [exportError, setExportError] = useState("");
   const router = useRouter();
 
   // Funzione di fetch
@@ -51,6 +60,42 @@ const ListaClienti = () => {
   useEffect(() => {
     fetchClienti();
   }, []);
+
+  const downloadActiveClients = async () => {
+    setExportingActiveClients(true);
+    setExportError("");
+
+    try {
+      const response = await fetch("/api/export-clienti-attivi", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.message || "Errore durante il download");
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get("content-disposition") || "";
+      const filenameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+      const filename = filenameMatch?.[1] || "clienti_con_collaborazioni_attive.xlsx";
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Errore export clienti attivi:", err);
+      setExportError(err.message || "Non è stato possibile scaricare i clienti attivi");
+    } finally {
+      setExportingActiveClients(false);
+    }
+  };
 
   if (loadingClienti) {
     return (
@@ -94,15 +139,45 @@ const ListaClienti = () => {
             </div>
           </div>
 
-          <button
-            onClick={fetchClienti}
-            disabled={loadingClienti}
-            className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`w-4 h-4 ${loadingClienti ? 'animate-spin' : ''}`} />
-            <span>Aggiorna</span>
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={downloadActiveClients}
+              disabled={exportingActiveClients}
+              className="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exportingActiveClients ? (
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Download className="w-4 h-4" aria-hidden="true" />
+              )}
+              <span>
+                {exportingActiveClients
+                  ? "Preparazione..."
+                  : "Scarica clienti con collaborazioni attive"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={fetchClienti}
+              disabled={loadingClienti}
+              className="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`w-4 h-4 ${loadingClienti ? 'animate-spin' : ''}`} />
+              <span>Aggiorna</span>
+            </button>
+          </div>
         </div>
+
+        {exportError && (
+          <div
+            role="alert"
+            className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            {exportError}
+          </div>
+        )}
 
         {/* Search */}
         <div className="mt-6">

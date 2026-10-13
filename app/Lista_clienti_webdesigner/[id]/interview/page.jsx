@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import SiteStructureDiagram from '@/Components/SiteStructureDiagram';
+import {
+  ExistingWebsiteAnalysis,
+  WebsiteCopyPreview,
+} from '@/Components/WebDesignAiContent';
 import {
   ArrowLeft,
   Check,
@@ -13,13 +18,16 @@ import {
   FileJson,
   FileText,
   History,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
 
 const STEPS = [
   { title: 'Business', subtitle: 'Chi e cosa vende' },
   { title: 'Obiettivi', subtitle: 'Cosa deve ottenere il sito' },
+  { title: 'Chi siamo', subtitle: 'Storia, valori e identità' },
   { title: 'Struttura', subtitle: 'Pagine, stile e materiali' },
-  { title: 'Export', subtitle: 'Risultato pronto' },
+  { title: 'Analisi AI', subtitle: 'Documento operativo pronto' },
 ];
 
 const OPTIONS = {
@@ -41,6 +49,7 @@ const OPTIONS = {
 
 const DEFAULT_INTERVIEW = {
   azienda: '',
+  sitoVecchioUrl: '',
   descrizioneAzienda: '',
   servizioPrincipale: '',
   servizioFocus: '',
@@ -50,6 +59,15 @@ const DEFAULT_INTERVIEW = {
   azioneUtente: '',
   ctaPrincipale: '',
   tipoSito: '',
+  chiSiamoNascita: '',
+  chiSiamoAttivita: '',
+  chiSiamoTarget: '',
+  chiSiamoDifferenziazione: '',
+  chiSiamoValori: '',
+  chiSiamoMetodo: '',
+  chiSiamoPercorso: '',
+  chiSiamoVisione: '',
+  chiSiamoContatti: '',
   sezioni: [],
   sezioniAltro: '',
   stile: [],
@@ -113,6 +131,7 @@ const buildInterviewText = (interview) => {
 
 1. BUSINESS
 - Azienda: ${joinValue(interview.azienda)}
+- Sito precedente da analizzare: ${joinValue(interview.sitoVecchioUrl)}
 - Cosa fa/vende: ${joinValue(interview.descrizioneAzienda)}
 - Servizio o prodotto principale: ${joinValue(interview.servizioPrincipale)}
 - Servizio/prodotto da spingere: ${joinValue(interview.servizioFocus)}
@@ -124,7 +143,18 @@ const buildInterviewText = (interview) => {
 - Cosa deve fare l'utente appena entra: ${joinValue(interview.azioneUtente)}
 - CTA principale: ${joinValue(interview.ctaPrincipale)}
 
-3. STRUTTURA E STILE
+3. CHI SIAMO GENERICO
+- Come nasce l'azienda e da dove siete partiti: ${joinValue(interview.chiSiamoNascita)}
+- Di cosa vi occupate oggi e quali sono i vostri servizi/prodotti principali: ${joinValue(interview.chiSiamoAttivita)}
+- A chi vi rivolgete principalmente: ${joinValue(interview.chiSiamoTarget)}
+- Cosa vi distingue dalle altre aziende del vostro settore: ${joinValue(interview.chiSiamoDifferenziazione)}
+- Valori dell'azienda e applicazione concreta nel lavoro: ${joinValue(interview.chiSiamoValori)}
+- Modo di lavorare con un cliente: ${joinValue(interview.chiSiamoMetodo)}
+- Percorso dell'azienda fino ad oggi: ${joinValue(interview.chiSiamoPercorso)}
+- Dove volete arrivare nei prossimi anni: ${joinValue(interview.chiSiamoVisione)}
+- Contatti: ${joinValue(interview.chiSiamoContatti)}
+
+4. STRUTTURA E STILE
 - Tipologia sito: ${joinValue(interview.tipoSito)}
 - Sezioni richieste: ${joinValue(sezioni)}
 - Stile desiderato: ${joinValue(stile)}
@@ -134,7 +164,7 @@ const buildInterviewText = (interview) => {
 - Colori preferiti/da evitare: ${joinValue(interview.colori)}
 - Font o riferimenti tipografici: ${joinValue(interview.font)}
 
-4. DOMINIO E ACCESSI
+5. DOMINIO E ACCESSI
 - Dominio esistente: ${joinValue(interview.dominioEsistente)}
 - Dominio/URL: ${joinValue(interview.dominio)}
 - Provider dominio/hosting: ${joinValue(interview.providerDominio)}
@@ -142,7 +172,7 @@ const buildInterviewText = (interview) => {
 - Scadenza dominio: ${joinValue(interview.scadenzaDominio)}
 - Accessi dominio/hosting: ${joinValue(interview.accessiDominio)}
 
-5. MATERIALI DISPONIBILI
+6. MATERIALI DISPONIBILI
 - Brand: ${joinValue(interview.brandAssets)}
 - Media: ${joinValue(interview.mediaAssets)}
 - Testi: ${joinValue(interview.textAssets)}
@@ -281,10 +311,20 @@ const InterviewPage = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [tracking, setTracking] = useState(false);
   const [savedSignature, setSavedSignature] = useState('');
+  const [savedInterviewId, setSavedInterviewId] = useState('');
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [aiResultText, setAiResultText] = useState('');
+  const [aiAnswers, setAiAnswers] = useState({});
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [aiStale, setAiStale] = useState(false);
+  const [aiAnswersDirty, setAiAnswersDirty] = useState(false);
 
   const updateField = (field, value) => {
     setInterview((prev) => ({ ...prev, [field]: value }));
     setMessage('');
+    setAiError('');
+    if (aiResultText) setAiStale(true);
   };
 
   const resultText = useMemo(() => buildInterviewText(interview), [interview]);
@@ -342,7 +382,9 @@ const InterviewPage = () => {
   };
 
   const trackInterview = async () => {
-    if (savedSignature === currentSignature) return true;
+    if (savedSignature === currentSignature && savedInterviewId) {
+      return { interviewId: savedInterviewId, saved: true };
+    }
 
     try {
       setTracking(true);
@@ -361,22 +403,23 @@ const InterviewPage = () => {
       if (!response.ok) throw new Error(data?.message || 'Errore salvataggio');
 
       setSavedSignature(currentSignature);
+      setSavedInterviewId(data.intervista?._id || '');
       setHistoryItems((items) =>
         data.intervista?._id && !items.some((item) => item._id === data.intervista._id)
           ? [data.intervista, ...items]
           : items
       );
-      return true;
+      return { interviewId: data.intervista?._id, saved: true };
     } catch (error) {
       console.error('Errore salvataggio automatico intervista:', error);
-      return false;
+      return null;
     } finally {
       setTracking(false);
     }
   };
 
   const downloadTxt = async () => {
-    const tracked = await trackInterview();
+    const tracked = Boolean((await trackInterview())?.saved);
     const filename = `${filenameBase}.txt`;
     downloadFile(
       resultText,
@@ -386,7 +429,7 @@ const InterviewPage = () => {
     );
   };
   const downloadJson = async () => {
-    const tracked = await trackInterview();
+    const tracked = Boolean((await trackInterview())?.saved);
     const filename = `${filenameBase}.json`;
     downloadFile(
       JSON.stringify(resultJson, null, 2),
@@ -397,7 +440,7 @@ const InterviewPage = () => {
   };
 
   const copyResultText = async () => {
-    const tracked = await trackInterview();
+    const tracked = Boolean((await trackInterview())?.saved);
 
     try {
       if (navigator.clipboard?.writeText) {
@@ -428,6 +471,100 @@ const InterviewPage = () => {
     );
   };
 
+  const downloadHistoryAiTxt = (item) => {
+    downloadFile(
+      item.aiRisultatoTxt || '',
+      `${getFilenameBase(item.azienda)} - Documento AI.txt`,
+      'text/plain;charset=utf-8'
+    );
+  };
+
+  const generateAiAnalysis = async () => {
+    if (!interview.azienda.trim() || !interview.descrizioneAzienda.trim()) {
+      setAiError('Completa almeno il nome azienda e la descrizione dell’attività prima di generare.');
+      return;
+    }
+
+    setAiGenerating(true);
+    setAiError('');
+    setMessage('');
+
+    try {
+      const trackedInterview = await trackInterview();
+      if (!trackedInterview?.interviewId) {
+        throw new Error('Non è stato possibile salvare l’intervista prima dell’analisi.');
+      }
+
+      const questions = Array.isArray(aiAnalysis?.domandeApprofondimento)
+        ? aiAnalysis.domandeApprofondimento
+        : [];
+      const followUpAnswers = aiStale
+        ? []
+        : questions.map((item, index) => ({
+            domanda: item.domanda,
+            risposta: aiAnswers[index] || '',
+          }));
+      const response = await fetch(
+        `/api/webdesign-interviste/${trackedInterview.interviewId}/analisi-ai`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ followUpAnswers }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.message || 'Errore durante l’analisi AI');
+
+      const saved = data.intervista;
+      setAiAnalysis(saved.aiAnalysis || null);
+      setAiResultText(saved.aiRisultatoTxt || '');
+      setSavedInterviewId(saved._id || trackedInterview.interviewId);
+      setAiStale(false);
+      setAiAnswersDirty(false);
+      setAiAnswers(
+        Object.fromEntries(
+          (saved.aiAnalysis?.domandeApprofondimento || []).map((item, index) => [
+            index,
+            item.rispostaRicevuta || '',
+          ])
+        )
+      );
+      setHistoryItems((items) => {
+        const exists = items.some((item) => item._id === saved._id);
+        return exists
+          ? items.map((item) => (item._id === saved._id ? saved : item))
+          : [saved, ...items];
+      });
+      setMessage(data.cached ? 'Documento già aggiornato e salvato' : data.message);
+    } catch (error) {
+      console.error('Errore analisi AI intervista:', error);
+      setAiError(error.message || 'Non è stato possibile generare il documento AI.');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const copyAiResult = async () => {
+    if (!aiResultText) return;
+    try {
+      await navigator.clipboard.writeText(aiResultText);
+      setMessage('Documento AI copiato');
+    } catch (error) {
+      console.error('Errore copia documento AI:', error);
+      setMessage('Copia non riuscita');
+    }
+  };
+
+  const downloadAiResult = () => {
+    if (!aiResultText) return;
+    downloadFile(
+      aiResultText,
+      `${filenameBase} - Documento AI.txt`,
+      'text/plain;charset=utf-8',
+      'Documento AI scaricato'
+    );
+  };
+
   const goBack = () => setCurrentStep((step) => Math.max(step - 1, 0));
   const goNext = () => setCurrentStep((step) => Math.min(step + 1, STEPS.length - 1));
 
@@ -447,7 +584,7 @@ const InterviewPage = () => {
         </Link>
       </div>
 
-      <div className="mb-6 grid gap-2 sm:grid-cols-4">
+      <div className="mb-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {STEPS.map((step, index) => (
           <button
             key={step.title}
@@ -492,6 +629,17 @@ const InterviewPage = () => {
               onChange={(value) => updateField('descrizioneAzienda', value)}
               placeholder="Descrizione breve e concreta dell'attività"
             />
+            <Field
+              label="Sito web precedente (facoltativo)"
+              value={interview.sitoVecchioUrl}
+              onChange={(value) => updateField('sitoVecchioUrl', value)}
+              placeholder="https://www.azienda.it"
+              type="url"
+            />
+            <p className="-mt-3 text-xs leading-5 text-gray-500">
+              Se presente, l’AI consulta il vecchio sito prima di creare struttura e testi. La ricerca
+              resta limitata a quel dominio.
+            </p>
             <div className="grid gap-4 lg:grid-cols-2">
               <Field
                 label="Cosa vogliamo spingere"
@@ -552,6 +700,74 @@ const InterviewPage = () => {
         )}
 
         {currentStep === 2 && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-gray-950">Chi siamo generico</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Informazioni utili per costruire un testo Chi siamo completo e autentico.
+              </p>
+            </div>
+            <TextArea
+              label="Come nasce l'azienda e da dove siete partiti?"
+              value={interview.chiSiamoNascita}
+              onChange={(value) => updateField('chiSiamoNascita', value)}
+              placeholder="Racconta l'idea iniziale, chi l'ha fondata e il punto di partenza"
+            />
+            <TextArea
+              label="Di cosa vi occupate oggi e quali sono i vostri servizi/prodotti principali?"
+              value={interview.chiSiamoAttivita}
+              onChange={(value) => updateField('chiSiamoAttivita', value)}
+              placeholder="Descrivi l'attività attuale e l'offerta principale"
+            />
+            <TextArea
+              label="A chi vi rivolgete principalmente?"
+              value={interview.chiSiamoTarget}
+              onChange={(value) => updateField('chiSiamoTarget', value)}
+              placeholder="Clienti, settori, territori o bisogni principali"
+              rows={3}
+            />
+            <TextArea
+              label="Cosa vi distingue dalle altre aziende del vostro settore?"
+              value={interview.chiSiamoDifferenziazione}
+              onChange={(value) => updateField('chiSiamoDifferenziazione', value)}
+              placeholder="Metodo, esperienza, specializzazione o vantaggi distintivi"
+            />
+            <TextArea
+              label="Quali sono i valori su cui avete costruito l'azienda e come si traducono concretamente nel vostro lavoro?"
+              value={interview.chiSiamoValori}
+              onChange={(value) => updateField('chiSiamoValori', value)}
+              placeholder="Indica i valori e aggiungi esempi concreti"
+            />
+            <TextArea
+              label="Qual è il vostro modo di lavorare con un cliente?"
+              value={interview.chiSiamoMetodo}
+              onChange={(value) => updateField('chiSiamoMetodo', value)}
+              placeholder="Dal primo contatto alla consegna e all'assistenza"
+            />
+            <TextArea
+              label="Qual è stato il percorso dell'azienda fino ad oggi?"
+              value={interview.chiSiamoPercorso}
+              onChange={(value) => updateField('chiSiamoPercorso', value)}
+              placeholder="Crescita, cambiamenti, nuovi servizi, ampliamento del team e traguardi importanti"
+            />
+            <TextArea
+              label="Dove volete arrivare nei prossimi anni?"
+              value={interview.chiSiamoVisione}
+              onChange={(value) => updateField('chiSiamoVisione', value)}
+              placeholder="Visione, obiettivi e direzione futura"
+              rows={3}
+            />
+            <TextArea
+              label="Contatti"
+              value={interview.chiSiamoContatti}
+              onChange={(value) => updateField('chiSiamoContatti', value)}
+              placeholder="Telefono, email, indirizzo, orari o altri riferimenti da pubblicare"
+              rows={3}
+            />
+          </div>
+        )}
+
+        {currentStep === 3 && (
           <div className="space-y-5">
             <div>
               <h2 className="text-lg font-bold text-gray-950">Struttura, stile e materiali</h2>
@@ -649,7 +865,7 @@ const InterviewPage = () => {
           </div>
         )}
 
-        {currentStep === 3 && (
+        {currentStep === 4 && (
           <div className="space-y-5">
             <div>
               <h2 className="text-lg font-bold text-gray-950">Dominio e risultato</h2>
@@ -702,11 +918,179 @@ const InterviewPage = () => {
               placeholder="Vincoli, cose da evitare, richieste particolari"
               rows={3}
             />
+
+            <section className="rounded-xl border border-violet-200 bg-violet-50 p-5 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="max-w-2xl">
+                  <div className="flex items-center gap-2 text-violet-800">
+                    <Sparkles className="h-5 w-5" aria-hidden="true" />
+                    <h3 className="text-base font-bold">Documento strategico generato con AI</h3>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-violet-950/75">
+                    Il gestionale analizza l’eventuale sito precedente e produce sempre lo stesso
+                    formato: sintesi, pagine, testi completi, cinque domande, schema visuale e prompt
+                    per Codex.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={generateAiAnalysis}
+                  disabled={aiGenerating || tracking}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {aiGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  {aiGenerating
+                    ? 'Analisi in corso...'
+                    : aiAnalysis
+                      ? 'Aggiorna documento'
+                      : 'Genera analisi AI'}
+                </button>
+              </div>
+
+              {aiError && (
+                <div
+                  role="alert"
+                  className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+                >
+                  {aiError}
+                </div>
+              )}
+
+              {aiGenerating && (
+                <div className="mt-5 rounded-lg border border-violet-200 bg-white px-4 py-5 text-sm text-violet-900">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-5 w-5 animate-spin text-violet-700" aria-hidden="true" />
+                    <div>
+                      <div className="font-bold">Sto organizzando il documento</div>
+                      <div className="mt-1 text-violet-800/70">
+                        Analisi dell’intervista e del vecchio sito, struttura delle pagine e testi.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {aiAnalysis && !aiGenerating && (
+                <div className="mt-6 space-y-6">
+                  {aiStale && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                      Hai modificato l’intervista dopo l’ultima analisi. Aggiorna il documento prima di
+                      usarlo.
+                    </div>
+                  )}
+
+                  {!aiStale && aiAnswersDirty && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                      Le nuove risposte non sono ancora nel documento. Premi “Rigenera con le
+                      risposte”.
+                    </div>
+                  )}
+
+                  <ExistingWebsiteAnalysis analysis={aiAnalysis.analisiSitoEsistente} />
+
+                  <SiteStructureDiagram
+                    pages={aiAnalysis.strutturaSito}
+                    azienda={interview.azienda}
+                    filename={`${filenameBase} - Schema sito.svg`}
+                  />
+
+                  <WebsiteCopyPreview pages={aiAnalysis.strutturaSito} />
+
+                  <div>
+                    <h4 className="text-sm font-bold text-violet-950">
+                      Domande per completare i testi
+                    </h4>
+                    <p className="mt-1 text-sm leading-6 text-violet-950/70">
+                      Inserisci le risposte disponibili e premi “Rigenera con le risposte”. Le domande
+                      rimarranno identiche e nello stesso ordine.
+                    </p>
+                    <div className="mt-4 space-y-4">
+                      {(aiAnalysis.domandeApprofondimento || []).map((item, index) => (
+                        <div key={`${item.domanda}-${index}`} className="rounded-lg bg-white p-4">
+                          <div className="text-sm font-bold text-gray-950">
+                            {index + 1}. {item.domanda}
+                          </div>
+                          <div className="mt-1 text-xs leading-5 text-gray-500">{item.motivo}</div>
+                          <label className="mt-3 block">
+                            <span className="sr-only">Risposta alla domanda {index + 1}</span>
+                            <textarea
+                              value={aiAnswers[index] || ''}
+                              onChange={(event) => {
+                                setAiAnswers((answers) => ({
+                                  ...answers,
+                                  [index]: event.target.value,
+                                }));
+                                setAiAnswersDirty(true);
+                              }}
+                              rows={3}
+                              placeholder="Scrivi qui la risposta del cliente..."
+                              className="w-full resize-y rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                            />
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={generateAiAnalysis}
+                      disabled={aiGenerating || tracking}
+                      className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Sparkles className="h-4 w-4" aria-hidden="true" />
+                      Rigenera con le risposte
+                    </button>
+                  </div>
+
+                  <div className="rounded-lg bg-white p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-950">Documento salvato</h4>
+                        <p className="mt-1 text-xs text-gray-500">
+                          {(aiAnalysis.strutturaSito || []).length} pagine organizzate · formato stabile
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={copyAiResult}
+                          disabled={aiStale || aiAnswersDirty}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-800 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Clipboard className="h-4 w-4" aria-hidden="true" />
+                          Copia documento
+                        </button>
+                        <button
+                          type="button"
+                          onClick={downloadAiResult}
+                          disabled={aiStale || aiAnswersDirty}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 py-2 text-xs font-bold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Download className="h-4 w-4" aria-hidden="true" />
+                          Scarica TXT AI
+                        </button>
+                      </div>
+                    </div>
+                    <pre className="mt-4 max-h-[620px] overflow-auto whitespace-pre-wrap border-t border-gray-100 pt-4 text-sm leading-6 text-gray-800">
+                      {aiResultText}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </section>
+
             <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-bold text-gray-950">Risultato TXT</h3>
-                  {message && <span className="text-xs font-semibold text-emerald-700">{message}</span>}
+                  <h3 className="text-sm font-bold text-gray-950">Intervista grezza</h3>
+                  {message && (
+                    <span aria-live="polite" className="text-xs font-semibold text-emerald-700">
+                      {message}
+                    </span>
+                  )}
                 </div>
                 <pre className="max-h-[460px] overflow-auto whitespace-pre-wrap text-sm leading-6 text-gray-800">
                   {resultText}
@@ -722,7 +1106,7 @@ const InterviewPage = () => {
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-orange-200 bg-white px-4 py-3 text-sm font-bold text-orange-700 transition hover:bg-orange-50"
                   >
                     <Clipboard className="h-4 w-4" />
-                    {tracking ? 'Salvataggio...' : 'Copia testo'}
+                    {tracking ? 'Salvataggio...' : 'Copia intervista'}
                   </button>
                   <button
                     type="button"
@@ -731,7 +1115,7 @@ const InterviewPage = () => {
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-700"
                   >
                     <FileText className="h-4 w-4" />
-                    {tracking ? 'Salvataggio...' : 'Scarica TXT'}
+                    {tracking ? 'Salvataggio...' : 'Scarica intervista TXT'}
                   </button>
                   <button
                     type="button"
@@ -781,8 +1165,18 @@ const InterviewPage = () => {
                             className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-orange-700 hover:text-orange-800"
                           >
                             <FileText className="h-3.5 w-3.5" />
-                            TXT
+                            Intervista TXT
                           </button>
+                          {item.aiRisultatoTxt && (
+                            <button
+                              type="button"
+                              onClick={() => downloadHistoryAiTxt(item)}
+                              className="ml-4 mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-violet-700 hover:text-violet-800"
+                            >
+                              <Sparkles className="h-3.5 w-3.5" />
+                              Documento AI
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -807,11 +1201,16 @@ const InterviewPage = () => {
         {currentStep === STEPS.length - 1 ? (
           <button
             type="button"
-            onClick={downloadTxt}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-700"
+            onClick={generateAiAnalysis}
+            disabled={aiGenerating || tracking}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Download className="h-4 w-4" />
-            Scarica TXT
+            {aiGenerating ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+            )}
+            {aiGenerating ? 'Analisi in corso...' : aiAnalysis ? 'Aggiorna analisi AI' : 'Genera analisi AI'}
           </button>
         ) : (
           <button
