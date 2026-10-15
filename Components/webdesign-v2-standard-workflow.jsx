@@ -284,6 +284,20 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
     const [label, timing] = metadata[control.tipo] || CONTROL_META[control.tipo] || [control.tipo, ''];
 
     if (weekly) {
+      const clearOutcome = () => {
+        updateControl(controlIndex, {
+          esito: '',
+          completata: false,
+          checkboxCompletamento: false,
+          stato: 'da fare',
+          data: null,
+        });
+        const nextPhase = NEXT_PHASE_BY_CONTROL[control.tipo];
+        if (nextPhase) {
+          setOpenPhases((current) => ({ ...current, [nextPhase]: false }));
+        }
+      };
+
       const selectOutcome = (esito) => {
         const changes = {
           esito,
@@ -360,6 +374,15 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
             <p className="mt-3 text-sm font-semibold text-emerald-700">
               Controllo superato. Lo step successivo è ora disponibile.
             </p>
+          )}
+          {['superato', 'non superato'].includes(control.esito) && (
+            <button
+              type="button"
+              onClick={clearOutcome}
+              className="mt-3 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
+            >
+              Deseleziona esito
+            </button>
           )}
           {messageScope === `control-${controlIndex}` && message && !saving && (
             <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-emerald-700' : 'mt-2 text-sm font-semibold text-red-700'}>{message}</p>
