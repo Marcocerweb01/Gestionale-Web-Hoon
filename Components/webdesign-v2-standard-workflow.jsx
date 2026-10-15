@@ -39,6 +39,11 @@ const WEEKLY_CONTROL_META = {
   'giorno-15-collaudo': ['Controllo fine Collaudo e Consegna', 'Fine settimana 3'],
 };
 
+const NEXT_PHASE_BY_CONTROL = {
+  'giorno-5-struttura': 'design',
+  'giorno-10-design': 'consegna',
+};
+
 const TASK_STATES = ['da fare', 'in corso', 'in attesa', 'completata', 'non applicabile'];
 const CONTROL_RESULTS = ['', 'superato', 'non superato', 'con riserva', 'non applicabile'];
 const PUBLICATION_STATES = [
@@ -277,6 +282,92 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
   const renderControl = (control, controlIndex, weekly = false) => {
     const metadata = weekly ? WEEKLY_CONTROL_META : CONTROL_META;
     const [label, timing] = metadata[control.tipo] || CONTROL_META[control.tipo] || [control.tipo, ''];
+
+    if (weekly) {
+      const selectOutcome = (esito) => {
+        const changes = {
+          esito,
+          completata: true,
+          checkboxCompletamento: true,
+          stato: 'completato',
+          data: control.data || new Date().toISOString(),
+        };
+        const needsExplanation = esito === 'non superato' && !control.note?.trim();
+        updateControl(controlIndex, changes, !needsExplanation);
+        const nextPhase = NEXT_PHASE_BY_CONTROL[control.tipo];
+        if (esito === 'superato' && nextPhase) {
+          setOpenPhases((current) => ({ ...current, [nextPhase]: true }));
+        }
+      };
+
+      return (
+        <div key={control.tipo} className="rounded-lg border border-sky-100 bg-white p-4">
+          <div className="mb-3">
+            <h5 className="font-bold text-gray-900">{label}</h5>
+            <p className="text-xs text-sky-700">
+              {timing} · con esito positivo si sblocca lo step successivo
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              aria-pressed={control.esito === 'superato'}
+              onClick={() => selectOutcome('superato')}
+              className={`rounded-lg border px-4 py-3 text-sm font-bold transition ${
+                control.esito === 'superato'
+                  ? 'border-emerald-600 bg-emerald-600 text-white'
+                  : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-400'
+              }`}
+            >
+              Esito positivo
+            </button>
+            <button
+              type="button"
+              aria-pressed={control.esito === 'non superato'}
+              onClick={() => selectOutcome('non superato')}
+              className={`rounded-lg border px-4 py-3 text-sm font-bold transition ${
+                control.esito === 'non superato'
+                  ? 'border-red-600 bg-red-600 text-white'
+                  : 'border-red-200 bg-red-50 text-red-800 hover:border-red-400'
+              }`}
+            >
+              Esito negativo
+            </button>
+          </div>
+          {control.esito === 'non superato' && (
+            <label className="mt-3 block text-xs font-bold text-red-800">
+              Spiegazione obbligatoria
+              <textarea
+                aria-label={`Spiegazione esito negativo — ${label}`}
+                required
+                value={control.note || ''}
+                onChange={(event) => updateControl(controlIndex, { note: event.target.value }, false)}
+                onBlur={(event) => {
+                  if (event.target.value.trim()) {
+                    updateControl(controlIndex, { note: event.target.value });
+                  }
+                }}
+                className={`${inputClass} mt-1 border-red-200 focus:border-red-400 focus:ring-red-100`}
+                rows={3}
+                placeholder="Spiega perché il controllo ha avuto esito negativo"
+              />
+              {!control.note?.trim() && (
+                <span className="mt-1 block font-medium">Inserisci la spiegazione per salvare l’esito.</span>
+              )}
+            </label>
+          )}
+          {control.esito === 'superato' && (
+            <p className="mt-3 text-sm font-semibold text-emerald-700">
+              Controllo superato. Lo step successivo è ora disponibile.
+            </p>
+          )}
+          {messageScope === `control-${controlIndex}` && message && !saving && (
+            <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-emerald-700' : 'mt-2 text-sm font-semibold text-red-700'}>{message}</p>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div key={control.tipo} className="rounded-lg border border-sky-100 bg-white p-4">
         <div className="mb-3 flex items-start justify-between gap-3">
@@ -587,7 +678,8 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
             </section>
           )}
 
-          <section className="grid gap-4 xl:grid-cols-2">
+          {!isWeeklyWorkflow && (
+            <section className="grid gap-4 xl:grid-cols-2">
             <div className="rounded-xl border border-gray-200 p-4">
               <h4 className="font-bold text-gray-900">Appuntamenti</h4>
               <p className="mb-3 text-sm text-gray-500">Tre momenti distinti; quello intermedio è facoltativo.</p>
@@ -633,7 +725,8 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
                 ))}
               </div>
             </div>
-          </section>
+            </section>
+          )}
 
           <section className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">

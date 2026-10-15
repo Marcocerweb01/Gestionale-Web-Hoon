@@ -290,6 +290,20 @@ export async function PATCH(req, { params }) {
             status: 400,
           });
         }
+        const negativeWithoutExplanation = body.fasiControllo.find((control) => {
+          const current = currentControlByType.get(control.tipo);
+          return (
+            control.esito === 'non superato' &&
+            current?.esito !== 'non superato' &&
+            !String(control.note || '').trim()
+          );
+        });
+        if (negativeWithoutExplanation) {
+          return new Response(
+            JSON.stringify({ message: "Spiega il motivo dell'esito negativo prima di salvarlo." }),
+            { status: 400 }
+          );
+        }
         updatePayload.fasiControllo = body.fasiControllo.map((control) => {
           const current = currentControlByType.get(control.tipo);
           return {
