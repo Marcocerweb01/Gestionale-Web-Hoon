@@ -38,6 +38,7 @@ import {
   YAxis
 } from "recharts";
 import { calculateCommercialLine, calculateDocumentTotals } from "@/lib/hoon-lab/calculations";
+import { DEFAULT_QUOTE_NOTE, QUOTE_DEPOSIT_PLACEHOLDER } from "@/lib/hoon-lab/quote-note.mjs";
 
 const emptyLine = {
   product: "",
@@ -57,7 +58,7 @@ const DEFAULT_HOON_LAB_SETTINGS = {
   companyName: "Hoon Srl",
   companyHeader: "Hoon Srl\nVia Buon Pastore 9 d\n01100 Viterbo (VT)\nTel. 3760361046 / Fax\nwww.hoonlab.it / info@hoonlab.it\nP.IVA 02338800564 - Cod. Fiscale 02338800564",
   quoteNoteTitle: "NOTA PREVENTIVO",
-  quoteNote: "Per l’avvio dell’ordine è richiesto un acconto pari al 50% dell’imponibile, IVA esclusa. Il saldo comprenderà l’importo residuo e l’intera IVA e dovrà essere versato prima della consegna della merce"
+  quoteNote: DEFAULT_QUOTE_NOTE
 };
 
 function currency(value) {
@@ -2043,6 +2044,9 @@ export default function HoonLabClient() {
                       onChange={(event) => setSettingsForm((current) => ({ ...current, quoteNote: event.target.value }))}
                       className="field min-h-40 font-normal"
                     />
+                    <span className="text-xs font-normal text-slate-500">
+                      {QUOTE_DEPOSIT_PLACEHOLDER} viene sostituito con il 50% del totale IVA inclusa.
+                    </span>
                   </label>
                   <div className="lg:col-span-2">
                     <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800">

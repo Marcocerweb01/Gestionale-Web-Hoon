@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { DEFAULT_QUOTE_NOTE } from "@/lib/hoon-lab/quote-note.mjs";
 
 const { Schema, model, models } = mongoose;
 
@@ -25,7 +26,7 @@ export const DEFAULT_HOON_LAB_SETTINGS = {
   companyName: "Hoon Srl",
   companyHeader: "Hoon Srl\nVia Buon Pastore 9 d\n01100 Viterbo (VT)\nTel. 3760361046 / Fax\nwww.hoonlab.it / info@hoonlab.it\nP.IVA 02338800564 - Cod. Fiscale 02338800564",
   quoteNoteTitle: "NOTA PREVENTIVO",
-  quoteNote: "Per l’avvio dell’ordine è richiesto un acconto pari al 50% dell’imponibile, IVA esclusa. Il saldo comprenderà l’importo residuo e l’intera IVA e dovrà essere versato prima della consegna della merce"
+  quoteNote: DEFAULT_QUOTE_NOTE
 };
 
 const MoneySchema = {
