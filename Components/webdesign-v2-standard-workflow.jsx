@@ -299,6 +299,10 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
       };
 
       const selectOutcome = (esito) => {
+        if (control.esito === esito) {
+          clearOutcome();
+          return;
+        }
         const changes = {
           esito,
           completata: true,
@@ -374,15 +378,6 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
             <p className="mt-3 text-sm font-semibold text-emerald-700">
               Controllo superato. Lo step successivo è ora disponibile.
             </p>
-          )}
-          {['superato', 'non superato'].includes(control.esito) && (
-            <button
-              type="button"
-              onClick={clearOutcome}
-              className="mt-3 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-            >
-              Deseleziona esito
-            </button>
           )}
           {messageScope === `control-${controlIndex}` && message && !saving && (
             <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-emerald-700' : 'mt-2 text-sm font-semibold text-red-700'}>{message}</p>
