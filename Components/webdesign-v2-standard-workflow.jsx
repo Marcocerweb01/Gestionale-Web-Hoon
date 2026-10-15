@@ -40,16 +40,6 @@ const WEEKLY_CONTROL_META = {
 };
 
 const TASK_STATES = ['da fare', 'in corso', 'in attesa', 'completata', 'non applicabile'];
-const CRITICALITIES = ['regolare', 'attenzione', 'critico'];
-const DELAY_REASONS = [
-  '',
-  'ritardo interno',
-  'attesa cliente',
-  'mancanza contenuti',
-  'attesa approvazione',
-  'problema tecnico',
-  'altro',
-];
 const CONTROL_RESULTS = ['', 'superato', 'non superato', 'con riserva', 'non applicabile'];
 const PUBLICATION_STATES = [
   'non prevista',
@@ -205,13 +195,6 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
     const next = { ...project, fasi: nextFasi };
     if (saveNow) patch({ fasi: nextFasi }, next);
     else setDraftProject(next);
-  };
-
-  const updatePhase = (phaseIndex, changes) => {
-    const nextFasi = fasi.map((phase, index) =>
-      phaseIndex === index ? { ...phase, ...changes } : phase
-    );
-    patch({ fasi: nextFasi }, { ...project, fasi: nextFasi });
   };
 
   const updateControl = (controlIndex, changes, saveNow = true) => {
@@ -497,7 +480,7 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
             <div className="mb-3 flex items-end justify-between">
               <div>
                 <h4 className="text-lg font-bold text-gray-900">Avanzamento produzione</h4>
-                <p className="text-sm text-gray-500">Le fasi successive si sbloccano dopo il controllo della fase precedente.</p>
+                <p className="text-sm text-gray-500">Spunta ogni attività quando è stata completata.</p>
               </div>
               <span className="text-sm font-bold text-violet-700">{projectProgress}%</span>
             </div>
@@ -542,97 +525,38 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
 
                     {isPhaseOpen && (
                       <div id={`phase-${project._id}-${phase.nome}`} className="space-y-4 p-4">
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <label className="text-xs font-bold text-gray-600">
-                            Stato fase
-                            <select
-                              value={phase.stato || 'da fare'}
-                              disabled={!unlocked}
-                              onChange={(event) => updatePhase(phaseIndex, { stato: event.target.value })}
-                              className={`${inputClass} mt-1`}
-                            >
-                              {TASK_STATES.map((value) => <option key={value}>{value}</option>)}
-                            </select>
-                          </label>
-                          <label className="text-xs font-bold text-gray-600">
-                            Criticità
-                            <select
-                              value={phase.criticita || 'regolare'}
-                              disabled={!unlocked}
-                              onChange={(event) => updatePhase(phaseIndex, { criticita: event.target.value })}
-                              className={`${inputClass} mt-1`}
-                            >
-                              {CRITICALITIES.map((value) => <option key={value}>{value}</option>)}
-                            </select>
-                          </label>
-                        </div>
-
                         <div className="space-y-2">
                           {(phase.tasks || []).map((task, taskIndex) => (
-                            <div key={task.codice || `${phase.nome}-${taskIndex}`} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                              <div className="flex items-start gap-3">
-                                <button
-                                  type="button"
-                                  aria-label={`${isDone(task) ? 'Riapri' : 'Completa'} attività: ${task.nome}`}
-                                  disabled={!unlocked}
-                                  onClick={() =>
-                                    updateTask(phaseIndex, taskIndex, {
-                                      stato: isDone(task) ? 'da fare' : 'completata',
-                                    })
-                                  }
-                                  className={isDone(task) ? 'text-emerald-500' : 'text-gray-300'}
-                                >
-                                  {isDone(task) ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
-                                </button>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    {task.giorno && (
-                                      <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-gray-600">{task.giorno}</span>
-                                    )}
-                                    <p className={`text-sm font-semibold ${isDone(task) ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{task.nome}</p>
-                                  </div>
-                                  <div className="mt-3 grid gap-2 md:grid-cols-3">
-                                    <select
-                                      aria-label={`Stato attività: ${task.nome}`}
-                                      value={task.stato || (task.completata ? 'completata' : 'da fare')}
-                                      disabled={!unlocked}
-                                      onChange={(event) => updateTask(phaseIndex, taskIndex, { stato: event.target.value })}
-                                      className={inputClass}
-                                    >
-                                      {TASK_STATES.map((value) => <option key={value}>{value}</option>)}
-                                    </select>
-                                    <select
-                                      aria-label={`Criticità attività: ${task.nome}`}
-                                      value={task.criticita || 'regolare'}
-                                      disabled={!unlocked}
-                                      onChange={(event) => updateTask(phaseIndex, taskIndex, { criticita: event.target.value })}
-                                      className={inputClass}
-                                    >
-                                      {CRITICALITIES.map((value) => <option key={value}>{value}</option>)}
-                                    </select>
-                                    <select
-                                      aria-label={`Motivo ritardo attività: ${task.nome}`}
-                                      value={task.motivoRitardo || ''}
-                                      disabled={!unlocked}
-                                      onChange={(event) => updateTask(phaseIndex, taskIndex, { motivoRitardo: event.target.value })}
-                                      className={inputClass}
-                                    >
-                                      {DELAY_REASONS.map((value) => <option key={value} value={value}>{value || 'Nessun motivo ritardo'}</option>)}
-                                    </select>
-                                  </div>
-                                  <textarea
-                                    aria-label={`Note attività: ${task.nome}`}
-                                    value={task.note || ''}
-                                    disabled={!unlocked}
-                                    onChange={(event) => updateTask(phaseIndex, taskIndex, { note: event.target.value }, false)}
-                                    onBlur={(event) => updateTask(phaseIndex, taskIndex, { note: event.target.value })}
-                                    className={`${inputClass} mt-2`}
-                                    rows={2}
-                                    placeholder="Note attività"
-                                  />
+                            <label
+                              key={task.codice || `${phase.nome}-${taskIndex}`}
+                              className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
+                                isDone(task)
+                                  ? 'border-emerald-100 bg-emerald-50'
+                                  : 'border-gray-100 bg-gray-50'
+                              } ${unlocked ? 'cursor-pointer hover:border-violet-200' : 'cursor-not-allowed opacity-60'}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isDone(task)}
+                                disabled={!unlocked}
+                                onChange={() =>
+                                  updateTask(phaseIndex, taskIndex, {
+                                    stato: isDone(task) ? 'da fare' : 'completata',
+                                  })
+                                }
+                                className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {task.giorno && (
+                                    <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-gray-600">{task.giorno}</span>
+                                  )}
+                                  <span className={`text-sm font-semibold ${isDone(task) ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                                    {task.nome}
+                                  </span>
                                 </div>
                               </div>
-                            </div>
+                            </label>
                           ))}
                         </div>
                         {isWeeklyWorkflow && phaseControl && (
