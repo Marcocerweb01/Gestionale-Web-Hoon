@@ -13,6 +13,19 @@ import { Azienda, Collaboratore } from "@/models/User";
 import { connectToDB } from "@/utils/database";
 
 const toId = (value) => value?.toString();
+const LEGACY_HOON_WEB_COLLABORATOR_ID = "686be44dc04a68e29f1770f3";
+
+const isHoonWebCollaborator = (collaborator) => {
+  if (toId(collaborator?._id) === LEGACY_HOON_WEB_COLLABORATOR_ID) {
+    return true;
+  }
+
+  const normalizedName = `${collaborator?.nome || ""}${collaborator?.cognome || ""}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+  return normalizedName === "hoonweb";
+};
 
 export async function GET() {
   try {
@@ -32,6 +45,49 @@ export async function GET() {
       GoogleAds.find({ campagnaTerminata: { $ne: true } }).select("cliente collaboratore").lean(),
       CollaborazioneSeo.find({ archiviata: { $ne: true } }).select("cliente seo").lean(),
     ]);
+
+    const activeCollaborations = [
+      ...social.map((item) => ({
+        clientId: item.azienda,
+        collaboratorId: item.collaboratore,
+        service: "Social",
+      })),
+      ...webDesign.map((item) => ({
+        clientId: item.cliente,
+        collaboratorId: item.webDesigner,
+        service: "Web Design",
+      })),
+      ...webDesignV2.map((item) => ({
+        clientId: item.cliente,
+        collaboratorId: item.webDesigner,
+        service: "Web Design",
+      })),
+      ...googleAds.map((item) => ({
+        clientId: item.cliente,
+        collaboratorId: item.collaboratore,
+        service: "Google Ads",
+      })),
+      ...seo.map((item) => ({
+        clientId: item.cliente,
+        collaboratorId: item.seo,
+        service: "SEO",
+      })),
+    ];
+
+    const collaboratorIds = Array.from(
+      new Set(
+        activeCollaborations
+          .map((item) => toId(item.collaboratorId))
+          .filter(Boolean)
+      )
+    );
+    const collaborators = await Collaboratore.find({ _id: { $in: collaboratorIds } })
+      .select("nome cognome")
+      .lean();
+    const hoonWebCollaboratorIds = new Set(
+      collaborators.filter(isHoonWebCollaborator).map((item) => toId(item._id))
+    );
+    hoonWebCollaboratorIds.add(LEGACY_HOON_WEB_COLLABORATOR_ID);
 
     const activeByClient = new Map();
 
@@ -57,29 +113,15 @@ export async function GET() {
       }
     };
 
-    social.forEach((item) => addCollaboration(item.azienda, item.collaboratore, "Social"));
-    webDesign.forEach((item) => addCollaboration(item.cliente, item.webDesigner, "Web Design"));
-    webDesignV2.forEach((item) => addCollaboration(item.cliente, item.webDesigner, "Web Design"));
-    googleAds.forEach((item) => addCollaboration(item.cliente, item.collaboratore, "Google Ads"));
-    seo.forEach((item) => addCollaboration(item.cliente, item.seo, "SEO"));
+    activeCollaborations.forEach((item) => {
+      if (hoonWebCollaboratorIds.has(toId(item.collaboratorId))) return;
+      addCollaboration(item.clientId, item.collaboratorId, item.service);
+    });
 
     const clientIds = Array.from(activeByClient.keys());
-    const collaboratorIds = Array.from(
-      new Set(
-        Array.from(activeByClient.values()).flatMap((item) =>
-          Array.from(item.collaboratorIds)
-        )
-      )
-    );
-
-    const [clients, collaborators] = await Promise.all([
-      Azienda.find({ _id: { $in: clientIds } })
-        .select("nome cognome email partitaIva ragioneSociale etichetta indirizzo status")
-        .lean(),
-      Collaboratore.find({ _id: { $in: collaboratorIds } })
-        .select("nome cognome")
-        .lean(),
-    ]);
+    const clients = await Azienda.find({ _id: { $in: clientIds } })
+      .select("nome cognome email partitaIva ragioneSociale etichetta indirizzo status")
+      .lean();
 
     const collaboratorNames = new Map(
       collaborators.map((item) => [
