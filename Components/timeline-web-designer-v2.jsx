@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronRight, CheckSquare, Square } from 'lucide-react';
+import { ChevronDown, ChevronRight, CheckSquare, Loader2, Square, Trash2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { createPublicationChecklist } from '@/lib/webdesign-v2-publication-checklist';
 import WebDesignV2StandardWorkflow from '@/Components/webdesign-v2-standard-workflow';
@@ -547,6 +547,8 @@ const TimelineWebDesignerV2 = ({ userId }) => {
   const [openProjects, setOpenProjects] = useState({});
   const [selectedDays, setSelectedDays] = useState({});
   const [openPublicationChecklist, setOpenPublicationChecklist] = useState({});
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
   const isAdministrator = session?.user?.role === 'amministratore';
   const isAdminView =
     session?.user?.role === 'amministratore' || session?.user?.role === 'segretaria';
@@ -592,6 +594,37 @@ const TimelineWebDesignerV2 = ({ userId }) => {
       if (!res.ok) throw new Error('Errore aggiornamento');
     } catch (err) {
       console.error(err);
+    }
+  }, []);
+
+  const handleDeleteCollaboration = useCallback(async (collab) => {
+    const clientName = collab.cliente?.etichetta || collab.aziendaRagioneSociale || 'questo cliente';
+    const confirmed = window.confirm(
+      `Eliminare definitivamente la collaborazione Web Design di ${clientName}? Verranno eliminati anche l'intervista e il servizio SEO collegati.`
+    );
+
+    if (!confirmed) return;
+
+    setDeletingId(collab._id);
+    setDeleteError('');
+
+    try {
+      const response = await fetch(
+        `/api/collaborazioni-utente/webdesign-v2/${collab._id}`,
+        { method: 'DELETE' }
+      );
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Eliminazione non riuscita');
+      }
+
+      setCollaborazioni((current) => current.filter((item) => item._id !== collab._id));
+    } catch (deleteFailure) {
+      console.error('Errore eliminazione collaborazione Web Design:', deleteFailure);
+      setDeleteError(deleteFailure.message || 'Non è stato possibile eliminare la collaborazione.');
+    } finally {
+      setDeletingId(null);
     }
   }, []);
 
@@ -777,15 +810,38 @@ const TimelineWebDesignerV2 = ({ userId }) => {
 
   return (
     <div className="space-y-4">
+      {deleteError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+          {deleteError}
+        </div>
+      )}
       {collaborazioni.map((collab) => {
         if (isStandardWorkflowProject(collab)) {
           return (
-            <WebDesignV2StandardWorkflow
-              key={collab._id}
-              initialProject={collab}
-              userId={userId}
-              isStaff={isAdminView}
-            />
+            <div key={collab._id} className="space-y-2">
+              {isAdministrator && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCollaboration(collab)}
+                    disabled={deletingId === collab._id}
+                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {deletingId === collab._id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    {deletingId === collab._id ? 'Eliminazione…' : 'Elimina collaborazione'}
+                  </button>
+                </div>
+              )}
+              <WebDesignV2StandardWorkflow
+                initialProject={collab}
+                userId={userId}
+                isStaff={isAdminView}
+              />
+            </div>
           );
         }
         const isOpen = openProjects[collab._id];
@@ -919,6 +975,22 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                       <option value="terminata">✅ Terminato</option>
                     </select>
                   </div>
+                  {isAdministrator && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCollaboration(collab)}
+                      disabled={deletingId === collab._id}
+                      className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white p-2 text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      title="Elimina collaborazione"
+                      aria-label={`Elimina collaborazione di ${collab.cliente?.etichetta || collab.aziendaRagioneSociale}`}
+                    >
+                      {deletingId === collab._id ? (
+                        <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Trash2 className="h-5 w-5" aria-hidden="true" />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
