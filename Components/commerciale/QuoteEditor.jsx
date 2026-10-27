@@ -1,11 +1,43 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Copy, Download, GripVertical, Layers, Plus, Redo2, Save, Trash2, Undo2, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Download, GripVertical, Layers, Plus, Redo2, Save, Trash2, Undo2, X } from "lucide-react";
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const money = (value) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(value) || 0);
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+const visualStyle = (block) => ({
+  left: block.x,
+  top: block.y,
+  width: block.width,
+  height: block.height,
+  color: block.color,
+  background: block.background,
+  fontSize: block.fontSize,
+  fontWeight: block.fontWeight,
+  textAlign: block.align,
+  transform: `rotate(${block.rotation || 0}deg)`,
+  zIndex: block.layer,
+  opacity: block.opacity ?? 1,
+  border: Number(block.borderWidth) > 0 ? `${block.borderWidth}px solid ${block.borderColor || "#111111"}` : undefined,
+  borderRadius: block.shapeType === "ellipse" ? "9999px" : block.borderRadius || 0,
+});
+
+function PageThumbnail({ page }) {
+  return <div className="aspect-[595/842] rounded bg-white border relative overflow-hidden" style={{ background: page.background || "#ffffff" }}>
+    {[...(page.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} className="absolute overflow-hidden" style={{
+      left: `${(block.x / 595) * 100}%`, top: `${(block.y / 842) * 100}%`, width: `${(block.width / 595) * 100}%`, height: `${(block.height / 842) * 100}%`,
+      color: block.color, background: block.background, fontSize: Math.max(2, (block.fontSize || 12) * 0.25), fontWeight: block.fontWeight,
+      textAlign: block.align, opacity: block.opacity ?? 1, zIndex: block.layer,
+      border: Number(block.borderWidth) > 0 ? `${Math.max(0.5, block.borderWidth * 0.25)}px solid ${block.borderColor || "#111111"}` : undefined,
+      borderRadius: block.shapeType === "ellipse" ? "9999px" : Math.max(0, (block.borderRadius || 0) * 0.25),
+    }}>
+      {block.type === "text" && <div className="whitespace-pre-wrap leading-tight">{block.text}</div>}
+      {block.type === "image" && block.imageUrl && <img src={block.imageUrl} alt="" className="w-full h-full object-contain" />}
+    </div>)}
+  </div>;
+}
 
 export default function QuoteEditor({ quote, onClose, onSaved }) {
   const initialVersion = useMemo(() => quote.versions.find((item) => item.version === quote.currentVersion) || quote.versions.at(-1), [quote]);
@@ -124,7 +156,7 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
   };
 
   const addBlock = (type) => {
-    const block = { id: uid(), type, text: type === "text" ? "Nuovo testo" : "", imageUrl: "", x: 60, y: 100, width: 260, height: type === "shape" ? 60 : 90, fontSize: 22, fontWeight: 400, color: "#111111", background: type === "shape" ? "#ffd800" : "transparent", align: "left", layer: (currentPage?.blocks?.length || 0) + 1 };
+    const block = { id: uid(), type, text: type === "text" ? "Nuovo testo" : "", imageUrl: "", x: 60, y: 100, width: 260, height: type === "shape" ? 60 : 90, fontSize: 22, fontWeight: 400, color: "#111111", background: type === "shape" ? "#ffd800" : "transparent", align: "left", layer: (currentPage?.blocks?.length || 0) + 1, shapeType: "rectangle", borderColor: "#111111", borderWidth: 0, borderRadius: 0, opacity: 1 };
     mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, blocks: [...page.blocks, block] } : page));
     setSelectedId(block.id);
   };
@@ -138,6 +170,22 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
     duplicate.id = uid(); duplicate.name = `${duplicate.name} copia`; duplicate.blocks = duplicate.blocks.map((block) => ({ ...block, id: uid() }));
     mutatePages((old) => [...old.slice(0, pageIndex + 1), duplicate, ...old.slice(pageIndex + 1)]);
     setPageIndex(pageIndex + 1);
+  };
+  const movePage = (direction) => {
+    const target = pageIndex + direction;
+    if (target < 0 || target >= pages.length) return;
+    mutatePages((old) => {
+      const next = [...old];
+      [next[pageIndex], next[target]] = [next[target], next[pageIndex]];
+      return next;
+    });
+    setPageIndex(target);
+  };
+  const deletePage = () => {
+    if (pages.length <= 1 || !window.confirm(`Eliminare la pagina “${currentPage?.name || "Pagina"}”?`)) return;
+    mutatePages((old) => old.filter((_, index) => index !== pageIndex));
+    setPageIndex((index) => Math.min(index, pages.length - 2));
+    setSelectedId("");
   };
 
   const changeStatus = async (status) => {
@@ -170,8 +218,13 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[210px_minmax(620px,1fr)_310px]">
           <aside className="hidden lg:block bg-white border-r overflow-y-auto p-3">
             <div className="flex items-center justify-between mb-3"><strong className="text-sm">Pagine</strong><button onClick={addPage} className="p-1 hover:bg-gray-100 rounded"><Plus className="w-4 h-4" /></button></div>
-            <div className="space-y-2">{pages.map((page, index) => <button key={page.id} onClick={() => { setPageIndex(index); setSelectedId(""); }} className={`w-full text-left border rounded-lg p-2 ${index === pageIndex ? "border-yellow-500 bg-yellow-50" : "border-gray-200"}`}><div className="aspect-[210/297] rounded bg-white border mb-2 relative overflow-hidden"><div className="absolute inset-0 grid place-items-center text-xs text-gray-400">{page.blocks.length} elementi</div></div><span className="text-xs font-medium">{index + 1}. {page.name}</span></button>)}</div>
-            <button onClick={duplicatePage} className="mt-3 w-full text-xs border rounded-lg py-2">Duplica pagina</button>
+            <div className="space-y-2">{pages.map((page, index) => <button key={page.id} onClick={() => { setPageIndex(index); setSelectedId(""); }} className={`w-full text-left border rounded-lg p-2 ${index === pageIndex ? "border-yellow-500 bg-yellow-50" : "border-gray-200"}`}><PageThumbnail page={page} /><span className="mt-2 block truncate text-xs font-medium">{index + 1}. {page.name}</span></button>)}</div>
+            <div className="sticky bottom-0 mt-3 grid grid-cols-4 gap-1 bg-white py-2">
+              <button title="Sposta pagina su" onClick={() => movePage(-1)} disabled={pageIndex === 0} className="grid place-items-center border rounded-lg py-2 disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
+              <button title="Sposta pagina giù" onClick={() => movePage(1)} disabled={pageIndex === pages.length - 1} className="grid place-items-center border rounded-lg py-2 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
+              <button title="Duplica pagina" onClick={duplicatePage} className="grid place-items-center border rounded-lg py-2"><Copy className="w-4 h-4" /></button>
+              <button title="Elimina pagina" onClick={deletePage} disabled={pages.length <= 1} className="grid place-items-center border rounded-lg py-2 text-red-600 disabled:opacity-30"><Trash2 className="w-4 h-4" /></button>
+            </div>
           </aside>
 
           <main className="overflow-auto p-4 md:p-8 bg-gray-200">
@@ -181,7 +234,7 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
               <button onClick={() => addBlock("image")} className="px-3 py-2 bg-white rounded-lg shadow text-sm">+ Immagine</button>
             </div>
             {currentPage && <div ref={canvasRef} className="relative mx-auto shadow-2xl touch-none" style={{ width: 595, height: 842, background: currentPage.background }} onPointerDown={() => setSelectedId("")}>
-              {[...currentPage.blocks].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} onPointerDown={(event) => { event.stopPropagation(); startDrag(event, block); }} className={`absolute overflow-hidden cursor-move ${selectedId === block.id ? "ring-2 ring-blue-500" : ""}`} style={{ left: block.x, top: block.y, width: block.width, height: block.height, color: block.color, background: block.background, fontSize: block.fontSize, fontWeight: block.fontWeight, textAlign: block.align, transform: `rotate(${block.rotation || 0}deg)`, zIndex: block.layer }}>
+              {[...currentPage.blocks].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} onPointerDown={(event) => { event.stopPropagation(); startDrag(event, block); }} className={`absolute overflow-hidden cursor-move ${selectedId === block.id ? "ring-2 ring-blue-500" : ""}`} style={visualStyle(block)}>
                 {block.type === "text" && <div className="w-full h-full p-1 whitespace-pre-wrap">{block.text}</div>}
                 {block.type === "image" && (block.imageUrl ? <img src={block.imageUrl} alt="" className="w-full h-full object-contain" /> : <div className="w-full h-full border-2 border-dashed grid place-items-center text-xs text-gray-400">Immagine</div>)}
                 {selectedId === block.id && <GripVertical className="absolute right-0 top-0 w-4 h-4 bg-blue-500 text-white" />}
@@ -195,9 +248,12 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
               {selected.type === "image" && <input value={selected.imageUrl} onChange={(event) => updateBlock({ imageUrl: event.target.value }, false)} placeholder="URL o data:image…" className="mt-3 w-full border rounded-lg p-2 text-sm" />}
               <div className="grid grid-cols-2 gap-2 mt-3">{[["X", "x"], ["Y", "y"], ["Larghezza", "width"], ["Altezza", "height"]].map(([label, key]) => <label key={key} className="text-xs">{label}<input type="number" value={selected[key]} onChange={(event) => updateBlock({ [key]: Number(event.target.value) }, false)} className="mt-1 w-full border rounded p-1" /></label>)}</div>
               {selected.type === "text" && <div className="grid grid-cols-2 gap-2 mt-3"><label className="text-xs">Font<input type="number" value={selected.fontSize} onChange={(event) => updateBlock({ fontSize: Number(event.target.value) }, false)} className="mt-1 w-full border rounded p-1" /></label><label className="text-xs">Peso<select value={selected.fontWeight} onChange={(event) => updateBlock({ fontWeight: Number(event.target.value) }, false)} className="mt-1 w-full border rounded p-1"><option value="400">Normale</option><option value="700">Bold</option><option value="900">Black</option></select></label></div>}
+              {selected.type === "shape" && <div className="grid grid-cols-2 gap-2 mt-3"><label className="text-xs">Forma<select value={selected.shapeType || "rectangle"} onChange={(event) => updateBlock({ shapeType: event.target.value })} className="mt-1 w-full border rounded p-1"><option value="rectangle">Rettangolo</option><option value="ellipse">Ellisse</option></select></label><label className="text-xs">Angoli<input type="number" min="0" value={selected.borderRadius || 0} onChange={(event) => updateBlock({ borderRadius: Number(event.target.value) }, false)} className="mt-1 w-full border rounded p-1" /></label></div>}
               <div className="grid grid-cols-2 gap-2 mt-3"><label className="text-xs">Colore<input type="color" value={selected.color || "#111111"} onChange={(event) => updateBlock({ color: event.target.value }, false)} className="mt-1 w-full h-8" /></label><label className="text-xs">Sfondo<input type="color" value={selected.background === "transparent" ? "#ffffff" : selected.background} onChange={(event) => updateBlock({ background: event.target.value }, false)} className="mt-1 w-full h-8" /></label></div>
+              <div className="grid grid-cols-2 gap-2 mt-3"><label className="text-xs">Bordo<input type="color" value={selected.borderColor === "transparent" ? "#111111" : selected.borderColor || "#111111"} onChange={(event) => updateBlock({ borderColor: event.target.value }, false)} className="mt-1 w-full h-8" /></label><label className="text-xs">Spessore<input type="number" min="0" step="0.5" value={selected.borderWidth || 0} onChange={(event) => updateBlock({ borderWidth: Number(event.target.value) }, false)} className="mt-1 w-full border rounded p-1" /></label></div>
+              <label className="mt-3 block text-xs">Opacità {Math.round((selected.opacity ?? 1) * 100)}%<input type="range" min="0.1" max="1" step="0.05" value={selected.opacity ?? 1} onChange={(event) => updateBlock({ opacity: Number(event.target.value) }, false)} className="mt-1 w-full" /></label>
               <div className="flex gap-2 mt-3"><button onClick={() => updateBlock({ layer: (selected.layer || 0) + 1 })} className="flex-1 border rounded py-1 text-xs">Porta avanti</button><button onClick={() => updateBlock({ layer: (selected.layer || 0) - 1 })} className="flex-1 border rounded py-1 text-xs">Porta indietro</button></div>
-            </section> : <p className="text-sm text-gray-500">Seleziona un elemento per modificarlo.</p>}
+            </section> : <section><p className="text-sm text-gray-500">Seleziona un elemento per modificarlo.</p>{currentPage && <label className="mt-4 block text-xs">Sfondo pagina<input type="color" value={currentPage.background || "#ffffff"} onChange={(event) => mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, background: event.target.value } : page))} className="mt-1 w-full h-9" /></label>}</section>}
 
             <section className="border-t pt-4"><h3 className="font-bold">Testi dinamici</h3><textarea value={projectDescription} onChange={(event) => { setProjectDescription(event.target.value); setDirty(true); }} placeholder="Descrizione progetto" rows={4} className="mt-2 w-full border rounded-lg p-2 text-sm" /><textarea value={paymentConditions} onChange={(event) => { setPaymentConditions(event.target.value); setDirty(true); }} placeholder="Condizioni pagamento" rows={4} className="mt-2 w-full border rounded-lg p-2 text-sm" /></section>
             <section className="border-t pt-4"><div className="flex justify-between"><h3 className="font-bold">Prezzi strutturati</h3><button onClick={() => { setItems((old) => [...old, { service: "Nuovo servizio", description: "", quantity: 1, unitPrice: 0, standardPrice: 0, discountedPrice: 0, vatRate: 22, periodicity: "one_off", renewal: false }]); setDirty(true); }} className="p-1"><Plus className="w-4 h-4" /></button></div>

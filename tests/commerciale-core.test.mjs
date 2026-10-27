@@ -5,6 +5,7 @@ import {
   PIPELINE_STATES,
   DEFAULT_INTERVIEW_TEMPLATES,
   DEFAULT_QUOTE_TEMPLATES,
+  HOON_GENERAL_QUOTE_TEMPLATE,
   buildDefaultQuotePages,
   calculateQuote,
   createPublicToken,
@@ -41,7 +42,7 @@ test("il motore prezzi normalizza valori negativi e stringhe numeriche", () => {
   assert.equal(result.items[0].gross, 62.22);
 });
 
-test("il template Hoon è nativo, multipagina e contiene le variabili dinamiche", () => {
+test("i template specifici esistenti restano nativi e multipagina", () => {
   const pages = buildDefaultQuotePages("Social Media Management");
   assert.equal(pages.length, 3);
   const text = pages.flatMap((page) => page.blocks).map((block) => block.text || "").join(" ");
@@ -50,10 +51,26 @@ test("il template Hoon è nativo, multipagina e contiene le variabili dinamiche"
   assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.background === "#ffd800"));
 });
 
+test("il preventivo generale Hoon ricostruisce le 36 pagine Canva come elementi editabili", () => {
+  const pages = buildDefaultQuotePages();
+  assert.equal(pages.length, 36);
+  assert.equal(pages[0].name, "Copertina");
+  assert.equal(pages.at(-1).name, "ASSISTENZA");
+  assert.equal(new Set(pages.map((page) => page.id)).size, pages.length);
+  assert.ok(pages.every((page) => page.blocks.length > 0));
+  assert.ok(pages.flatMap((page) => page.blocks).every((block) => ["text", "shape", "image"].includes(block.type)));
+  assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.shapeType === "ellipse"));
+  assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.borderWidth > 0));
+  const text = pages.flatMap((page) => page.blocks).map((block) => block.text || "").join(" ");
+  assert.match(text, /{{azienda}}/);
+  assert.match(text, /{{numero_preventivo}}/);
+});
+
 test("sono predisposti i template iniziali richiesti", () => {
-  assert.equal(DEFAULT_QUOTE_TEMPLATES.length, 6);
+  assert.equal(DEFAULT_QUOTE_TEMPLATES.length, 7);
   assert.equal(DEFAULT_INTERVIEW_TEMPLATES.length, 5);
   assert.ok(DEFAULT_QUOTE_TEMPLATES.includes("Preventivo personalizzato"));
+  assert.equal(DEFAULT_QUOTE_TEMPLATES[0], HOON_GENERAL_QUOTE_TEMPLATE);
   assert.ok(DEFAULT_INTERVIEW_TEMPLATES.includes("Sito internet"));
 });
 

@@ -147,6 +147,11 @@ const BlockSchema = new Schema({
   align: { type: String, enum: ["left", "center", "right"], default: "left" },
   rotation: { type: Number, default: 0 },
   layer: { type: Number, default: 0 },
+  shapeType: { type: String, enum: ["rectangle", "ellipse"], default: "rectangle" },
+  borderColor: { type: String, default: "transparent" },
+  borderWidth: { type: Number, default: 0, min: 0 },
+  borderRadius: { type: Number, default: 0, min: 0 },
+  opacity: { type: Number, default: 1, min: 0, max: 1 },
 }, { _id: false });
 
 const PageSchema = new Schema({
