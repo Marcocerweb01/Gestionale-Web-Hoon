@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  COMMERCIAL_ADMIN_EMAIL,
   PIPELINE_STATES,
   DEFAULT_INTERVIEW_TEMPLATES,
   DEFAULT_QUOTE_TEMPLATES,
@@ -11,6 +12,10 @@ import {
   normalizeEmail,
   normalizePhone,
 } from "../lib/commerciale/core.js";
+
+test("il modulo commerciale è riservato all'account amministratore corretto", () => {
+  assert.equal(COMMERCIAL_ADMIN_EMAIL, "marcocerweb@gmail.com");
+});
 
 test("la pipeline contiene tutti i dodici stati nell'ordine operativo", () => {
   assert.equal(PIPELINE_STATES.length, 12);

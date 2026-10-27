@@ -5,7 +5,7 @@
 La pagina `/Commerciale` e tutte le API amministrative `/api/commerciale/*` sono accessibili soltanto a una sessione con:
 
 - ruolo `amministratore`;
-- email normalizzata uguale a `hoonweb2022@gmail.com`.
+- email normalizzata uguale a `marcocerweb@gmail.com`.
 
 Il controllo è duplicato lato pagina server e lato API. Il link di navigazione viene mostrato solo a questo account.
 
