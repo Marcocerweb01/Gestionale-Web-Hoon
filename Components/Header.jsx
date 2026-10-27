@@ -170,7 +170,7 @@ const Header = () => {
               </div>
             ) : session ? (
               <div className="flex items-center space-x-4">
-                {session.user.email?.trim().toLowerCase() === "marcocerweb@gmail.com" &&
+                {session.user.email?.trim().toLowerCase() === "marcocerasaweb@gmail.com" &&
                   session.user.role === "amministratore" && (
                     <Link
                       href="/Commerciale"

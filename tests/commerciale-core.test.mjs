@@ -14,7 +14,7 @@ import {
 } from "../lib/commerciale/core.js";
 
 test("il modulo commerciale è riservato all'account amministratore corretto", () => {
-  assert.equal(COMMERCIAL_ADMIN_EMAIL, "marcocerweb@gmail.com");
+  assert.equal(COMMERCIAL_ADMIN_EMAIL, "marcocerasaweb@gmail.com");
 });
 
 test("la pipeline contiene tutti i dodici stati nell'ordine operativo", () => {
