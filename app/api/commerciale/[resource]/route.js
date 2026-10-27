@@ -12,6 +12,7 @@ import {
   normalizePhone,
   sanitizeText,
   selectQuoteTemplatePages,
+  shouldUpgradeHoonQuoteTemplate,
 } from "@/lib/commerciale/core";
 import {
   CommercialOrganization,
@@ -86,7 +87,7 @@ const populate = {
 
 async function seedTemplates() {
   const currentMaster = await QuoteTemplate.findOne({ name: HOON_GENERAL_QUOTE_TEMPLATE }).select("sourceVersion").lean();
-  if (!currentMaster || Number(currentMaster.sourceVersion) < HOON_TEMPLATE_SOURCE_VERSION) {
+  if (!currentMaster || shouldUpgradeHoonQuoteTemplate(currentMaster.sourceVersion)) {
     await QuoteTemplate.updateOne(
       { name: HOON_GENERAL_QUOTE_TEMPLATE },
       {

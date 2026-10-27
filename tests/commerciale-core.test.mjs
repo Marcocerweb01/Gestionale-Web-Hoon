@@ -14,6 +14,7 @@ import {
   normalizeEmail,
   normalizePhone,
   selectQuoteTemplatePages,
+  shouldUpgradeHoonQuoteTemplate,
 } from "../lib/commerciale/core.js";
 
 test("il modulo commerciale è riservato all'account amministratore corretto", () => {
@@ -62,6 +63,13 @@ test("il preventivo generale Hoon usa tutte le 36 pagine fedeli del master", () 
   assert.ok(pages.every((page, index) => page.backgroundImage.endsWith(`page-${String(index + 1).padStart(2, "0")}.jpg`)));
   assert.deepEqual(pages.filter((page) => page.includedByDefault).map((page) => page.sourcePage), [1, 2, 35, 36]);
   assert.ok(HOON_QUOTE_SERVICE_CATALOG.length >= 20);
+});
+
+test("il vecchio master senza versione viene aggiornato", () => {
+  assert.equal(shouldUpgradeHoonQuoteTemplate(undefined), true);
+  assert.equal(shouldUpgradeHoonQuoteTemplate(null), true);
+  assert.equal(shouldUpgradeHoonQuoteTemplate(1), true);
+  assert.equal(shouldUpgradeHoonQuoteTemplate(2), false);
 });
 
 test("la selezione servizi copia solo pagine comuni e pagine collegate", () => {
