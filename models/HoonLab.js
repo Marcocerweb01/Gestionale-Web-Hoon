@@ -17,7 +17,7 @@ const ORDER_STATUSES = [
   "annullato"
 ];
 const PAYMENT_STATUSES = ["non_pagato", "acconto", "pagato"];
-const PAYMENT_METHODS = ["", "contanti", "bonifico", "carta", "paypal", "altro"];
+const PAYMENT_METHODS = ["", "contanti", "bonifico", "assegno", "carta", "paypal", "altro"];
 const DDT_STATUSES = ["bozza", "emesso", "annullato"];
 const TODO_STATUSES = ["da_fare", "in_lavorazione", "fatta"];
 const FINANCE_ENTRY_TYPES = ["income", "expense"];

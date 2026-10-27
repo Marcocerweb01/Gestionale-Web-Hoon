@@ -170,6 +170,16 @@ const Header = () => {
               </div>
             ) : session ? (
               <div className="flex items-center space-x-4">
+                {session.user.email?.trim().toLowerCase() === "hoonweb2022@gmail.com" &&
+                  session.user.role === "amministratore" && (
+                    <Link
+                      href="/Commerciale"
+                      className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-900 bg-yellow-300 hover:bg-yellow-400 rounded-lg transition-all duration-200"
+                    >
+                      <span className="text-lg">◎</span>
+                      <span className="hidden md:block">Commerciale</span>
+                    </Link>
+                  )}
                 {session.user.role !== "hoon_lab" && (
                 <div className="relative" ref={searchRef}>
                   <div className="flex items-center gap-2">

@@ -3266,6 +3266,7 @@ function OrderCard({ order, onGenerateDdt, onUpdateOrder }) {
           <option value="">Metodo pagamento</option>
           <option value="contanti">Contanti</option>
           <option value="bonifico">Bonifico</option>
+          <option value="assegno">Assegno</option>
           <option value="carta">Carta</option>
           <option value="paypal">PayPal</option>
           <option value="altro">Altro</option>

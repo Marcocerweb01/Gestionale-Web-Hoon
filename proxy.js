@@ -7,6 +7,7 @@ export async function proxy(req) {
   const isAuthApi = pathname.startsWith('/api/auth');
   const isHoonLabApi = pathname.startsWith('/api/hoon-lab');
   const isHoonLabPage = pathname === '/Hoon-Lab' || pathname.startsWith('/Hoon-Lab/');
+  const isCommercialPaymentPage = pathname.startsWith('/Pagamenti/');
   
   // Le API auth e le risorse statiche restano pubbliche. Le altre API passano
   // dal controllo token per poter isolare completamente il ruolo Hoon Lab.
@@ -15,6 +16,7 @@ export async function proxy(req) {
     isAuthApi ||
     pathname.startsWith('/public') ||
     pathname.startsWith('/hoon_logo.png') ||
+    isCommercialPaymentPage ||
     pathname.includes('.') // File con estensione
   ) {
     return NextResponse.next();
