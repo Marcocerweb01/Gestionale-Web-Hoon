@@ -6,12 +6,14 @@ import {
   DEFAULT_INTERVIEW_TEMPLATES,
   DEFAULT_QUOTE_TEMPLATES,
   HOON_GENERAL_QUOTE_TEMPLATE,
+  HOON_QUOTE_SERVICE_CATALOG,
   buildDefaultQuotePages,
   calculateQuote,
   createPublicToken,
   hashPublicToken,
   normalizeEmail,
   normalizePhone,
+  selectQuoteTemplatePages,
 } from "../lib/commerciale/core.js";
 
 test("il modulo commerciale è riservato all'account amministratore corretto", () => {
@@ -51,19 +53,23 @@ test("i template specifici esistenti restano nativi e multipagina", () => {
   assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.background === "#ffd800"));
 });
 
-test("il preventivo generale Hoon ricostruisce le 36 pagine Canva come elementi editabili", () => {
+test("il preventivo generale Hoon usa tutte le 36 pagine fedeli del master", () => {
   const pages = buildDefaultQuotePages();
   assert.equal(pages.length, 36);
   assert.equal(pages[0].name, "Copertina");
-  assert.equal(pages.at(-1).name, "ASSISTENZA");
+  assert.equal(pages.at(-1).name, "Assistenza - orari");
   assert.equal(new Set(pages.map((page) => page.id)).size, pages.length);
-  assert.ok(pages.every((page) => page.blocks.length > 0));
-  assert.ok(pages.flatMap((page) => page.blocks).every((block) => ["text", "shape", "image"].includes(block.type)));
-  assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.shapeType === "ellipse"));
-  assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.borderWidth > 0));
-  const text = pages.flatMap((page) => page.blocks).map((block) => block.text || "").join(" ");
-  assert.match(text, /{{azienda}}/);
-  assert.match(text, /{{numero_preventivo}}/);
+  assert.ok(pages.every((page, index) => page.backgroundImage.endsWith(`page-${String(index + 1).padStart(2, "0")}.jpg`)));
+  assert.deepEqual(pages.filter((page) => page.includedByDefault).map((page) => page.sourcePage), [1, 2, 35, 36]);
+  assert.ok(HOON_QUOTE_SERVICE_CATALOG.length >= 20);
+});
+
+test("la selezione servizi copia solo pagine comuni e pagine collegate", () => {
+  const pages = buildDefaultQuotePages();
+  const social = selectQuoteTemplatePages(pages, ["social-media-management"]);
+  assert.deepEqual(social.map((page) => page.sourcePage), [1, 2, 3, 4, 5, 6, 7, 35, 36]);
+  const website = selectQuoteTemplatePages(pages, ["sito-one-page"]);
+  assert.deepEqual(website.map((page) => page.sourcePage), [1, 2, 23, 25, 35, 36]);
 });
 
 test("sono predisposti i template iniziali richiesti", () => {

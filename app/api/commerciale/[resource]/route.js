@@ -5,9 +5,13 @@ import {
   calculateQuote,
   DEFAULT_INTERVIEW_TEMPLATES,
   DEFAULT_QUOTE_TEMPLATES,
+  HOON_GENERAL_QUOTE_TEMPLATE,
+  HOON_QUOTE_SERVICE_CATALOG,
+  HOON_TEMPLATE_SOURCE_VERSION,
   normalizeEmail,
   normalizePhone,
   sanitizeText,
+  selectQuoteTemplatePages,
 } from "@/lib/commerciale/core";
 import {
   CommercialOrganization,
@@ -81,8 +85,26 @@ const populate = {
 };
 
 async function seedTemplates() {
+  const currentMaster = await QuoteTemplate.findOne({ name: HOON_GENERAL_QUOTE_TEMPLATE }).select("sourceVersion").lean();
+  if (!currentMaster || Number(currentMaster.sourceVersion) < HOON_TEMPLATE_SOURCE_VERSION) {
+    await QuoteTemplate.updateOne(
+      { name: HOON_GENERAL_QUOTE_TEMPLATE },
+      {
+        $set: {
+          name: HOON_GENERAL_QUOTE_TEMPLATE,
+          description: "Master fedele al preventivo generale Hoon: seleziona i servizi e genera solo le pagine collegate.",
+          pages: buildDefaultQuotePages(HOON_GENERAL_QUOTE_TEMPLATE),
+          serviceCatalog: HOON_QUOTE_SERVICE_CATALOG,
+          sourceVersion: HOON_TEMPLATE_SOURCE_VERSION,
+          active: true,
+        },
+      },
+      { upsert: true }
+    );
+  }
+
   await Promise.all(
-    DEFAULT_QUOTE_TEMPLATES.map((name) =>
+    DEFAULT_QUOTE_TEMPLATES.filter((name) => name !== HOON_GENERAL_QUOTE_TEMPLATE).map((name) =>
       QuoteTemplate.updateOne(
         { name },
         {
@@ -220,6 +242,10 @@ export async function POST(req, { params }) {
       const template = input.template ? await QuoteTemplate.findById(input.template).lean() : null;
       const pricing = calculateQuote(input.items || []);
       const number = `PREV-${new Date().getFullYear()}-${Date.now().toString().slice(-7)}`;
+      const templatePages = template?.pages || buildDefaultQuotePages(template?.name);
+      const selectedPages = template && Array.isArray(input.serviceKeys) && input.serviceKeys.length
+        ? selectQuoteTemplatePages(templatePages, input.serviceKeys)
+        : templatePages;
       payload = {
         number,
         organization: input.organization,
@@ -234,7 +260,7 @@ export async function POST(req, { params }) {
           version: 1,
           createdBy: auth.session.user.email,
           reason: "Versione iniziale",
-          pages: input.pages || template?.pages || buildDefaultQuotePages(template?.name),
+          pages: input.pages || selectedPages,
           items: pricing.items,
           totals: pricing.totals,
           projectDescription: sanitizeText(input.projectDescription, 15000),
@@ -260,6 +286,8 @@ export async function POST(req, { params }) {
         name: sanitizeText(input.name, 200),
         description: sanitizeText(input.description, 2000),
         pages: input.pages?.length ? input.pages : buildDefaultQuotePages(input.name),
+        serviceCatalog: Array.isArray(input.serviceCatalog) ? input.serviceCatalog : [],
+        sourceVersion: Number(input.sourceVersion) || 0,
         active: input.active !== false,
       };
     }

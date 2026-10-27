@@ -26,6 +26,7 @@ const visualStyle = (block) => ({
 
 function PageThumbnail({ page }) {
   return <div className="aspect-[595/842] rounded bg-white border relative overflow-hidden" style={{ background: page.background || "#ffffff" }}>
+    {page.backgroundImage && <img src={page.backgroundImage} alt="" className="absolute inset-0 w-full h-full object-fill" style={{ opacity: page.backgroundImageOpacity ?? 1 }} />}
     {[...(page.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} className="absolute overflow-hidden" style={{
       left: `${(block.x / 595) * 100}%`, top: `${(block.y / 842) * 100}%`, width: `${(block.width / 595) * 100}%`, height: `${(block.height / 842) * 100}%`,
       color: block.color, background: block.background, fontSize: Math.max(2, (block.fontSize || 12) * 0.25), fontWeight: block.fontWeight,
@@ -39,8 +40,11 @@ function PageThumbnail({ page }) {
   </div>;
 }
 
-export default function QuoteEditor({ quote, onClose, onSaved }) {
-  const initialVersion = useMemo(() => quote.versions.find((item) => item.version === quote.currentVersion) || quote.versions.at(-1), [quote]);
+export default function QuoteEditor({ quote, template, onClose, onSaved }) {
+  const isTemplate = Boolean(template);
+  const initialVersion = useMemo(() => isTemplate
+    ? { pages: template.pages || [], items: [], projectDescription: "", paymentConditions: "" }
+    : quote.versions.find((item) => item.version === quote.currentVersion) || quote.versions.at(-1), [isTemplate, quote, template]);
   const [pages, setPages] = useState(() => clone(initialVersion?.pages || []));
   const [items, setItems] = useState(() => clone(initialVersion?.items || []));
   const [projectDescription, setProjectDescription] = useState(initialVersion?.projectDescription || "");
@@ -82,16 +86,18 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
     savingRef.current = true;
     setSaving(true);
     try {
-      const response = await fetch(`/api/commerciale/quotes/${quote._id}`, {
+      const response = await fetch(isTemplate ? `/api/commerciale/quote-templates/${template._id}` : `/api/commerciale/quotes/${quote._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "save_version", pages, items, projectDescription, paymentConditions, createNewVersion: newVersion, reason: newVersion ? "Revisione manuale" : "Salvataggio automatico" }),
+        body: JSON.stringify(isTemplate
+          ? { pages, serviceCatalog: template.serviceCatalog || [] }
+          : { action: "save_version", pages, items, projectDescription, paymentConditions, createNewVersion: newVersion, reason: newVersion ? "Revisione manuale" : "Salvataggio automatico" }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Salvataggio non riuscito");
       setDirty(false);
-      setMessage(newVersion ? `Versione ${payload.currentVersion} creata` : "Salvato");
-      onSaved(payload);
+      setMessage(isTemplate ? "Template salvato" : newVersion ? `Versione ${payload.currentVersion} creata` : "Salvato");
+      onSaved?.(payload);
       setTimeout(() => setMessage(""), 1800);
     } catch (error) {
       if (!silent) setMessage(error.message);
@@ -99,7 +105,7 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
       savingRef.current = false;
       setSaving(false);
     }
-  }, [items, onSaved, pages, paymentConditions, projectDescription, quote._id]);
+  }, [isTemplate, items, onSaved, pages, paymentConditions, projectDescription, quote?._id, template?._id, template?.serviceCatalog]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -162,7 +168,7 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
   };
 
   const addPage = () => {
-    mutatePages((old) => [...old, { id: uid(), name: `Pagina ${old.length + 1}`, background: "#ffffff", blocks: [] }]);
+    mutatePages((old) => [...old, { id: uid(), name: `Pagina ${old.length + 1}`, background: "#ffffff", backgroundImage: "", backgroundImageOpacity: 1, includedByDefault: false, serviceKeys: [], blocks: [] }]);
     setPageIndex(pages.length);
   };
   const duplicatePage = () => {
@@ -189,6 +195,7 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
   };
 
   const changeStatus = async (status) => {
+    if (isTemplate) return;
     const needsReason = status === "rejected" || status === "postponed";
     const reason = needsReason ? window.prompt(status === "rejected" ? "Motivazione del rifiuto" : "Motivo del rinvio") : "";
     if (needsReason && !reason) return;
@@ -197,7 +204,7 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
     const response = await fetch(`/api/commerciale/quotes/${quote._id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "change_status", status, reason, resumeAt }) });
     const payload = await response.json();
     if (!response.ok) return setMessage(payload.error || "Cambio stato non riuscito");
-    onSaved(payload); setMessage("Stato aggiornato");
+    onSaved?.(payload); setMessage("Stato aggiornato");
   };
 
   return (
@@ -205,12 +212,12 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
       <div className="h-full max-w-[1600px] mx-auto bg-gray-100 rounded-2xl overflow-hidden flex flex-col">
         <header className="bg-white border-b px-4 py-3 flex flex-wrap items-center gap-2">
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100"><X /></button>
-          <div className="mr-auto"><h2 className="font-bold">{quote.number}</h2><p className="text-xs text-gray-500">Versione {quote.currentVersion} · {quote.organization?.businessName}</p></div>
+          <div className="mr-auto"><h2 className="font-bold">{isTemplate ? template.name : quote.number}</h2><p className="text-xs text-gray-500">{isTemplate ? "Editor master del template · le modifiche valgono per i nuovi preventivi" : `Versione ${quote.currentVersion} · ${quote.organization?.businessName || ""}`}</p></div>
           <button onClick={undo} disabled={!history.length} className="p-2 rounded hover:bg-gray-100 disabled:opacity-30"><Undo2 className="w-4 h-4" /></button>
           <button onClick={redo} disabled={!future.length} className="p-2 rounded hover:bg-gray-100 disabled:opacity-30"><Redo2 className="w-4 h-4" /></button>
-          <select value={quote.status} onChange={(event) => changeStatus(event.target.value)} className="border rounded-lg px-3 py-2 text-sm"><option value="draft">Bozza</option><option value="ready">Pronto</option><option value="presented">Presentato</option><option value="accepted">Accettato</option><option value="rejected">Rifiutato</option><option value="postponed">Posticipato</option><option value="archived">Archiviato</option></select>
+          {!isTemplate && <><select value={quote.status} onChange={(event) => changeStatus(event.target.value)} className="border rounded-lg px-3 py-2 text-sm"><option value="draft">Bozza</option><option value="ready">Pronto</option><option value="presented">Presentato</option><option value="accepted">Accettato</option><option value="rejected">Rifiutato</option><option value="postponed">Posticipato</option><option value="archived">Archiviato</option></select>
           <a href={`/api/commerciale/quotes/${quote._id}/pdf?version=${quote.currentVersion}`} target="_blank" className="inline-flex items-center gap-2 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm"><Download className="w-4 h-4" />PDF</a>
-          <button onClick={() => save({ newVersion: true })} className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm"><Copy className="w-4 h-4" />Nuova versione</button>
+          <button onClick={() => save({ newVersion: true })} className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm"><Copy className="w-4 h-4" />Nuova versione</button></>}
           <button onClick={() => save()} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-300 hover:bg-yellow-400 rounded-lg text-sm font-semibold"><Save className="w-4 h-4" />{saving ? "Salvo…" : dirty ? "Salva" : "Salvato"}</button>
           {message && <span className="text-xs text-gray-600">{message}</span>}
         </header>
@@ -234,6 +241,7 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
               <button onClick={() => addBlock("image")} className="px-3 py-2 bg-white rounded-lg shadow text-sm">+ Immagine</button>
             </div>
             {currentPage && <div ref={canvasRef} className="relative mx-auto shadow-2xl touch-none" style={{ width: 595, height: 842, background: currentPage.background }} onPointerDown={() => setSelectedId("")}>
+              {currentPage.backgroundImage && <img src={currentPage.backgroundImage} alt="Sfondo del template" className="absolute inset-0 w-full h-full object-fill pointer-events-none" style={{ opacity: currentPage.backgroundImageOpacity ?? 1 }} />}
               {[...currentPage.blocks].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} onPointerDown={(event) => { event.stopPropagation(); startDrag(event, block); }} className={`absolute overflow-hidden cursor-move ${selectedId === block.id ? "ring-2 ring-blue-500" : ""}`} style={visualStyle(block)}>
                 {block.type === "text" && <div className="w-full h-full p-1 whitespace-pre-wrap">{block.text}</div>}
                 {block.type === "image" && (block.imageUrl ? <img src={block.imageUrl} alt="" className="w-full h-full object-contain" /> : <div className="w-full h-full border-2 border-dashed grid place-items-center text-xs text-gray-400">Immagine</div>)}
@@ -253,13 +261,13 @@ export default function QuoteEditor({ quote, onClose, onSaved }) {
               <div className="grid grid-cols-2 gap-2 mt-3"><label className="text-xs">Bordo<input type="color" value={selected.borderColor === "transparent" ? "#111111" : selected.borderColor || "#111111"} onChange={(event) => updateBlock({ borderColor: event.target.value }, false)} className="mt-1 w-full h-8" /></label><label className="text-xs">Spessore<input type="number" min="0" step="0.5" value={selected.borderWidth || 0} onChange={(event) => updateBlock({ borderWidth: Number(event.target.value) }, false)} className="mt-1 w-full border rounded p-1" /></label></div>
               <label className="mt-3 block text-xs">Opacità {Math.round((selected.opacity ?? 1) * 100)}%<input type="range" min="0.1" max="1" step="0.05" value={selected.opacity ?? 1} onChange={(event) => updateBlock({ opacity: Number(event.target.value) }, false)} className="mt-1 w-full" /></label>
               <div className="flex gap-2 mt-3"><button onClick={() => updateBlock({ layer: (selected.layer || 0) + 1 })} className="flex-1 border rounded py-1 text-xs">Porta avanti</button><button onClick={() => updateBlock({ layer: (selected.layer || 0) - 1 })} className="flex-1 border rounded py-1 text-xs">Porta indietro</button></div>
-            </section> : <section><p className="text-sm text-gray-500">Seleziona un elemento per modificarlo.</p>{currentPage && <label className="mt-4 block text-xs">Sfondo pagina<input type="color" value={currentPage.background || "#ffffff"} onChange={(event) => mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, background: event.target.value } : page))} className="mt-1 w-full h-9" /></label>}</section>}
+            </section> : <section><h3 className="font-bold">Pagina</h3><p className="text-sm text-gray-500">Seleziona un elemento oppure modifica lo sfondo e i servizi collegati.</p>{currentPage && <div className="mt-4 space-y-3"><label className="block text-xs">Nome pagina<input value={currentPage.name || ""} onChange={(event) => mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, name: event.target.value } : page), false)} className="mt-1 w-full border rounded p-2" /></label><label className="block text-xs">Sfondo pagina<input type="color" value={currentPage.background || "#ffffff"} onChange={(event) => mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, background: event.target.value } : page))} className="mt-1 w-full h-9" /></label><label className="block text-xs">Immagine master<input value={currentPage.backgroundImage || ""} onChange={(event) => mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, backgroundImage: event.target.value } : page), false)} placeholder="/commerciale/..." className="mt-1 w-full border rounded p-2" /></label>{currentPage.backgroundImage && <label className="block text-xs">Opacità master {Math.round((currentPage.backgroundImageOpacity ?? 1) * 100)}%<input type="range" min="0" max="1" step="0.05" value={currentPage.backgroundImageOpacity ?? 1} onChange={(event) => mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, backgroundImageOpacity: Number(event.target.value) } : page), false)} className="mt-1 w-full" /></label>}{isTemplate && <><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(currentPage.includedByDefault)} onChange={(event) => mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, includedByDefault: event.target.checked } : page))} />Includi sempre nel preventivo</label><div><p className="text-xs font-semibold mb-2">Servizi collegati</p><div className="space-y-1 max-h-52 overflow-auto">{(template.serviceCatalog || []).map((service) => <label key={service.key} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={(currentPage.serviceKeys || []).includes(service.key)} onChange={(event) => mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, serviceKeys: event.target.checked ? [...new Set([...(page.serviceKeys || []), service.key])] : (page.serviceKeys || []).filter((key) => key !== service.key) } : page))} />{service.label}</label>)}</div></div></>}</div>}</section>}
 
-            <section className="border-t pt-4"><h3 className="font-bold">Testi dinamici</h3><textarea value={projectDescription} onChange={(event) => { setProjectDescription(event.target.value); setDirty(true); }} placeholder="Descrizione progetto" rows={4} className="mt-2 w-full border rounded-lg p-2 text-sm" /><textarea value={paymentConditions} onChange={(event) => { setPaymentConditions(event.target.value); setDirty(true); }} placeholder="Condizioni pagamento" rows={4} className="mt-2 w-full border rounded-lg p-2 text-sm" /></section>
+            {!isTemplate && <><section className="border-t pt-4"><h3 className="font-bold">Testi dinamici</h3><textarea value={projectDescription} onChange={(event) => { setProjectDescription(event.target.value); setDirty(true); }} placeholder="Descrizione progetto" rows={4} className="mt-2 w-full border rounded-lg p-2 text-sm" /><textarea value={paymentConditions} onChange={(event) => { setPaymentConditions(event.target.value); setDirty(true); }} placeholder="Condizioni pagamento" rows={4} className="mt-2 w-full border rounded-lg p-2 text-sm" /></section>
             <section className="border-t pt-4"><div className="flex justify-between"><h3 className="font-bold">Prezzi strutturati</h3><button onClick={() => { setItems((old) => [...old, { service: "Nuovo servizio", description: "", quantity: 1, unitPrice: 0, standardPrice: 0, discountedPrice: 0, vatRate: 22, periodicity: "one_off", renewal: false }]); setDirty(true); }} className="p-1"><Plus className="w-4 h-4" /></button></div>
               <div className="space-y-3 mt-3">{items.map((item, index) => <div key={item._id || index} className="border rounded-lg p-2 space-y-2"><input value={item.service} onChange={(event) => { setItems((old) => old.map((value, i) => i === index ? { ...value, service: event.target.value } : value)); setDirty(true); }} className="w-full border-b font-semibold text-sm" /><div className="grid grid-cols-3 gap-1"><input type="number" min="0" step="0.01" title="Quantità" value={item.quantity} onChange={(event) => { setItems((old) => old.map((value, i) => i === index ? { ...value, quantity: Number(event.target.value) } : value)); setDirty(true); }} className="border rounded p-1 text-xs" /><input type="number" min="0" step="0.01" title="Prezzo" value={item.discountedPrice} onChange={(event) => { setItems((old) => old.map((value, i) => i === index ? { ...value, discountedPrice: Number(event.target.value), unitPrice: Number(event.target.value) } : value)); setDirty(true); }} className="border rounded p-1 text-xs" /><input type="number" min="0" title="IVA" value={item.vatRate} onChange={(event) => { setItems((old) => old.map((value, i) => i === index ? { ...value, vatRate: Number(event.target.value) } : value)); setDirty(true); }} className="border rounded p-1 text-xs" /></div><select value={item.periodicity} onChange={(event) => { setItems((old) => old.map((value, i) => i === index ? { ...value, periodicity: event.target.value } : value)); setDirty(true); }} className="w-full border rounded p-1 text-xs"><option value="one_off">Una tantum</option><option value="monthly">Mensile</option><option value="annual">Annuale</option><option value="custom">Personalizzato</option></select><button onClick={() => { setItems((old) => old.filter((_, i) => i !== index)); setDirty(true); }} className="text-xs text-red-600">Rimuovi</button></div>)}</div>
               <div className="mt-3 rounded-lg bg-yellow-100 p-3 text-sm"><div className="flex justify-between"><span>Imponibile</span><strong>{money(totals.net)}</strong></div><div className="flex justify-between"><span>IVA</span><strong>{money(totals.vat)}</strong></div><div className="flex justify-between text-base mt-1"><span>Totale</span><strong>{money(totals.gross)}</strong></div></div>
-            </section>
+            </section></>}
           </aside>
         </div>
       </div>

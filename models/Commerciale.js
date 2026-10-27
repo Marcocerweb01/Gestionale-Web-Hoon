@@ -158,10 +158,16 @@ const PageSchema = new Schema({
   id: { type: String, required: true },
   name: { type: String, default: "Pagina" },
   background: { type: String, default: "#ffffff" },
+  backgroundImage: { type: String, default: "" },
+  backgroundImageOpacity: { type: Number, default: 1, min: 0, max: 1 },
+  includedByDefault: { type: Boolean, default: false },
+  sourcePage: { type: Number, default: null },
+  serviceKeys: { type: [String], default: [] },
   blocks: { type: [BlockSchema], default: [] },
 }, { _id: false });
 
 const QuoteItemSchema = new Schema({
+  catalogKey: { type: String, default: "" },
   service: { type: String, required: true },
   description: { type: String, default: "" },
   quantity: { type: Number, default: 1, min: 0 },
@@ -204,6 +210,14 @@ const QuoteTemplateSchema = new Schema({
   pages: { type: [PageSchema], default: [] },
   active: { type: Boolean, default: true },
   sourceFile: { type: Schema.Types.ObjectId, ref: "CommercialFile", default: null },
+  sourceVersion: { type: Number, default: 0 },
+  serviceCatalog: { type: [{
+    key: { type: String, required: true },
+    label: { type: String, required: true },
+    description: { type: String, default: "" },
+    defaultPrice: { type: Number, default: 0, min: 0 },
+    vatRate: { type: Number, default: 22, min: 0 },
+  }], default: [] },
 }, { timestamps: true });
 
 const CommercialQuoteSchema = new Schema({
