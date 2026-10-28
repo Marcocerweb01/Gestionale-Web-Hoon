@@ -142,6 +142,9 @@ const BlockSchema = new Schema({
   height: { type: Number, default: 50 },
   fontSize: { type: Number, default: 18 },
   fontWeight: { type: Number, default: 400 },
+  fontFamily: { type: String, default: "Arial" },
+  lineHeight: { type: Number, default: 1.2, min: 0.5, max: 5 },
+  letterSpacing: { type: Number, default: 0, min: -20, max: 100 },
   color: { type: String, default: "#111111" },
   background: { type: String, default: "transparent" },
   align: { type: String, enum: ["left", "center", "right"], default: "left" },
@@ -152,6 +155,8 @@ const BlockSchema = new Schema({
   borderWidth: { type: Number, default: 0, min: 0 },
   borderRadius: { type: Number, default: 0, min: 0 },
   opacity: { type: Number, default: 1, min: 0, max: 1 },
+  objectFit: { type: String, enum: ["contain", "cover", "fill"], default: "contain" },
+  locked: { type: Boolean, default: false },
 }, { _id: false });
 
 const PageSchema = new Schema({
