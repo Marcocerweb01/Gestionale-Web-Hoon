@@ -72,6 +72,15 @@ export default function GestioneCollaborazioniUtentePage() {
     setUtenteEspanso(utenteEspanso === userId ? null : userId);
   };
 
+  const formatDate = (value) => {
+    if (!value) return 'Non impostata';
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? 'Non impostata'
+      : date.toLocaleDateString('it-IT');
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -256,11 +265,11 @@ export default function GestioneCollaborazioniUtentePage() {
                                         collab.stato === 'terminata' ? 'bg-gray-100 text-gray-700' :
                                         'bg-yellow-100 text-yellow-700'
                                       }`}>
-                                        {collab.stato}
+                                        {collab.stato === 'pending' ? 'Pending' : collab.stato}
                                       </span>
-                                      <span>Inizio: {new Date(collab.dataInizio).toLocaleDateString('it-IT')}</span>
-                                      {collab.dataFine && (
-                                        <span>Fine: {new Date(collab.dataFine).toLocaleDateString('it-IT')}</span>
+                                      <span>Inizio contratto: {formatDate(collab.dataInizioContratto)}</span>
+                                      {collab.dataFineContratto && (
+                                        <span>Fine contratto: {formatDate(collab.dataFineContratto)}</span>
                                       )}
                                     </div>
                                   </div>

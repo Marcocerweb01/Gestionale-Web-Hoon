@@ -3,13 +3,23 @@ import { COLLABORATOR_SUB_ROLES, PERMISSIONS, USER_TYPES } from "./constants";
 
 const UserV3Schema = new Schema({
   agenziaId: { type: Schema.Types.ObjectId, ref: "AgenziaV3", required: true, index: true },
+  aziendaIds: {
+    type: [{ type: Schema.Types.ObjectId, ref: "AziendaV3" }],
+    default: [],
+    validate: {
+      validator(value) {
+        return this.tipo !== "azienda" || value.length > 0;
+      },
+      message: "Un utente azienda deve essere collegato ad almeno una AziendaV3.",
+    },
+  },
   tipo: { type: String, enum: USER_TYPES, required: true, index: true },
   nome: { type: String, required: true, trim: true },
   cognome: { type: String, default: "", trim: true },
   displayName: { type: String, default: "", trim: true },
   email: { type: String, required: true, trim: true, lowercase: true },
   telefono: { type: String, default: "", trim: true },
-  passwordHash: { type: String, required: true },
+  passwordHash: { type: String, required: true, select: false },
   avatarUrl: { type: String, default: "" },
   stato: {
     type: String,
@@ -45,5 +55,6 @@ const UserV3Schema = new Schema({
 
 UserV3Schema.index({ agenziaId: 1, email: 1 }, { unique: true });
 UserV3Schema.index({ agenziaId: 1, tipo: 1, stato: 1 });
+UserV3Schema.index({ agenziaId: 1, aziendaIds: 1, stato: 1 });
 
 export default models.UserV3 || model("UserV3", UserV3Schema);

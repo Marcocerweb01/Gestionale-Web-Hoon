@@ -69,8 +69,7 @@ const SocialInteractionSchema = new mongoose.Schema({
 
   // ID commento originale per deduplicazione polling
   commentId: {
-    type: String,
-    sparse: true
+    type: String
   },
   
   // Ref automazione che ha generato l'interazione

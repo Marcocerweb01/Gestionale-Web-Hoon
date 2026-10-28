@@ -10,7 +10,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate:v3:hoonweb": "node scripts/migrate-new-web-area-to-v3-hoonweb.mjs"
   },
   "dependencies": {
     "@vercel/speed-insights": "^1.2.0",

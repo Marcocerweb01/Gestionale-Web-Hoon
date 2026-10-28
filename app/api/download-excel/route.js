@@ -4,6 +4,10 @@ import Collaborazione from "@/models/Collaborazioni";
 import Nota from "@/models/Note";
 import { Collaboratore } from "@/models/User";
 import { NextResponse } from "next/server";
+import {
+  getActiveSocialCollaborationFilter,
+  syncSocialCollaborationStatuses,
+} from "@/utils/socialCollaborationStatus";
 
 export async function GET() {
   console.log("🚀 === INIZIO DOWNLOAD EXCEL ===");
@@ -11,11 +15,12 @@ export async function GET() {
   try {
     console.log("🔌 Connessione al database...");
     await connectToDB();
+    await syncSocialCollaborationStatuses(Collaborazione);
     console.log("✅ Connesso al database");
 
     // Recupera tutte le collaborazioni con i dati popolati
     console.log("📊 Recupero collaborazioni...");
-    const collaborazioni = await Collaborazione.find({})
+    const collaborazioni = await Collaborazione.find(getActiveSocialCollaborationFilter())
       .populate({
         path: 'collaboratore',
         select: 'nome cognome email status'

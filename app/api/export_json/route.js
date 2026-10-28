@@ -3,14 +3,19 @@ export const dynamic = "force-dynamic";
 import { connectToDB } from "@/utils/database";
 import Collaborazione from "@/models/Collaborazioni";
 import { Collaboratore, Azienda } from "@/models/User";
+import {
+  getActiveSocialCollaborationFilter,
+  syncSocialCollaborationStatuses,
+} from "@/utils/socialCollaborationStatus";
 
 export async function GET(req) {
   try {
     console.log("🚀 Inizio export JSON semplificato...");
     await connectToDB();
+    await syncSocialCollaborationStatuses(Collaborazione);
 
     // Recupera tutte le collaborazioni attive con populate
-    const collaborazioni = await Collaborazione.find({ stato: "attiva" })
+    const collaborazioni = await Collaborazione.find(getActiveSocialCollaborationFilter())
       .populate("collaboratore")
       .populate("azienda")
       .lean();

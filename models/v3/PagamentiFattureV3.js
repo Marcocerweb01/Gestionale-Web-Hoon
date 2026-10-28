@@ -6,7 +6,9 @@ const PagamentoV3Schema = new Schema({
   collaborazioneId: { type: Schema.Types.ObjectId, ref: "CollaborazioneV3", default: null, index: true },
   assegnazioneId: { type: Schema.Types.ObjectId, ref: "CollaborazioneAssegnazioneV3", default: null },
   tipo: { type: String, enum: ["entrata", "uscita"], required: true, index: true },
-  importo: { type: Number, required: true },
+  importo: { type: Number, min: 0, default: null },
+  valuta: { type: String, enum: ["EUR"], default: "EUR" },
+  importoConfermato: { type: Boolean, default: true },
   stato_pagamento: {
     type: String,
     enum: ["pagato", "non_pagato", "ragazzi"],
@@ -24,6 +26,10 @@ const PagamentoV3Schema = new Schema({
   metodoPagamento: { type: String, default: "" },
   note: { type: String, default: "" },
   allegati: [{ type: Schema.Types.ObjectId, ref: "FileAssetV3" }],
+  legacyRef: {
+    model: { type: String, enum: ["Pagamenti", "PagamentoNuovo", ""], default: "" },
+    id: { type: Schema.Types.ObjectId, default: null },
+  },
   createdBy: { type: Schema.Types.ObjectId, ref: "UserV3", default: null },
   updatedBy: { type: Schema.Types.ObjectId, ref: "UserV3", default: null },
 }, { timestamps: true });
@@ -33,7 +39,8 @@ const FatturaCollaboratoreV3Schema = new Schema({
   collaboratoreId: { type: Schema.Types.ObjectId, ref: "UserV3", required: true, index: true },
   collaborazioneIds: [{ type: Schema.Types.ObjectId, ref: "CollaborazioneV3" }],
   assegnazioneIds: [{ type: Schema.Types.ObjectId, ref: "CollaborazioneAssegnazioneV3" }],
-  mese: { type: String, required: true },
+  mese: { type: Number, min: 1, max: 12, required: true },
+  anno: { type: Number, min: 2000, required: true },
   totale: { type: Number, default: null },
   numeroFattura: { type: String, default: "" },
   dataEmissione: { type: Date, default: null },
@@ -50,10 +57,25 @@ const FatturaCollaboratoreV3Schema = new Schema({
   },
   fileUrl: { type: String, default: "" },
   noteAdmin: { type: String, default: "" },
+  legacyRef: {
+    model: { type: String, enum: ["Fatturazione", ""], default: "" },
+    id: { type: Schema.Types.ObjectId, default: null },
+  },
 }, { timestamps: true });
 
 PagamentoV3Schema.index({ agenziaId: 1, tipo: 1, anno: 1, mese: 1 });
-FatturaCollaboratoreV3Schema.index({ collaboratoreId: 1, mese: 1 }, { unique: true });
+PagamentoV3Schema.index(
+  { agenziaId: 1, "legacyRef.model": 1, "legacyRef.id": 1 },
+  { unique: true, partialFilterExpression: { "legacyRef.id": { $type: "objectId" } } }
+);
+FatturaCollaboratoreV3Schema.index(
+  { agenziaId: 1, collaboratoreId: 1, anno: 1, mese: 1 },
+  { unique: true }
+);
+FatturaCollaboratoreV3Schema.index(
+  { agenziaId: 1, "legacyRef.model": 1, "legacyRef.id": 1 },
+  { unique: true, partialFilterExpression: { "legacyRef.id": { $type: "objectId" } } }
+);
 
 export const PagamentoV3 = models.PagamentoV3 || model("PagamentoV3", PagamentoV3Schema);
 export const FatturaCollaboratoreV3 = models.FatturaCollaboratoreV3 ||

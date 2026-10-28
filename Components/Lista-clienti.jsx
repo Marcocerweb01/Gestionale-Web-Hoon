@@ -324,6 +324,15 @@ const ListaClienti = ({ id, amministratore }) => {
                       {row.cliente}
                     </span>
                   )}
+                  <span className={`inline-flex mt-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                    row.stato === 'attiva'
+                      ? 'bg-green-100 text-green-700'
+                      : row.stato === 'pending'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {row.stato === 'pending' ? 'Pending' : row.stato}
+                  </span>
                   <Link
                     href={`/Feed-2/${id}?collaborazioneId=${row.id}`}
                     className="text-[11px] text-gray-500 hover:text-indigo-600 hover:underline"
@@ -558,6 +567,17 @@ const ListaClienti = ({ id, amministratore }) => {
               ) : (
                 <h3 className="text-lg font-semibold text-gray-900">{row.cliente}</h3>
               )}
+              <div className="mt-1">
+                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  row.stato === 'attiva'
+                    ? 'bg-green-100 text-green-700'
+                    : row.stato === 'pending'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {row.stato === 'pending' ? 'Pending' : row.stato}
+                </span>
+              </div>
               <Link 
                 href={`/Feed-2/${id}?collaborazioneId=${row.id}`}
                 className="inline-flex items-center mt-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"

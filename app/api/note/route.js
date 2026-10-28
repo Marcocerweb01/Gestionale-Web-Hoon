@@ -33,11 +33,13 @@ export async function POST(req) {
     if (tipo === 'problema') {
       const collab = await Collaborazione.findById(collaborazione).lean();
       const clienteNome = collab?.aziendaRagioneSociale || 'cliente';
+      const collaboratoreId = collab?.collaboratore?.toString() || autoreId;
+      const feedLink = `/Feed-2/${encodeURIComponent(collaboratoreId)}?collaborazioneId=${encodeURIComponent(collaborazione)}&notaId=${encodeURIComponent(newNote._id.toString())}`;
       await createNotifica({
         tipo: 'nota_problema',
         titolo: `Nota problema da ${autore}`,
         messaggio: `${autore} ha segnalato un problema per ${clienteNome}: "${nota.substring(0, 80)}${nota.length > 80 ? '…' : ''}"`,
-        link: `/Feed-2/${autoreId}`,
+        link: feedLink,
         refId: newNote._id.toString(),
       });
     }

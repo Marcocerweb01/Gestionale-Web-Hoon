@@ -59,6 +59,13 @@ export default function NotifichePage() {
     carica();
   };
 
+  const apriNotifica = async (notifica) => {
+    if (!notifica.letta) {
+      await fetch(`/api/notifiche/${notifica._id}`, { method: 'PATCH' });
+    }
+    if (notifica.link) router.push(notifica.link);
+  };
+
   const elimina = async (id) => {
     await fetch(`/api/notifiche/${id}`, { method: 'DELETE' });
     carica();
@@ -186,12 +193,13 @@ export default function NotifichePage() {
                   </p>
                   <p className="text-sm text-gray-600 mt-0.5">{n.messaggio}</p>
                   {n.link && (
-                    <a
-                      href={n.link}
+                    <button
+                      type="button"
+                      onClick={() => apriNotifica(n)}
                       className="text-xs text-indigo-600 hover:underline mt-1 inline-block"
                     >
                       Vai alla pagina →
-                    </a>
+                    </button>
                   )}
                   <p className="text-xs text-gray-400 mt-1.5">
                     {new Date(n.createdAt).toLocaleDateString('it-IT', {

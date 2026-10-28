@@ -27,7 +27,7 @@ const CalendarioItemSchema = new Schema({
 
 const CalendarioOperativoSchema = new Schema({
   agenziaId: { type: Schema.Types.ObjectId, ref: "AgenziaV3", required: true, index: true },
-  collaborazioneId: { type: Schema.Types.ObjectId, ref: "CollaborazioneV3", required: true, index: true },
+  collaborazioneId: { type: Schema.Types.ObjectId, ref: "CollaborazioneV3", required: true },
   aziendaId: { type: Schema.Types.ObjectId, ref: "AziendaV3", required: true, index: true },
   items: [CalendarioItemSchema],
 }, { timestamps: true });

@@ -1,11 +1,17 @@
 import { connectToDB } from "@/utils/database";
 import Collaborazione from "@/models/Collaborazioni";
+import {
+  getActiveSocialCollaborationFilter,
+  syncSocialCollaborationStatuses,
+} from "@/utils/socialCollaborationStatus";
 
 export async function POST(req) {
   try {
     await connectToDB();
+    await syncSocialCollaborationStatuses(Collaborazione);
 
     const collaborazioni = await Collaborazione.find({
+      ...getActiveSocialCollaborationFilter(),
       escludi_reset_trimestrale: { $ne: true },
     });
 

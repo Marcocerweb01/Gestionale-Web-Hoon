@@ -14,6 +14,7 @@ const FeedPage = ({ params }) => {
   const { collaboratoreId } = use(params);
   const searchParams = useSearchParams();
   const collaborazioneIdFromQuery = searchParams.get("collaborazioneId");
+  const notaIdFromQuery = searchParams.get("notaId");
 
   const [collaborazioni, setCollaborazioni] = useState([]);
   const [selectedCollaborationId, setSelectedCollaborationId] = useState(null);
@@ -124,6 +125,19 @@ const FeedPage = ({ params }) => {
       scrollToBottom();
     }
   }, [notes, loadingNotes]);
+
+  // Se il feed è stato aperto da una notifica, porta in vista la nota
+  // specifica dopo il caricamento (lo scroll normale altrimenti va in fondo).
+  useEffect(() => {
+    if (!notaIdFromQuery || loadingNotes || notes.length === 0) return;
+    const timer = setTimeout(() => {
+      document.getElementById(`nota-${notaIdFromQuery}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [notaIdFromQuery, notes, loadingNotes]);
 
   // Effetto per scroll automatico quando cambia il cliente selezionato
   useEffect(() => {
@@ -632,13 +646,15 @@ const FeedPage = ({ params }) => {
                   const isOwn = note.autoreId === session?.user?.id;
                   const isProblem = note.tipo === "problema";
                   const isPostMancante = note.tipo === "post_mancante";
+                  const isTargetNote = note._id === notaIdFromQuery;
                   
                   return (
                     <div
                       key={note._id}
+                      id={`nota-${note._id}`}
                       className={`group transition-all duration-150 flex ${
                         isOwn ? "justify-end" : "justify-start"
-                      }`}
+                      } ${isTargetNote ? "ring-2 ring-yellow-400 ring-offset-2 rounded-2xl p-1" : ""}`}
                     >
                       <div
                         className={`relative rounded-xl shadow-sm border p-2.5 sm:p-3 max-w-[85%] sm:max-w-md ${

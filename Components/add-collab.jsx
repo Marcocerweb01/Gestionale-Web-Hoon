@@ -22,6 +22,7 @@ const AddCollabForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [contrattoAperto, setContrattoAperto] = useState(false);
   
   const [aziende, setAziende] = useState([]);
   const [collaboratori, setCollaboratori] = useState([]);
@@ -95,9 +96,25 @@ const AddCollabForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
     setSuccess('');
+
+    if (!formData.data_inizio_contratto) {
+      setContrattoAperto(true);
+      setError('Inserisci la data di inizio contratto.');
+      return;
+    }
+
+    if (
+      formData.data_fine_contratto &&
+      formData.data_fine_contratto < formData.data_inizio_contratto
+    ) {
+      setContrattoAperto(true);
+      setError('La data di fine contratto non può precedere la data di inizio.');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const response = await fetch('/api/crea_collaborazioni', {
@@ -127,6 +144,7 @@ const AddCollabForm = () => {
         escludi_reset_trimestrale: false});
       setAziendaSearch('');
       setCollaboratoreSearch('');
+      setContrattoAperto(false);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -307,12 +325,29 @@ const selectCollaboratore = (collaboratore) => {
           </div>
 
           {/* Sezione Totali e Contratto */}
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-6 border border-purple-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">📊</span> Gestione Contratto
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-100 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setContrattoAperto((aperto) => !aperto)}
+              aria-expanded={contrattoAperto}
+              aria-controls="gestione-contratto-social"
+              className="w-full p-6 flex items-center justify-between text-left hover:bg-purple-100/50 transition-colors"
+            >
+              <span>
+                <span className="text-lg font-semibold text-gray-900">
+                  <span className="mr-2">📊</span> Gestione Contratto
+                </span>
+                <span className="block mt-1 text-sm text-gray-600">
+                  Date, durata e obiettivi complessivi
+                </span>
+              </span>
+              <span className="text-xl text-purple-700" aria-hidden="true">
+                {contrattoAperto ? '▲' : '▼'}
+              </span>
+            </button>
+
+            {contrattoAperto && (
+            <div id="gestione-contratto-social" className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 pb-6 border-t border-purple-100 pt-6">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
                   📝 Post Totali Previsti
@@ -365,11 +400,12 @@ const selectCollaboratore = (collaboratore) => {
 
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  📆 Data Inizio Contratto <span className="text-gray-500">(opzionale)</span>
+                  📆 Data Inizio Contratto <span className="text-red-500">*</span>
                 </label>
                 <input
                   type='date'
                   name="data_inizio_contratto"
+                  required
                   value={formData.data_inizio_contratto}
                   onChange={(e) => setFormData(prev => ({ ...prev, data_inizio_contratto: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
@@ -383,6 +419,7 @@ const selectCollaboratore = (collaboratore) => {
                 <input
                   type='date'
                   name="data_fine_contratto"
+                  min={formData.data_inizio_contratto || undefined}
                   value={formData.data_fine_contratto}
                   onChange={(e) => setFormData(prev => ({ ...prev, data_fine_contratto: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
@@ -406,6 +443,7 @@ const selectCollaboratore = (collaboratore) => {
                 <p className="text-xs text-gray-500 ml-8">Se attivo, i contatori trimestrali di questa collaborazione non verranno azzerati con il reset trimestrale</p>
               </div>
             </div>
+            )}
           </div>
 
           {/* Note */}

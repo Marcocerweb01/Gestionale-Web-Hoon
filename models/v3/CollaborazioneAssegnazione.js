@@ -13,6 +13,7 @@ const ASSIGNMENT_PERMISSIONS = [
 ];
 
 const CollaborazioneAssegnazioneSchema = new Schema({
+  agenziaId: { type: Schema.Types.ObjectId, ref: "AgenziaV3", required: true, index: true },
   collaborazioneId: { type: Schema.Types.ObjectId, ref: "CollaborazioneV3", required: true, index: true },
   aziendaId: { type: Schema.Types.ObjectId, ref: "AziendaV3", required: true, index: true },
   collaboratoreId: { type: Schema.Types.ObjectId, ref: "UserV3", required: true, index: true },
@@ -37,8 +38,8 @@ const CollaborazioneAssegnazioneSchema = new Schema({
 }, { timestamps: true });
 
 CollaborazioneAssegnazioneSchema.index(
-  { collaborazioneId: 1, collaboratoreId: 1, subRole: 1, stato: 1 },
-  { unique: false }
+  { agenziaId: 1, collaborazioneId: 1, collaboratoreId: 1, subRole: 1 },
+  { unique: true, partialFilterExpression: { stato: "attiva" } }
 );
 
 export default models.CollaborazioneAssegnazioneV3 ||

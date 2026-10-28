@@ -14,6 +14,7 @@ const ChatThreadSchema = new Schema({
 }, { timestamps: true });
 
 const ChatMessageSchema = new Schema({
+  agenziaId: { type: Schema.Types.ObjectId, ref: "AgenziaV3", required: true, index: true },
   threadId: { type: Schema.Types.ObjectId, ref: "ChatThreadV3", required: true, index: true },
   autoreId: { type: Schema.Types.ObjectId, ref: "UserV3", required: true },
   testo: { type: String, required: true },
@@ -48,11 +49,11 @@ const TicketSchema = new Schema({
     default: "aperto",
     index: true,
   },
-  messaggi: [{ type: Schema.Types.ObjectId, ref: "ChatMessageV3" }],
+  threadId: { type: Schema.Types.ObjectId, ref: "ChatThreadV3", default: null, index: true },
   closedAt: { type: Date, default: null },
 }, { timestamps: true });
 
-ChatMessageSchema.index({ threadId: 1, createdAt: 1 });
+ChatMessageSchema.index({ agenziaId: 1, threadId: 1, createdAt: 1 });
 TicketSchema.index({ agenziaId: 1, stato: 1, priorita: 1 });
 
 export const ChatThreadV3 = models.ChatThreadV3 || model("ChatThreadV3", ChatThreadSchema);

@@ -140,6 +140,19 @@ const AdminCollaborationsList = ({ id }) => {
       console.warn("⚠️ Salvataggio già in corso, ignoro click");
       return;
     }
+
+    if (!tempData.data_inizio_contratto) {
+      setError("La data di inizio contratto è obbligatoria.");
+      return;
+    }
+
+    if (
+      tempData.data_fine_contratto &&
+      tempData.data_fine_contratto < tempData.data_inizio_contratto
+    ) {
+      setError("La data di fine contratto non può precedere la data di inizio.");
+      return;
+    }
     
     console.log("🚀 Inizio salvataggio...");
     setSaving(true);
@@ -192,7 +205,8 @@ const AdminCollaborationsList = ({ id }) => {
                 appuntamenti_totali_previsti: tempData.appuntamenti_totali_previsti,
                 durata_contratto: tempData.durata_contratto,
                 data_inizio_contratto: tempData.data_inizio_contratto,
-                data_fine_contratto: tempData.data_fine_contratto
+                data_fine_contratto: tempData.data_fine_contratto,
+                stato: responseData.stato
               }
             : row
         );
@@ -352,6 +366,15 @@ const AdminCollaborationsList = ({ id }) => {
                       ⏱️ {row.durata_contratto}
                     </span>
                   )}
+                  <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                    row.stato === 'attiva'
+                      ? 'bg-green-100 text-green-700'
+                      : row.stato === 'pending'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {row.stato === 'pending' ? 'Pending' : row.stato}
+                  </span>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -468,6 +491,7 @@ const AdminCollaborationsList = ({ id }) => {
                   {editingRow === row.id ? (
                     <input
                       type="date"
+                      required
                       value={tempData.data_inizio_contratto}
                       onChange={(e) => setTempData(prev => ({ ...prev, data_inizio_contratto: e.target.value }))}
                       className="w-full mt-1 px-2 py-1 text-center border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
@@ -481,6 +505,7 @@ const AdminCollaborationsList = ({ id }) => {
                   {editingRow === row.id ? (
                     <input
                       type="date"
+                      min={tempData.data_inizio_contratto || undefined}
                       value={tempData.data_fine_contratto}
                       onChange={(e) => setTempData(prev => ({ ...prev, data_fine_contratto: e.target.value }))}
                       className="w-full mt-1 px-2 py-1 text-center border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"

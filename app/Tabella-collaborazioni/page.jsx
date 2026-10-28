@@ -90,12 +90,16 @@ const TabellaCollaborazioni = () => {
   };
 
   const esportaCsv = () => {
-    // Creiamo le righe per CSV: una riga per ogni combinazione cliente-collaboratore
+    // Il download operativo include solo le collaborazioni già attive.
     const righeCSV = [];
     
     collaboratori.forEach(collaboratore => {
-      if (collaboratore.collaborazioni && collaboratore.collaborazioni.length > 0) {
-        collaboratore.collaborazioni.forEach(collaborazione => {
+      const collaborazioniAttive = (collaboratore.collaborazioni || []).filter(
+        (collaborazione) => collaborazione.stato === 'attiva'
+      );
+
+      if (collaborazioniAttive.length > 0) {
+        collaborazioniAttive.forEach(collaborazione => {
           righeCSV.push([
             `"${collaboratore.nome} ${collaboratore.cognome}"`,
             `"${collaboratore.email}"`,
@@ -108,28 +112,14 @@ const TabellaCollaborazioni = () => {
             `"${collaborazione.post_linkedin_fatti || 0}/${collaborazione.post_linkedin || 0}"`,
             collaborazione.post_totali || 0,
             collaborazione.appuntamenti_totali || 0,
+            `"${collaborazione.data_inizio_contratto ? new Date(collaborazione.data_inizio_contratto).toLocaleDateString('it-IT') : ''}"`,
             `"${collaborazione.note || ''}"`
           ]);
         });
-      } else {
-        righeCSV.push([
-          `"${collaboratore.nome} ${collaboratore.cognome}"`,
-          `"${collaboratore.email}"`,
-          `"${collaboratore.subRole}"`,
-          `"Nessuna collaborazione"`,
-          `"-"`,
-          0,
-          `"0/0"`,
-          `"0/0"`,
-          `"0/0"`,
-          0,
-          0,
-          `""`
-        ]);
       }
     });
 
-    const headers = ["Collaboratore", "Email", "Ruolo", "Cliente", "Email Cliente", "Appuntamenti", "Post IG/FB", "Post TikTok", "Post LinkedIn", "Post Totali", "App. Totali", "Note"];
+    const headers = ["Collaboratore", "Email", "Ruolo", "Cliente", "Email Cliente", "Appuntamenti", "Post IG/FB", "Post TikTok", "Post LinkedIn", "Post Totali", "App. Totali", "Inizio Contratto", "Note"];
     const csvContent = [
       headers.join(","),
       ...righeCSV.map(row => row.join(","))
@@ -229,7 +219,7 @@ const TabellaCollaborazioni = () => {
             <div className="text-xl font-bold text-pink-700">{collaboratori.length}</div>
           </div>
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-            <div className="text-blue-600 text-xs font-medium">Clienti Totali</div>
+            <div className="text-blue-600 text-xs font-medium">Collaborazioni Totali</div>
             <div className="text-xl font-bold text-blue-700">
               {collaboratori.reduce((total, c) => total + c.collaborazioni.length, 0)}
             </div>
@@ -322,6 +312,23 @@ const TabellaCollaborazioni = () => {
                                   {collaborazione.aziendaNome}
                                 </div>
                               )}
+
+                              <div className="flex flex-wrap justify-center gap-1 mb-2">
+                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${
+                                  collaborazione.stato === 'attiva'
+                                    ? 'bg-green-100 text-green-700'
+                                    : collaborazione.stato === 'pending'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {collaborazione.stato === 'pending' ? 'Pending' : collaborazione.stato}
+                                </span>
+                                <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-purple-100 text-purple-700">
+                                  Dal {collaborazione.data_inizio_contratto
+                                    ? new Date(collaborazione.data_inizio_contratto).toLocaleDateString('it-IT')
+                                    : '—'}
+                                </span>
+                              </div>
                               
                               {/* Totali Generali (non si azzerano) */}
                               <div className="bg-purple-50 rounded p-1.5 mb-1">
@@ -382,7 +389,7 @@ const TabellaCollaborazioni = () => {
                 <div className="text-2xl font-bold text-green-600">
                   {collaboratori.reduce((acc, c) => acc + c.collaborazioni.length, 0)}
                 </div>
-                <div className="text-sm text-gray-600">Collaborazioni Attive</div>
+                <div className="text-sm text-gray-600">Collaborazioni Totali</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-purple-600">

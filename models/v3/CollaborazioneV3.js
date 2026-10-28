@@ -61,7 +61,6 @@ const CollaborazioneV3Schema = new Schema({
     statoSintetico: { type: String, default: "" },
     ultimoAggiornamentoAt: { type: Date, default: null },
   },
-  notebookId: { type: Schema.Types.ObjectId, ref: "NotebookV3", default: null },
   calendarioId: { type: Schema.Types.ObjectId, ref: "CalendarioOperativoV3", default: null },
   chatId: { type: Schema.Types.ObjectId, ref: "ChatThreadV3", default: null },
   legacyRef: {
@@ -78,5 +77,15 @@ const CollaborazioneV3Schema = new Schema({
 
 CollaborazioneV3Schema.index({ agenziaId: 1, aziendaId: 1, stato: 1 });
 CollaborazioneV3Schema.index({ "team.collaboratoreId": 1, stato: 1 });
+CollaborazioneV3Schema.index(
+  { agenziaId: 1, "legacyRef.model": 1, "legacyRef.id": 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      "legacyRef.model": { $type: "string" },
+      "legacyRef.id": { $type: "objectId" },
+    },
+  }
+);
 
 export default models.CollaborazioneV3 || model("CollaborazioneV3", CollaborazioneV3Schema);

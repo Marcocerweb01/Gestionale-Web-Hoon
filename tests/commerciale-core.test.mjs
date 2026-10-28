@@ -60,7 +60,10 @@ test("il preventivo generale Hoon usa tutte le 36 pagine fedeli del master", () 
   assert.equal(pages[0].name, "Copertina");
   assert.equal(pages.at(-1).name, "Assistenza - orari");
   assert.equal(new Set(pages.map((page) => page.id)).size, pages.length);
-  assert.ok(pages.every((page, index) => page.backgroundImage.endsWith(`page-${String(index + 1).padStart(2, "0")}.jpg`)));
+  assert.ok(pages.every((page) => !page.backgroundImage));
+  assert.ok(pages.every((page) => page.blocks.length > 0));
+  assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.type === "text"));
+  assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.type === "shape"));
   assert.deepEqual(pages.filter((page) => page.includedByDefault).map((page) => page.sourcePage), [1, 2, 35, 36]);
   assert.ok(HOON_QUOTE_SERVICE_CATALOG.length >= 20);
 });
@@ -69,7 +72,8 @@ test("il vecchio master senza versione viene aggiornato", () => {
   assert.equal(shouldUpgradeHoonQuoteTemplate(undefined), true);
   assert.equal(shouldUpgradeHoonQuoteTemplate(null), true);
   assert.equal(shouldUpgradeHoonQuoteTemplate(1), true);
-  assert.equal(shouldUpgradeHoonQuoteTemplate(2), false);
+  assert.equal(shouldUpgradeHoonQuoteTemplate(2), true);
+  assert.equal(shouldUpgradeHoonQuoteTemplate(3), false);
 });
 
 test("la selezione servizi copia solo pagine comuni e pagine collegate", () => {

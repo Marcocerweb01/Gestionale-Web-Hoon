@@ -25,8 +25,8 @@ const CredentialVaultItemSchema = new Schema({
   },
   url: { type: String, default: "" },
   username: { type: String, default: "" },
-  passwordEncrypted: { type: String, required: true },
-  noteEncrypted: { type: String, default: "" },
+  passwordEncrypted: { type: String, required: true, select: false },
+  noteEncrypted: { type: String, default: "", select: false },
   visibileA: [{ type: Schema.Types.ObjectId, ref: "UserV3" }],
   ultimoAccessoAt: { type: Date, default: null },
   createdBy: { type: Schema.Types.ObjectId, ref: "UserV3", required: true },
@@ -149,7 +149,7 @@ const AuditLogSchema = new Schema({
 
 DominioSchema.index({ agenziaId: 1, urlDominio: 1 }, { unique: true });
 ValutazioneCollaboratoreSchema.index(
-  { collaboratoreId: 1, "periodo.tipo": 1, "periodo.anno": 1, "periodo.trimestre": 1, "periodo.mese": 1, ruoloValutato: 1 },
+  { agenziaId: 1, collaboratoreId: 1, "periodo.tipo": 1, "periodo.anno": 1, "periodo.trimestre": 1, "periodo.mese": 1, ruoloValutato: 1 },
   { unique: true }
 );
 

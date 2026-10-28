@@ -6,6 +6,7 @@ import GoogleAds from "@/models/GoogleAds";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { syncSocialCollaborationStatuses } from "@/utils/socialCollaborationStatus";
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,7 @@ export async function GET(req) {
     }
     
     await connectToDB();
+    await syncSocialCollaborationStatuses(Collaborazioni);
     
     // Recupera tutte le collaborazioni social
     const collaborazioniSocial = await Collaborazioni.find()
@@ -69,6 +71,8 @@ export async function GET(req) {
         stato: collab.stato,
         dataInizio: collab.dataInizio,
         dataFine: collab.dataFine,
+        dataInizioContratto: collab.data_inizio_contratto,
+        dataFineContratto: collab.data_fine_contratto,
         tipo: 'social'
       });
     });

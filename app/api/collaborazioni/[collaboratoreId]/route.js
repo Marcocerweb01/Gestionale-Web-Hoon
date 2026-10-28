@@ -1,6 +1,7 @@
 import Collaborazione from "@/models/Collaborazioni";
 import { Azienda } from "@/models/User";
 import { connectToDB } from "@/utils/database";
+import { syncSocialCollaborationStatuses } from "@/utils/socialCollaborationStatus";
 
 // ✨ FORZA DYNAMIC RENDERING - NO CACHE
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,7 @@ export async function GET(req, { params }) {
   
   try {
     await connectToDB();
+    await syncSocialCollaborationStatuses(Collaborazione);
     console.log("✅ Database connesso");
 
     // Ottieni il collaboratoreId dai parametri dell'URL
@@ -67,6 +69,7 @@ export async function GET(req, { params }) {
       postLinkedin: collaborazione.post_linkedin,
       feed: collaborazione._id,
       pagato: collaborazione.pagato,
+      stato: collaborazione.stato,
       post_ig_fb_fatti: collaborazione.post_ig_fb_fatti,
       post_tiktok_fatti: collaborazione.post_tiktok_fatti,
       post_linkedin_fatti: collaborazione.post_linkedin_fatti,

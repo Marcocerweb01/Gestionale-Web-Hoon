@@ -2,6 +2,7 @@ import Collaborazione from "@/models/Collaborazioni";
 import { Collaboratore, Azienda } from "@/models/User";
 import { connectToDB } from "@/utils/database";
 import { NextResponse } from "next/server";
+import { syncSocialCollaborationStatuses } from "@/utils/socialCollaborationStatus";
 
 // Disabilita completamente la cache per questa route
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,7 @@ export const revalidate = 0;
 export async function GET() {
   try {
     await connectToDB();
+    await syncSocialCollaborationStatuses(Collaborazione);
 
     console.log("🔄 Inizio recupero dati tabella collaborazioni...");
 

@@ -2,10 +2,15 @@ import Pagamenti from "@/models/Pagamenti";
 import Collaborazione from "@/models/Collaborazioni";
 import ConfigurazioneRagazzi from "@/models/ConfigurazioneRagazzi";
 import { connectToDB } from "@/utils/database";
+import {
+  getActiveSocialCollaborationFilter,
+  syncSocialCollaborationStatuses,
+} from "@/utils/socialCollaborationStatus";
 
 export async function POST() {
   try {
     await connectToDB();
+    await syncSocialCollaborationStatuses(Collaborazione);
 
     // ✨ Recupera la lista di aziende "ragazzi" dal database
     let config = await ConfigurazioneRagazzi.findOne();
@@ -27,7 +32,7 @@ export async function POST() {
 
     // Recupera tutte le collaborazioni attive ESCLUDENDO il collaboratore specificato
     const collaborazioni = await Collaborazione.find({
-      stato: "attiva",
+      ...getActiveSocialCollaborationFilter(),
       collaboratore: { $ne: "686be44dc04a68e29f1770f3" },
     }).populate("azienda");
 

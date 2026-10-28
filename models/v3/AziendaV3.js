@@ -52,11 +52,23 @@ const AziendaV3Schema = new Schema({
     consensoMarketing: { type: Boolean, default: false },
     consensoTrattamentoDati: { type: Boolean, default: false },
   },
+  gestioneEconomica: {
+    incassoDestinatoA: {
+      type: String,
+      enum: ["agenzia", "collaboratori"],
+      default: "agenzia",
+    },
+  },
+  legacyKeys: { type: [String], default: [] },
   createdBy: { type: Schema.Types.ObjectId, ref: "UserV3", default: null },
   updatedBy: { type: Schema.Types.ObjectId, ref: "UserV3", default: null },
 }, { timestamps: true });
 
 AziendaV3Schema.index({ agenziaId: 1, ragioneSociale: 1 });
 AziendaV3Schema.index({ agenziaId: 1, partitaIva: 1 });
+AziendaV3Schema.index(
+  { agenziaId: 1, legacyKeys: 1 },
+  { unique: true, partialFilterExpression: { legacyKeys: { $type: "string" } } }
+);
 
 export default models.AziendaV3 || model("AziendaV3", AziendaV3Schema);

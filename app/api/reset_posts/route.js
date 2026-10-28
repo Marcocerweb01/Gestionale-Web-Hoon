@@ -1,12 +1,17 @@
 import { connectToDB } from "@/utils/database";
 import Collaborazione from "@/models/Collaborazioni";
+import {
+  getActiveSocialCollaborationFilter,
+  syncSocialCollaborationStatuses,
+} from "@/utils/socialCollaborationStatus";
 
 export async function PATCH(req) {
   try {
     await connectToDB();
+    await syncSocialCollaborationStatuses(Collaborazione);
 
-    // 1. Recupera tutte le collaborazioni per calcolare i valori da accumulare
-    const collaborazioni = await Collaborazione.find({});
+    // 1. Recupera solo le collaborazioni attive per calcolare i valori da accumulare
+    const collaborazioni = await Collaborazione.find(getActiveSocialCollaborationFilter());
     
     // 2. Per ogni collaborazione, aggiorna i contatori trimestrali
     const bulkOps = collaborazioni.map(collab => {

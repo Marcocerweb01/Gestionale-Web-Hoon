@@ -1,6 +1,10 @@
 import Collaborazione from "@/models/Collaborazioni";
 import { Azienda, Collaboratore } from "@/models/User";
 import { connectToDB } from "@/utils/database";
+import {
+  getSocialCollaborationStatus,
+  parseContractDate,
+} from "@/utils/socialCollaborationStatus";
 import mongoose from "mongoose";
 
 export async function POST(req) {
@@ -21,6 +25,23 @@ export async function POST(req) {
       data_inizio_contratto,
       data_fine_contratto
     } = await req.json();
+
+    const dataInizioContratto = parseContractDate(data_inizio_contratto);
+    const dataFineContratto = parseContractDate(data_fine_contratto);
+
+    if (!dataInizioContratto) {
+      return new Response(
+        JSON.stringify({ message: "La data di inizio contratto è obbligatoria" }),
+        { status: 400 }
+      );
+    }
+
+    if (dataFineContratto && dataFineContratto < dataInizioContratto) {
+      return new Response(
+        JSON.stringify({ message: "La data di fine contratto non può precedere la data di inizio" }),
+        { status: 400 }
+      );
+    }
 
     // Verifica e conversione degli ID
     if (!mongoose.Types.ObjectId.isValid(aziendaId) || !mongoose.Types.ObjectId.isValid(collaboratoreId)) {
@@ -50,6 +71,7 @@ export async function POST(req) {
         aziendaRagioneSociale: azienda.ragioneSociale,
         collaboratoreNome: collaboratore.nome,
         collaboratoreCognome: collaboratore.cognome,
+        stato: getSocialCollaborationStatus(dataInizioContratto),
         numero_appuntamenti,
         post_ig_fb,
         post_tiktok,
@@ -66,8 +88,8 @@ export async function POST(req) {
         post_totali_previsti: post_totali_previsti || 0,
         appuntamenti_totali_previsti: appuntamenti_totali_previsti || 0,
         durata_contratto: durata_contratto || null,
-        data_inizio_contratto: data_inizio_contratto ? new Date(data_inizio_contratto) : null,
-        data_fine_contratto: data_fine_contratto ? new Date(data_fine_contratto) : null,
+        data_inizio_contratto: dataInizioContratto,
+        data_fine_contratto: dataFineContratto,
       });
 
     console.log("✅ Collaborazione creata:", nuovaCollaborazione);

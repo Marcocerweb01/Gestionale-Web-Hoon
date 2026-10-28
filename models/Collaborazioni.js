@@ -33,7 +33,7 @@ const CollaborazioneSchema = new Schema(
     },
     stato: {
       type: String,
-      enum: ["attiva", "terminata", "in sospeso"],
+      enum: ["attiva", "pending", "terminata", "in sospeso"],
       default: "attiva",
     },
     note: {

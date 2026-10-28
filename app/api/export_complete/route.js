@@ -5,14 +5,19 @@ import Collaborazione from "@/models/Collaborazioni";
 import { Collaboratore, Azienda } from "@/models/User";
 import ExcelJS from "exceljs";
 import { NextResponse } from "next/server";
+import {
+  getActiveSocialCollaborationFilter,
+  syncSocialCollaborationStatuses,
+} from "@/utils/socialCollaborationStatus";
 
 export async function GET(req) {
   try {
     console.log("🚀 Inizio export completo (JSON + Excel)...");
     await connectToDB();
+    await syncSocialCollaborationStatuses(Collaborazione);
 
     // Recupera tutte le collaborazioni attive con populate
-    const collaborazioni = await Collaborazione.find({ stato: "attiva" })
+    const collaborazioni = await Collaborazione.find(getActiveSocialCollaborationFilter())
       .populate("collaboratore")
       .populate("azienda")
       .lean();

@@ -11,6 +11,10 @@ import CollaborazioneWebDesignV2 from "@/models/CollaborazioniWebDesignV2";
 import GoogleAds from "@/models/GoogleAds";
 import { Azienda, Collaboratore } from "@/models/User";
 import { connectToDB } from "@/utils/database";
+import {
+  getActiveSocialCollaborationFilter,
+  syncSocialCollaborationStatuses,
+} from "@/utils/socialCollaborationStatus";
 
 const toId = (value) => value?.toString();
 const LEGACY_HOON_WEB_COLLABORATOR_ID = "686be44dc04a68e29f1770f3";
@@ -37,9 +41,10 @@ export async function GET() {
     }
 
     await connectToDB();
+    await syncSocialCollaborationStatuses(Collaborazione);
 
     const [social, webDesign, webDesignV2, googleAds, seo] = await Promise.all([
-      Collaborazione.find({ stato: "attiva" }).select("azienda collaboratore").lean(),
+      Collaborazione.find(getActiveSocialCollaborationFilter()).select("azienda collaboratore").lean(),
       CollaborazioneWebDesign.find({ stato: "in corso" }).select("cliente webDesigner").lean(),
       CollaborazioneWebDesignV2.find({ stato: "in corso" }).select("cliente webDesigner").lean(),
       GoogleAds.find({ campagnaTerminata: { $ne: true } }).select("cliente collaboratore").lean(),
