@@ -157,6 +157,13 @@ const BlockSchema = new Schema({
   opacity: { type: Number, default: 1, min: 0, max: 1 },
   objectFit: { type: String, enum: ["contain", "cover", "fill"], default: "contain" },
   locked: { type: Boolean, default: false },
+  referenceMode: { type: Boolean, default: false },
+  modified: { type: Boolean, default: true },
+  sourceX: { type: Number, default: null },
+  sourceY: { type: Number, default: null },
+  sourceWidth: { type: Number, default: null },
+  sourceHeight: { type: Number, default: null },
+  sourceMaskColor: { type: String, default: "#ffffff" },
 }, { _id: false });
 
 const PageSchema = new Schema({

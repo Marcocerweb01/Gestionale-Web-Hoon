@@ -60,7 +60,7 @@ const visualStyle = (block) => ({
 function PageThumbnail({ page }) {
   return <div className="aspect-[595/842] rounded bg-white border relative overflow-hidden" style={{ background: page.background || "#ffffff" }}>
     {page.backgroundImage && <img src={page.backgroundImage} alt="" className="absolute inset-0 w-full h-full object-fill" style={{ opacity: page.backgroundImageOpacity ?? 1 }} />}
-    {[...(page.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} className="absolute overflow-hidden" style={{
+    {[...(page.blocks || [])].filter((block) => !block.referenceMode || block.modified).sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} className="absolute overflow-hidden" style={{
       left: `${(block.x / 595) * 100}%`, top: `${(block.y / 842) * 100}%`, width: `${(block.width / 595) * 100}%`, height: `${(block.height / 842) * 100}%`,
       color: block.color, background: block.background, fontSize: Math.max(2, (block.fontSize || 12) * 0.25), fontWeight: block.fontWeight,
       textAlign: block.align, opacity: block.opacity ?? 1, zIndex: block.layer,
@@ -120,7 +120,9 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
 
   const updateBlockById = useCallback((blockId, patch, withHistory = true) => {
     if (withHistory) remember();
-    setPages((old) => old.map((page, index) => index === pageIndex ? { ...page, blocks: page.blocks.map((block) => block.id === blockId ? { ...block, ...patch } : block) } : page));
+    const visualKeys = ["x", "y", "width", "height", "rotation", "text", "imageUrl", "fontSize", "fontWeight", "fontFamily", "lineHeight", "letterSpacing", "color", "background", "align", "shapeType", "borderColor", "borderWidth", "borderRadius", "opacity", "objectFit"];
+    const changesVisual = visualKeys.some((key) => Object.prototype.hasOwnProperty.call(patch, key));
+    setPages((old) => old.map((page, index) => index === pageIndex ? { ...page, blocks: page.blocks.map((block) => block.id === blockId ? { ...block, ...patch, ...(block.referenceMode && changesVisual ? { modified: true } : {}) } : block) } : page));
     setDirty(true);
   }, [pageIndex, remember]);
 
@@ -416,15 +418,17 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
             {currentPage && <div className="relative mx-auto" style={{ width: PAGE_WIDTH * zoom, height: PAGE_HEIGHT * zoom }}>
               <div ref={canvasRef} className="absolute left-0 top-0 shadow-2xl touch-none overflow-hidden" style={{ width: PAGE_WIDTH, height: PAGE_HEIGHT, background: currentPage.background, transform: `scale(${zoom})`, transformOrigin: "top left" }} onPointerDown={() => { setSelectedId(""); setEditingTextId(""); }}>
                 {currentPage.backgroundImage && <img src={currentPage.backgroundImage} alt="Sfondo del template" className="absolute inset-0 w-full h-full object-fill pointer-events-none" style={{ opacity: currentPage.backgroundImageOpacity ?? 1 }} />}
+                {(currentPage.blocks || []).filter((block) => block.referenceMode && block.modified).map((block) => <div key={`mask-${block.id}`} className="absolute pointer-events-none" style={{ left: block.sourceX ?? block.x, top: block.sourceY ?? block.y, width: block.sourceWidth ?? block.width, height: block.sourceHeight ?? block.height, background: block.sourceMaskColor || "#ffffff", zIndex: Math.max(-1, (Number(block.layer) || 0) - 0.5) }} />)}
                 {guides.x !== null && <div className="absolute top-0 bottom-0 w-px bg-fuchsia-500 z-[9999] pointer-events-none" style={{ left: guides.x }} />}
                 {guides.y !== null && <div className="absolute left-0 right-0 h-px bg-fuchsia-500 z-[9999] pointer-events-none" style={{ top: guides.y }} />}
                 {[...(currentPage.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => {
                   const isSelected = !preview && selectedId === block.id;
                   const isEditing = editingTextId === block.id;
-                  return <div key={block.id} onPointerDown={(event) => startInteraction(event, block)} onDoubleClick={(event) => { if (block.type === "text" && !block.locked) { event.stopPropagation(); setSelectedId(block.id); setEditingTextId(block.id); } }} className={`absolute ${preview || block.locked ? "cursor-default" : "cursor-move hover:outline hover:outline-1 hover:outline-blue-400"} ${isSelected ? "ring-2 ring-blue-500" : ""}`} style={visualStyle(block)}>
+                  const pristineReference = block.referenceMode && !block.modified;
+                  return <div key={block.id} onPointerDown={(event) => startInteraction(event, block)} onDoubleClick={(event) => { if (block.type === "text" && !block.locked) { event.stopPropagation(); updateBlockById(block.id, { modified: true }); setSelectedId(block.id); setEditingTextId(block.id); } }} className={`absolute ${preview || block.locked ? "cursor-default" : "cursor-move hover:outline hover:outline-1 hover:outline-blue-400"} ${isSelected ? "ring-2 ring-blue-500" : ""}`} style={{ ...visualStyle(block), ...(pristineReference ? { background: "transparent", border: "none", opacity: 1 } : {}) }}>
                     <div className="w-full h-full overflow-hidden" style={{ borderRadius: block.shapeType === "ellipse" ? "9999px" : block.borderRadius || 0 }}>
-                      {block.type === "text" && (isEditing ? <textarea autoFocus value={block.text} onChange={(event) => updateBlock({ text: event.target.value }, false)} onBlur={() => { setEditingTextId(""); setDirty(true); }} onPointerDown={(event) => event.stopPropagation()} className="w-full h-full resize-none border-0 bg-transparent p-1 outline-none" style={{ color: block.color, fontFamily: block.fontFamily || "Arial", fontSize: block.fontSize, fontWeight: block.fontWeight, lineHeight: block.lineHeight || 1.2, letterSpacing: block.letterSpacing || 0, textAlign: block.align }} /> : <div className="w-full h-full p-1 whitespace-pre-wrap">{block.text}</div>)}
-                      {block.type === "image" && (block.imageUrl ? <img src={block.imageUrl} alt="" draggable="false" className={`w-full h-full pointer-events-none ${block.objectFit === "cover" ? "object-cover" : block.objectFit === "fill" ? "object-fill" : "object-contain"}`} /> : <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full h-full border-2 border-dashed grid place-items-center text-xs text-gray-400">Carica immagine</button>)}
+                      {block.type === "text" && (isEditing ? <textarea autoFocus value={block.text} onChange={(event) => updateBlock({ text: event.target.value }, false)} onBlur={() => { setEditingTextId(""); setDirty(true); }} onPointerDown={(event) => event.stopPropagation()} className="w-full h-full resize-none border-0 bg-transparent p-1 outline-none" style={{ color: block.color, fontFamily: block.fontFamily || "Arial", fontSize: block.fontSize, fontWeight: block.fontWeight, lineHeight: block.lineHeight || 1.2, letterSpacing: block.letterSpacing || 0, textAlign: block.align }} /> : !pristineReference && <div className="w-full h-full p-1 whitespace-pre-wrap">{block.text}</div>)}
+                      {block.type === "image" && !pristineReference && (block.imageUrl ? <img src={block.imageUrl} alt="" draggable="false" className={`w-full h-full pointer-events-none ${block.objectFit === "cover" ? "object-cover" : block.objectFit === "fill" ? "object-fill" : "object-contain"}`} /> : <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full h-full border-2 border-dashed grid place-items-center text-xs text-gray-400">Carica immagine</button>)}
                     </div>
                     {isSelected && !block.locked && !isEditing && <>
                       {resizeHandles.map((handle) => <button type="button" aria-label={`Ridimensiona ${handle}`} key={handle} onPointerDown={(event) => startInteraction(event, block, "resize", handle)} className={`absolute z-[10000] h-3 w-3 rounded-sm border border-blue-700 bg-white ${handlePosition[handle]}`} />)}
