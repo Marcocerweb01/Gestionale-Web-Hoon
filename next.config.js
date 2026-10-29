@@ -33,7 +33,7 @@ const nextConfig = {
     resolveAlias: {
       // pdfjs-dist references the Node-only canvas package, but this import is
       // used exclusively by the browser PDF importer.
-      canvas: { browser: "./lib/stubs/canvas.js" },
+      canvas: "./lib/stubs/canvas.js",
     },
   },
   
