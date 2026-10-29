@@ -5,6 +5,9 @@ const nextConfig = {
   
   // Disabilita static export per evitare errori di prerender
   output: 'standalone',
+  outputFileTracingExcludes: {
+    '*': ['./tmp/**/*', './graphify-out/**/*'],
+  },
   
   images: {
     unoptimized: process.env.NODE_ENV === 'development',

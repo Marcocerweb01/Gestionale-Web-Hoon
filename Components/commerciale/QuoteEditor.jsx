@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Copy, Download, Eye, EyeOff, ImagePlus, Layers, Lock, Plus, Redo2, Save, Trash2, Undo2, Unlock, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Circle, Copy, Download, Eye, EyeOff, FileUp, ImagePlus, Layers, Lock, Plus, Redo2, Save, Shapes, Square, Trash2, Type, Undo2, Unlock, X } from "lucide-react";
 import { normalizeQuotePages, resolveQuoteVariables } from "@/lib/commerciale/quoteCanvas";
+import FabricQuoteCanvas from "./FabricQuoteCanvas";
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const money = (value) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(value) || 0);
@@ -182,6 +183,11 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
   const [pageIndex, setPageIndex] = useState(0);
   const [selectedId, setSelectedId] = useState("");
   const [selectedSource, setSelectedSource] = useState(null);
+  const [fabricSelection, setFabricSelection] = useState(null);
+  const [leftPanel, setLeftPanel] = useState("pages");
+  const [importingPdf, setImportingPdf] = useState(false);
+  const [canvasGeneration, setCanvasGeneration] = useState(0);
+  const [sourceFileId, setSourceFileId] = useState(() => String(template?.sourceFile?._id || template?.sourceFile || ""));
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -194,6 +200,8 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
   const canvasRef = useRef(null);
   const canvasViewportRef = useRef(null);
   const imageInputRef = useRef(null);
+  const pdfInputRef = useRef(null);
+  const fabricCanvasRef = useRef(null);
   const dragRef = useRef(null);
   const savingRef = useRef(false);
 
@@ -243,7 +251,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(isTemplate
-          ? { pages, serviceCatalog: template.serviceCatalog || [] }
+          ? { pages, serviceCatalog: template.serviceCatalog || [], sourceFile: sourceFileId || null }
           : { action: "save_version", pages, items, projectDescription, paymentConditions, createNewVersion: newVersion, reason: newVersion ? "Revisione manuale" : "Salvataggio automatico" }),
       });
       const payload = await response.json();
@@ -258,7 +266,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
       savingRef.current = false;
       setSaving(false);
     }
-  }, [isTemplate, items, onSaved, pages, paymentConditions, projectDescription, quote?._id, template?._id, template?.serviceCatalog]);
+  }, [isTemplate, items, onSaved, pages, paymentConditions, projectDescription, quote?._id, sourceFileId, template?._id, template?.serviceCatalog]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -392,6 +400,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
     setPages(previous);
     setHistory((old) => old.slice(0, -1));
     setDirty(true);
+    setCanvasGeneration((value) => value + 1);
   };
   const redo = () => {
     const next = future[0];
@@ -400,6 +409,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
     setPages(next);
     setFuture((old) => old.slice(1));
     setDirty(true);
+    setCanvasGeneration((value) => value + 1);
   };
 
   const addBlock = (type) => {
@@ -434,22 +444,86 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
         canvas.height = Math.max(1, Math.round(image.naturalHeight * compressionScale));
         canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
         const imageData = canvas.toDataURL("image/jpeg", 0.88);
-        const maxWidth = 360;
-        const ratio = image.naturalWidth ? image.naturalHeight / image.naturalWidth : 0.75;
-        const width = Math.min(maxWidth, image.naturalWidth || maxWidth);
-        const height = Math.min(360, Math.max(40, width * ratio));
-        if (selected?.type === "image") {
-          updateBlock({ imageUrl: imageData }, false);
-          setDirty(true);
-          return;
-        }
-        const block = { id: uid(), type: "image", text: "", imageUrl: imageData, x: Math.round((PAGE_WIDTH - width) / 2), y: Math.round((PAGE_HEIGHT - height) / 2), width, height, fontSize: 18, fontWeight: 400, color: "#111111", background: "transparent", align: "left", layer: Math.max(...(currentPage?.blocks || []).map((item) => Number(item.layer) || 0), 0) + 1, shapeType: "rectangle", borderColor: "transparent", borderWidth: 0, borderRadius: 0, opacity: 1, rotation: 0, objectFit: "contain", locked: false };
-        mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, blocks: [...page.blocks, block] } : page));
-        setSelectedId(block.id);
+        fabricCanvasRef.current?.addImage(imageData);
       };
       image.src = String(reader.result);
     };
     reader.readAsDataURL(file);
+  };
+
+  const importPdfProject = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf") return setMessage("Seleziona un file PDF");
+    if (file.size > 12 * 1024 * 1024) return setMessage("Il PDF supera il limite di 12 MB");
+    setImportingPdf(true);
+    setMessage("Analisi del PDF in corso…");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("purpose", "quote_source");
+      const upload = await fetch("/api/commerciale/files", { method: "POST", body: form });
+      const uploaded = await upload.json();
+      if (!upload.ok) throw new Error(uploaded.error || "Caricamento PDF non riuscito");
+      setSourceFileId(uploaded._id);
+
+      const pdfjsModule = await import("pdfjs-dist/legacy/build/pdf");
+      const pdfjs = pdfjsModule.default || pdfjsModule;
+      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const documentTask = pdfjs.getDocument({ data: bytes });
+      const pdf = await documentTask.promise;
+      if (pdf.numPages > 60) throw new Error("Il PDF supera il limite di 60 pagine");
+      const importedPages = [];
+
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+        setMessage(`Importazione pagina ${pageNumber} di ${pdf.numPages}…`);
+        const page = await pdf.getPage(pageNumber);
+        const logicalViewport = page.getViewport({ scale: 1 });
+        const renderScale = Math.min(1.35, 1100 / Math.max(logicalViewport.width, logicalViewport.height));
+        const renderViewport = page.getViewport({ scale: renderScale });
+        const raster = document.createElement("canvas");
+        raster.width = Math.ceil(renderViewport.width);
+        raster.height = Math.ceil(renderViewport.height);
+        const context = raster.getContext("2d", { willReadFrequently: true });
+        await page.render({ canvasContext: context, viewport: renderViewport }).promise;
+        const backgroundImage = raster.toDataURL("image/jpeg", 0.72);
+        const textContent = await page.getTextContent();
+        const scaleX = PAGE_WIDTH / logicalViewport.width;
+        const scaleY = PAGE_HEIGHT / logicalViewport.height;
+        const blocks = [];
+
+        for (const [textIndex, item] of textContent.items.entries()) {
+          if (!item.str?.trim()) continue;
+          const transform = pdfjs.Util.transform(logicalViewport.transform, item.transform);
+          const fontHeight = Math.max(5, Math.hypot(transform[2], transform[3]));
+          const x = transform[4] * scaleX;
+          const y = (transform[5] - fontHeight) * scaleY;
+          const width = Math.max(6, (item.width || item.str.length * fontHeight * 0.5) * scaleX);
+          const height = Math.max(7, fontHeight * 1.15 * scaleY);
+          const sampleX = Math.max(0, Math.min(raster.width - 1, Math.round((transform[4] + (item.width || 1) / 2) * renderScale)));
+          const sampleY = Math.max(0, Math.min(raster.height - 1, Math.round((transform[5] - fontHeight / 2) * renderScale)));
+          const pixel = context.getImageData(sampleX, sampleY, 1, 1).data;
+          const maskColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+          blocks.push({ id: `pdf-mask-${pageNumber}-${textIndex}`, type: "shape", x: x - 1, y: y - 1, width: width + 2, height: height + 2, background: maskColor, color: maskColor, rotation: 0, layer: textIndex * 2 + 1, opacity: 1, shapeType: "rectangle", borderColor: "transparent", borderWidth: 0, borderRadius: 0, locked: true, maskLayer: true });
+          blocks.push({ id: `pdf-text-${pageNumber}-${textIndex}`, type: "text", text: item.str, x, y, width: Math.max(width, 20), height: Math.max(height, fontHeight * 1.5), fontSize: fontHeight * scaleY, fontWeight: 400, fontFamily: "Arial", lineHeight: 1, letterSpacing: 0, color: "#111111", background: "transparent", align: "left", rotation: 0, layer: textIndex * 2 + 2, opacity: 1, locked: false, sourceFont: item.fontName || "" });
+        }
+
+        importedPages.push({ id: `imported-${Date.now().toString(36)}-${pageNumber}`, name: `Pagina ${pageNumber}`, background: "#ffffff", backgroundImage, backgroundImageOpacity: 1, svgAsset: "", svgEdits: {}, fabricJson: null, includedByDefault: pageNumber === 1, sourcePage: pageNumber, serviceKeys: [], blocks, importMeta: { mode: "pdfjs-raster-reference", editableTextCount: blocks.filter((block) => block.type === "text").length, originalWidth: logicalViewport.width, originalHeight: logicalViewport.height } });
+      }
+      await pdf.destroy();
+      remember();
+      setPages(importedPages);
+      setPageIndex(0);
+      setFabricSelection(null);
+      setDirty(true);
+      setMessage(`${importedPages.length} pagine importate · testi riconosciuti modificabili · grafica non recuperabile mantenuta come riferimento`);
+    } catch (error) {
+      setMessage(error.message || "Importazione PDF non riuscita");
+    } finally {
+      setImportingPdf(false);
+    }
   };
 
   const addPage = () => {
@@ -500,7 +574,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
           <div className="mr-auto"><h2 className="font-bold">{isTemplate ? template.name : quote.number}</h2><p className="text-xs text-gray-500">{isTemplate ? "Editor master del template · le modifiche valgono per i nuovi preventivi" : `Versione ${quote.currentVersion} · ${quote.organization?.businessName || ""}`}</p></div>
           <button onClick={undo} disabled={!history.length} className="p-2 rounded hover:bg-gray-100 disabled:opacity-30"><Undo2 className="w-4 h-4" /></button>
           <button onClick={redo} disabled={!future.length} className="p-2 rounded hover:bg-gray-100 disabled:opacity-30"><Redo2 className="w-4 h-4" /></button>
-          <button onClick={() => { setPreview((value) => !value); setSelectedId(""); setSelectedSource(null); setEditingTextId(""); }} className={`inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm ${preview ? "bg-blue-50 border-blue-400" : ""}`}>{preview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}{preview ? "Modifica" : "Anteprima"}</button>
+          <button onClick={() => { setPreview((value) => !value); setSelectedId(""); setSelectedSource(null); setFabricSelection(null); setEditingTextId(""); }} className={`inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm ${preview ? "bg-blue-50 border-blue-400" : ""}`}>{preview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}{preview ? "Modifica" : "Anteprima"}</button>
           {!isTemplate && <><select value={quote.status} onChange={(event) => changeStatus(event.target.value)} className="border rounded-lg px-3 py-2 text-sm"><option value="draft">Bozza</option><option value="ready">Pronto</option><option value="presented">Presentato</option><option value="accepted">Accettato</option><option value="rejected">Rifiutato</option><option value="postponed">Posticipato</option><option value="archived">Archiviato</option></select>
           <a href={`/api/commerciale/quotes/${quote._id}/pdf?version=${quote.currentVersion}`} target="_blank" className="inline-flex items-center gap-2 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm"><Download className="w-4 h-4" />PDF</a>
           <button onClick={() => save({ newVersion: true })} className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm"><Copy className="w-4 h-4" />Nuova versione</button></>}
@@ -510,52 +584,53 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
 
         <div className={`flex-1 min-h-0 grid grid-cols-1 ${preview ? "lg:grid-cols-1" : "lg:grid-cols-[210px_minmax(620px,1fr)_310px]"}`}>
           {!preview && <aside className="hidden lg:block bg-white border-r overflow-y-auto p-3">
-            <div className="flex items-center justify-between mb-3"><strong className="text-sm">Pagine</strong><button onClick={addPage} className="p-1 hover:bg-gray-100 rounded"><Plus className="w-4 h-4" /></button></div>
-            <div className="space-y-2">{pages.map((page, index) => <button key={page.id} onClick={() => { setPageIndex(index); setSelectedId(""); setSelectedSource(null); }} className={`w-full text-left border rounded-lg p-2 ${index === pageIndex ? "border-yellow-500 bg-yellow-50" : "border-gray-200"}`}><PageThumbnail page={page} resolveText={(text) => isTemplate ? text : resolveQuoteVariables(text, quote, { ...initialVersion, items, projectDescription, paymentConditions, totals })} /><span className="mt-2 block truncate text-xs font-medium">{index + 1}. {page.name}</span></button>)}</div>
+            <div className="grid grid-cols-4 gap-1 border-b pb-3">{[
+              ["pages", "Pagine", Layers], ["text", "Testi", Type], ["elements", "Elementi", Shapes], ["images", "Immagini", ImagePlus],
+              ["layers", "Livelli", Layers], ["template", "Template", FileUp], ["fields", "Campi", Plus],
+            ].map(([key, label, Icon]) => <button key={key} title={label} onClick={() => setLeftPanel(key)} className={`grid place-items-center gap-1 rounded-lg p-2 text-[10px] ${leftPanel === key ? "bg-blue-50 text-blue-700" : "hover:bg-gray-100"}`}><Icon className="h-4 w-4" />{label}</button>)}</div>
+            {leftPanel === "pages" && <><div className="flex items-center justify-between my-3"><strong className="text-sm">Pagine PDF</strong><button onClick={addPage} className="p-1 hover:bg-gray-100 rounded"><Plus className="w-4 h-4" /></button></div>
+            <div className="space-y-2">{pages.map((page, index) => <button key={page.id} onClick={() => { setPageIndex(index); setSelectedId(""); setSelectedSource(null); setFabricSelection(null); }} className={`w-full text-left border rounded-lg p-2 ${index === pageIndex ? "border-yellow-500 bg-yellow-50" : "border-gray-200"}`}><PageThumbnail page={page} resolveText={(text) => isTemplate ? text : resolveQuoteVariables(text, quote, { ...initialVersion, items, projectDescription, paymentConditions, totals })} /><span className="mt-2 block truncate text-xs font-medium">{index + 1}. {page.name}</span></button>)}</div>
             <div className="sticky bottom-0 mt-3 grid grid-cols-4 gap-1 bg-white py-2">
               <button title="Sposta pagina su" onClick={() => movePage(-1)} disabled={pageIndex === 0} className="grid place-items-center border rounded-lg py-2 disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
               <button title="Sposta pagina giù" onClick={() => movePage(1)} disabled={pageIndex === pages.length - 1} className="grid place-items-center border rounded-lg py-2 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
               <button title="Duplica pagina" onClick={duplicatePage} className="grid place-items-center border rounded-lg py-2"><Copy className="w-4 h-4" /></button>
               <button title="Elimina pagina" onClick={deletePage} disabled={pages.length <= 1} className="grid place-items-center border rounded-lg py-2 text-red-600 disabled:opacity-30"><Trash2 className="w-4 h-4" /></button>
-            </div>
+            </div></>}
+            {leftPanel === "text" && <div className="space-y-2 pt-4"><button onClick={() => fabricCanvasRef.current?.addText("Aggiungi un titolo", { fontSize: 38, fontWeight: "bold" })} className="w-full rounded-xl border p-3 text-left text-xl font-bold">Titolo</button><button onClick={() => fabricCanvasRef.current?.addText("Aggiungi un sottotitolo", { fontSize: 25, fontWeight: "600" })} className="w-full rounded-xl border p-3 text-left text-base font-semibold">Sottotitolo</button><button onClick={() => fabricCanvasRef.current?.addText("Aggiungi del testo", { fontSize: 16 })} className="w-full rounded-xl border p-3 text-left text-sm">Corpo testo</button></div>}
+            {leftPanel === "elements" && <div className="grid grid-cols-2 gap-2 pt-4"><button onClick={() => fabricCanvasRef.current?.addShape("rect")} className="grid aspect-square place-items-center rounded-xl border"><Square className="h-12 w-12" /><span className="text-xs">Rettangolo</span></button><button onClick={() => fabricCanvasRef.current?.addShape("circle")} className="grid aspect-square place-items-center rounded-xl border"><Circle className="h-12 w-12" /><span className="text-xs">Cerchio</span></button></div>}
+            {leftPanel === "images" && <div className="pt-4"><button onClick={() => imageInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-sm"><ImagePlus className="h-6 w-6" />Carica logo o immagine</button></div>}
+            {leftPanel === "template" && <div className="space-y-3 pt-4"><p className="text-xs text-gray-500">Il PDF originale viene conservato. Testi riconosciuti diventano oggetti modificabili; grafica non recuperabile resta nel livello di riferimento.</p><button onClick={() => pdfInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 p-3 text-sm font-semibold text-white"><FileUp className="h-5 w-5" />Importa PDF</button></div>}
+            {leftPanel === "fields" && <div className="space-y-2 pt-4">{[["Nome azienda", "{{azienda}}"], ["Referente", "{{referente}}"], ["Data", "{{data_preventivo}}"], ["Numero preventivo", "{{numero_preventivo}}"], ["Servizi", "{{servizi}}"], ["Totale", "{{prezzo_totale}}"], ["IVA", "{{iva}}"]].map(([label, token]) => <button key={token} onClick={() => fabricCanvasRef.current?.addText(token, { fontSize: 18 })} className="w-full rounded-lg border p-2 text-left text-xs"><strong>{label}</strong><span className="block text-gray-400">{token}</span></button>)}</div>}
+            {leftPanel === "layers" && <div className="space-y-1 pt-4">{(fabricCanvasRef.current?.getLayers?.() || []).map((layer) => <button key={layer.editorId} onClick={() => fabricCanvasRef.current?.selectLayer(layer.editorId)} className="flex w-full items-center gap-2 rounded-lg border px-2 py-2 text-left text-xs"><Layers className="h-3 w-3" /><span className="truncate">{layer.name}</span>{layer.locked && <Lock className="ml-auto h-3 w-3" />}</button>)}</div>}
           </aside>}
 
           <main ref={canvasViewportRef} className="overflow-auto p-4 md:p-8 bg-gray-200">
             {!preview && <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-              <button onClick={() => addBlock("text")} className="px-3 py-2 bg-white rounded-lg shadow text-sm">+ Aggiungi testo</button>
-              <button onClick={() => addBlock("shape")} className="px-3 py-2 bg-white rounded-lg shadow text-sm">+ Aggiungi forma</button>
+              <button onClick={() => fabricCanvasRef.current?.addText()} className="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow text-sm"><Type className="h-4 w-4" />Testo</button>
+              <button onClick={() => fabricCanvasRef.current?.addShape("rect")} className="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow text-sm"><Square className="h-4 w-4" />Rettangolo</button>
+              <button onClick={() => fabricCanvasRef.current?.addShape("circle")} className="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow text-sm"><Circle className="h-4 w-4" />Cerchio</button>
               <button onClick={() => imageInputRef.current?.click()} className="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow text-sm"><ImagePlus className="w-4 h-4" />Carica immagine</button>
               <input ref={imageInputRef} type="file" accept="image/*" onChange={uploadImage} className="hidden" />
+              <button disabled={importingPdf} onClick={() => pdfInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow disabled:opacity-50"><FileUp className="h-4 w-4" />{importingPdf ? "Importo…" : "Importa PDF modificabile"}</button>
+              <input ref={pdfInputRef} type="file" accept="application/pdf,.pdf" onChange={importPdfProject} className="hidden" />
               <span className="mx-2 h-6 border-l" />
               <label className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs shadow">Zoom<input type="range" min="0.35" max="1.5" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} className="w-24" /><span className="w-10 text-right">{Math.round(zoom * 100)}%</span></label>
             </div>}
-            {currentPage && <div className="relative mx-auto" style={{ width: PAGE_WIDTH * zoom, height: PAGE_HEIGHT * zoom }}>
-              <div ref={canvasRef} className="absolute left-0 top-0 shadow-2xl touch-none overflow-hidden" style={{ width: PAGE_WIDTH, height: PAGE_HEIGHT, background: currentPage.background, transform: `scale(${zoom})`, transformOrigin: "top left" }} onPointerDown={() => { setSelectedId(""); setSelectedSource(null); setEditingTextId(""); }}>
-                {currentPage.svgAsset && <SourceSvgLayer asset={currentPage.svgAsset} edits={currentPage.svgEdits || {}} selectedId={selectedSource?.id || ""} preview={preview} onSelect={(source) => { setSelectedId(""); setEditingTextId(""); setSelectedSource(source); }} onEdit={updateSvgEdit} onInteractionStart={remember} />}
-                {currentPage.backgroundImage && <img src={currentPage.backgroundImage} alt="Sfondo del template" className="absolute inset-0 w-full h-full object-fill pointer-events-none" style={{ opacity: currentPage.backgroundImageOpacity ?? 1 }} />}
-                {guides.x !== null && <div className="absolute top-0 bottom-0 w-px bg-fuchsia-500 z-[9999] pointer-events-none" style={{ left: guides.x }} />}
-                {guides.y !== null && <div className="absolute left-0 right-0 h-px bg-fuchsia-500 z-[9999] pointer-events-none" style={{ top: guides.y }} />}
-                {[...(currentPage.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => {
-                  const isSelected = !preview && selectedId === block.id;
-                  const isEditing = editingTextId === block.id;
-                  return <div key={block.id} onPointerDown={(event) => startInteraction(event, block)} onDoubleClick={(event) => { if (!preview && block.type === "text" && !block.locked) { event.stopPropagation(); setSelectedSource(null); setSelectedId(block.id); setEditingTextId(block.id); } }} className={`absolute z-[2] ${preview || block.locked ? "cursor-default" : "cursor-move hover:outline hover:outline-1 hover:outline-blue-400"} ${isSelected ? "ring-2 ring-blue-500" : ""}`} style={visualStyle(block)}>
-                    <div className="w-full h-full overflow-hidden" style={{ borderRadius: block.shapeType === "ellipse" ? "9999px" : block.borderRadius || 0 }}>
-                      {block.type === "text" && (isEditing ? <textarea autoFocus value={block.text} onChange={(event) => updateBlockById(block.id, { text: event.target.value }, false)} onBlur={() => { setEditingTextId(""); setDirty(true); }} onPointerDown={(event) => event.stopPropagation()} className="w-full h-full resize-none border-0 bg-transparent p-1 outline-none" style={{ color: block.color, fontFamily: block.fontFamily || "Arial", fontSize: block.fontSize, fontWeight: block.fontWeight, lineHeight: block.lineHeight || 1.2, letterSpacing: block.letterSpacing || 0, textAlign: block.align }} /> : <div className="w-full h-full p-1 whitespace-pre-wrap">{isTemplate ? block.text : resolveQuoteVariables(block.text, quote, { ...initialVersion, items, projectDescription, paymentConditions, totals })}</div>)}
-                      {block.type === "image" && (block.imageUrl ? <img src={block.imageUrl} alt="" draggable="false" className={`w-full h-full pointer-events-none ${block.objectFit === "cover" ? "object-cover" : block.objectFit === "fill" ? "object-fill" : "object-contain"}`} /> : <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full h-full border-2 border-dashed grid place-items-center text-xs text-gray-400">Carica immagine</button>)}
-                    </div>
-                    {isSelected && !block.locked && !isEditing && <>
-                      {resizeHandles.map((handle) => <button type="button" aria-label={`Ridimensiona ${handle}`} key={handle} onPointerDown={(event) => startInteraction(event, block, "resize", handle)} className={`absolute z-[10000] h-3 w-3 rounded-sm border border-blue-700 bg-white ${handlePosition[handle]}`} />)}
-                      <div className="absolute left-1/2 -translate-x-1/2 -top-7 h-6 w-px bg-blue-500" />
-                      <button type="button" aria-label="Ruota" onPointerDown={(event) => startInteraction(event, block, "rotate")} className="absolute left-1/2 -translate-x-1/2 -top-10 z-[10000] h-4 w-4 rounded-full border-2 border-blue-700 bg-white cursor-grab" />
-                    </>}
-                  </div>;
-                })}
-              </div>
-            </div>}
+            {currentPage && <div className="mx-auto"><FabricQuoteCanvas key={`${currentPage.id}-${canvasGeneration}`} ref={fabricCanvasRef} page={currentPage} preview={preview} zoom={zoom} onSelection={setFabricSelection} onChange={(patch, withHistory) => mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, ...patch } : page), withHistory)} /></div>}
           </main>
 
           {!preview && <aside className="bg-white border-l overflow-y-auto p-4 space-y-5">
-            {selectedSource ? <section>
+            {fabricSelection ? <section>
+              <div className="flex items-center justify-between"><h3 className="font-bold flex items-center gap-2"><Layers className="h-4 w-4" />{fabricSelection.count > 1 ? `${fabricSelection.count} elementi` : fabricSelection.sourceKind === "text" ? "Testo PDF" : fabricSelection.sourceKind === "image" ? "Immagine" : "Elemento grafico"}</h3><div className="flex"><button title="Duplica" onClick={() => fabricCanvasRef.current?.duplicateSelected()} className="p-1"><Copy className="h-4 w-4" /></button><button title="Blocca o sblocca" onClick={() => fabricCanvasRef.current?.toggleLock()} className="p-1">{fabricSelection.locked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}</button><button title="Elimina" onClick={() => fabricCanvasRef.current?.deleteSelected()} className="p-1 text-red-600"><Trash2 className="h-4 w-4" /></button></div></div>
+              <p className="mt-1 text-[11px] text-gray-500">Oggetto Fabric.js reale: trascina, ridimensiona con le maniglie, ruota dal controllo superiore. Shift abilita la selezione multipla.</p>
+              {(fabricSelection.sourceKind === "text" || ["i-text", "textbox", "text", "group"].includes(fabricSelection.type) && fabricSelection.sourceText) && <textarea value={fabricSelection.text ?? fabricSelection.sourceText ?? ""} onChange={(event) => { setFabricSelection((old) => ({ ...old, text: event.target.value })); fabricCanvasRef.current?.replaceSelectedText(event.target.value); }} rows={5} className="mt-3 w-full rounded-lg border p-2 text-sm" />}
+              <div className="mt-3 grid grid-cols-2 gap-2">{[["X", "left"], ["Y", "top"], ["Larghezza", "width"], ["Altezza", "height"]].map(([label, key]) => <label key={key} className="text-xs">{label}<input type="number" value={fabricSelection[key] ?? 0} onChange={(event) => fabricCanvasRef.current?.updateSelected({ [key]: Number(event.target.value) })} className="mt-1 w-full rounded border p-1" /></label>)}</div>
+              <label className="mt-2 block text-xs">Rotazione<input type="number" value={fabricSelection.angle || 0} onChange={(event) => fabricCanvasRef.current?.updateSelected({ angle: Number(event.target.value) })} className="mt-1 w-full rounded border p-1" /></label>
+              {(fabricSelection.sourceKind === "text" || ["i-text", "textbox", "text"].includes(fabricSelection.type)) && <div className="mt-3 space-y-2"><label className="block text-xs">Font<select value={fabricSelection.fontFamily || "Arial"} onChange={(event) => fabricCanvasRef.current?.updateSelected({ fontFamily: event.target.value })} className="mt-1 w-full rounded border p-2"><option>Arial</option><option>Helvetica</option><option>Montserrat</option><option>Georgia</option><option>Times New Roman</option><option>Courier New</option></select></label><div className="grid grid-cols-2 gap-2"><label className="text-xs">Dimensione<input type="number" min="6" value={fabricSelection.fontSize || 18} onChange={(event) => fabricCanvasRef.current?.updateSelected({ fontSize: Number(event.target.value) })} className="mt-1 w-full rounded border p-1" /></label><label className="text-xs">Peso<select value={fabricSelection.fontWeight || 400} onChange={(event) => fabricCanvasRef.current?.updateSelected({ fontWeight: event.target.value })} className="mt-1 w-full rounded border p-1"><option value="400">Normale</option><option value="700">Bold</option><option value="900">Black</option></select></label></div></div>}
+              <div className="mt-3 grid grid-cols-2 gap-2"><label className="text-xs">Colore<input type="color" value={fabricSelection.fill?.startsWith?.("#") ? fabricSelection.fill : "#111111"} onChange={(event) => fabricCanvasRef.current?.updateSelected({ fill: event.target.value })} className="mt-1 h-8 w-full" /></label><label className="text-xs">Opacità {Math.round((fabricSelection.opacity ?? 1) * 100)}%<input type="range" min="0.05" max="1" step="0.05" value={fabricSelection.opacity ?? 1} onChange={(event) => fabricCanvasRef.current?.updateSelected({ opacity: Number(event.target.value) })} className="mt-2 w-full" /></label></div>
+              <label className="mt-3 block text-xs">Collegamento dati<select value={fabricSelection.dataBinding || ""} onChange={(event) => fabricCanvasRef.current?.updateSelected({ dataBinding: event.target.value })} className="mt-1 w-full rounded border p-2"><option value="">Nessuno</option><option value="azienda">Nome azienda</option><option value="referente">Referente</option><option value="data_preventivo">Data preventivo</option><option value="numero_preventivo">Numero preventivo</option><option value="prezzo_totale">Totale</option><option value="iva">IVA</option></select></label>
+              <div className="mt-3 grid grid-cols-2 gap-2"><button onClick={() => fabricCanvasRef.current?.layer("front")} className="rounded border py-1 text-xs">In primo piano</button><button onClick={() => fabricCanvasRef.current?.layer("back")} className="rounded border py-1 text-xs">Sullo sfondo</button><button onClick={() => fabricCanvasRef.current?.layer("up")} className="rounded border py-1 text-xs">Avanti</button><button onClick={() => fabricCanvasRef.current?.layer("down")} className="rounded border py-1 text-xs">Indietro</button></div>
+            </section> : selectedSource ? <section>
               <div className="flex items-center justify-between"><h3 className="font-bold flex items-center gap-2"><Layers className="w-4 h-4" />Elemento PDF · {selectedSource.kind === "text" ? "testo" : selectedSource.kind === "image" ? "immagine" : "vettore"}</h3><button title="Nascondi elemento" onClick={() => updateSvgEdit(selectedSource.id, { hidden: true })} className="p-1 text-red-600"><Trash2 className="w-4 h-4" /></button></div>
               <p className="mt-1 text-[11px] text-gray-500">Questo è un oggetto del PDF originale. Trascinalo direttamente sul foglio oppure usa i controlli precisi.</p>
               {selectedSource.kind === "text" && <textarea value={selectedSourceEdit?.text ?? selectedSource.text} onChange={(event) => updateSvgEdit(selectedSource.id, { text: event.target.value }, false)} onBlur={() => setDirty(true)} rows={5} className="mt-3 w-full border rounded-lg p-2 text-sm" />}

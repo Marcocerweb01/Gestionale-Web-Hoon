@@ -20,6 +20,7 @@
     "dayjs": "^1.11.13",
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
+    "fabric": "^7.4.0",
     "lucide-react": "^0.469.0",
     "mongoose": "^8.8.2",
     "next": "^16.1.6",

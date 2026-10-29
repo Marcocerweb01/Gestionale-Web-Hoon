@@ -64,6 +64,7 @@ test("il preventivo generale Hoon usa le 36 pagine SVG importate dal PDF reale",
   assert.ok(pages.every((page) => !page.backgroundImage));
   assert.ok(pages.every((page, index) => page.svgAsset === `/commerciale/hoon-template-svg/page-${String(index + 1).padStart(2, "0")}.svg`));
   assert.ok(pages.every((page) => page.svgEdits && Object.keys(page.svgEdits).length === 0));
+  assert.ok(pages.every((page) => page.fabricJson === null));
   assert.ok(pages.every((page) => page.blocks.length === 0));
   assert.deepEqual(pages.filter((page) => page.includedByDefault).map((page) => page.sourcePage), [1, 2, 35, 36]);
   assert.ok(HOON_QUOTE_SERVICE_CATALOG.length >= 20);
@@ -77,7 +78,8 @@ test("il vecchio master senza versione viene aggiornato", () => {
   assert.equal(shouldUpgradeHoonQuoteTemplate(3), true);
   assert.equal(shouldUpgradeHoonQuoteTemplate(4), true);
   assert.equal(shouldUpgradeHoonQuoteTemplate(5), true);
-  assert.equal(shouldUpgradeHoonQuoteTemplate(6), false);
+  assert.equal(shouldUpgradeHoonQuoteTemplate(6), true);
+  assert.equal(shouldUpgradeHoonQuoteTemplate(7), false);
 });
 
 test("le vecchie pagine JPG con hotspot vengono convertite senza duplicare il testo", () => {
