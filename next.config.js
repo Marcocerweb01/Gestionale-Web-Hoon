@@ -30,6 +30,11 @@ const nextConfig = {
   // Turbopack config (Next.js 16+)
   turbopack: {
     resolveExtensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
+    resolveAlias: {
+      // pdfjs-dist references the Node-only canvas package, but this import is
+      // used exclusively by the browser PDF importer.
+      canvas: { browser: "./lib/stubs/canvas.js" },
+    },
   },
   
   // webpack(config) {
