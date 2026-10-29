@@ -31,6 +31,19 @@ function decorateObject(object, values = {}) {
   return object;
 }
 
+function detachFromSvgGroup(object) {
+  // Fabric keeps imported SVG children in the coordinate plane of their
+  // original <g>. Re-grouping them without first leaving that plane makes the
+  // visible glyphs, controls and metadata refer to different positions.
+  if (object.group?.exitGroup) object.group.exitGroup(object);
+  object.set({
+    objectCaching: false,
+    perPixelTargetFind: true,
+  });
+  object.setCoords();
+  return object;
+}
+
 async function loadSourceSvg(fabric, asset) {
   const result = await fabric.loadSVGFromURL(asset, (element, object) => {
     const wrapper = element.closest?.("[data-editor-id]");
@@ -42,7 +55,8 @@ async function loadSourceSvg(fabric, asset) {
   });
 
   const grouped = new Map();
-  for (const object of result.objects.filter(Boolean)) {
+  for (const rawObject of result.objects.filter(Boolean)) {
+    const object = detachFromSvgGroup(rawObject);
     const key = object.editorId || uid();
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key).push(object);
@@ -53,7 +67,8 @@ async function loadSourceSvg(fabric, asset) {
     const first = objects[0];
     return decorateObject(new fabric.Group(objects, {
       subTargetCheck: false,
-      objectCaching: true,
+      objectCaching: false,
+      perPixelTargetFind: true,
     }), {
       editorId,
       sourceKind: first.sourceKind,
@@ -112,16 +127,17 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
   const active = () => canvasRef.current?.getActiveObject() || null;
   const emitSelection = () => {
     const object = active();
+    const bounds = object?.getBoundingRect?.();
     selectionRef.current?.(object ? {
       editorId: object.editorId,
       type: object.type,
       sourceKind: object.sourceKind,
       sourceText: object.sourceText,
       text: object.text,
-      left: Math.round(object.left || 0),
-      top: Math.round(object.top || 0),
-      width: Math.round(object.getScaledWidth?.() || object.width || 0),
-      height: Math.round(object.getScaledHeight?.() || object.height || 0),
+      left: Math.round(bounds?.left ?? object.left ?? 0),
+      top: Math.round(bounds?.top ?? object.top ?? 0),
+      width: Math.round(bounds?.width ?? object.getScaledWidth?.() ?? object.width ?? 0),
+      height: Math.round(bounds?.height ?? object.getScaledHeight?.() ?? object.height ?? 0),
       angle: Math.round(object.angle || 0),
       opacity: object.opacity ?? 1,
       fill: typeof object.fill === "string" ? object.fill : "#111111",
@@ -150,6 +166,10 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
         selection: true,
         preserveObjectStacking: true,
         controlsAboveOverlay: true,
+        enableRetinaScaling: true,
+        perPixelTargetFind: true,
+        targetFindTolerance: 4,
+        altSelectionKey: "altKey",
         fireRightClick: true,
         stopContextMenu: true,
       });
@@ -262,6 +282,19 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
     canvas.requestRenderAll();
   }, [preview, page?.id, readyVersion]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const safeZoom = Math.max(0.1, Number(zoom) || 1);
+    canvas.setDimensions({
+      width: Math.round(PAGE_WIDTH * safeZoom),
+      height: Math.round(PAGE_HEIGHT * safeZoom),
+    });
+    canvas.setViewportTransform([safeZoom, 0, 0, safeZoom, 0, 0]);
+    canvas.calcOffset();
+    canvas.requestRenderAll();
+  }, [zoom, readyVersion]);
+
   useImperativeHandle(ref, () => ({
     addText(text = "Nuovo testo", options = {}) {
       const fabric = fabricRef.current; const canvas = canvasRef.current; if (!fabric || !canvas) return;
@@ -307,7 +340,7 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
   }));
 
   return <div className="relative bg-white shadow-2xl" style={{ width: PAGE_WIDTH * zoom, height: PAGE_HEIGHT * zoom }}>
-    <div className="absolute left-0 top-0 origin-top-left" style={{ width: PAGE_WIDTH, height: PAGE_HEIGHT, transform: `scale(${zoom})` }}>
+    <div className="absolute left-0 top-0">
       <canvas ref={elementRef} />
     </div>
   </div>;
