@@ -4,7 +4,8 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
-const CUSTOM_PROPERTIES = ["editorId", "sourceKind", "sourceText", "sourceFontSize", "sourceFontWeight", "sourceFill", "dataBinding", "referenceLayer", "maskLayer", "fromSource", "replacesSource", "sourceInitial", "name"];
+const CUSTOM_PROPERTIES = ["editorId", "sourceKind", "sourceText", "sourceFontSize", "sourceFontFamily", "sourceFontWeight", "sourceFill", "dataBinding", "referenceLayer", "maskLayer", "fromSource", "replacesSource", "sourceInitial", "name"];
+const fontLoadCache = new Map();
 
 const uid = () => `fabric-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -14,6 +15,7 @@ function decorateObject(object, values = {}) {
     sourceKind: values.sourceKind || object.sourceKind || object.type,
     sourceText: values.sourceText ?? object.sourceText ?? "",
     sourceFontSize: values.sourceFontSize ?? object.sourceFontSize ?? null,
+    sourceFontFamily: values.sourceFontFamily ?? object.sourceFontFamily ?? null,
     sourceFontWeight: values.sourceFontWeight ?? object.sourceFontWeight ?? null,
     sourceFill: values.sourceFill ?? object.sourceFill ?? null,
     dataBinding: values.dataBinding ?? object.dataBinding ?? "",
@@ -49,27 +51,61 @@ function editableTextFromObject(fabric, object, text = object.sourceText || "") 
     left: bounds.left,
     top: bounds.top,
     angle: object.angle || 0,
-    fontSize: Math.max(6, bounds.height || Number(object.sourceFontSize) || 18),
-    fontFamily: object.fontFamily || "Arial",
+    fontSize: Math.max(6, Number(object.sourceFontSize) || bounds.height || 18),
+    fontFamily: object.sourceFontFamily || object.fontFamily || "Arial",
     fontWeight: object.fontWeight || object.sourceFontWeight || 400,
     fill: objectFill(object) || object.sourceFill || "#111111",
     opacity: object.opacity ?? 1,
     objectCaching: false,
     perPixelTargetFind: true,
   });
+  replacement.set({
+    scaleX: bounds.width / Math.max(1, replacement.width || bounds.width),
+    scaleY: bounds.height / Math.max(1, replacement.height || bounds.height),
+  });
+  replacement.setCoords();
+  const existingEdit = object.sourceEdit || {};
+  const sourceInitial = {
+    left: (replacement.left || 0) - (Number(existingEdit.dx) || 0),
+    top: (replacement.top || 0) - (Number(existingEdit.dy) || 0),
+    scaleX: (replacement.scaleX || 1) / (Number(existingEdit.scaleX) || 1),
+    scaleY: (replacement.scaleY || 1) / (Number(existingEdit.scaleY) || 1),
+    angle: (replacement.angle || 0) - (Number(existingEdit.rotation) || 0),
+  };
   return decorateObject(replacement, {
     editorId: object.editorId,
     sourceKind: "text",
     sourceText: object.sourceText || text,
     sourceFontSize: object.sourceFontSize,
+    sourceFontFamily: object.sourceFontFamily,
     sourceFontWeight: object.sourceFontWeight,
     sourceFill: object.sourceFill,
     dataBinding: object.dataBinding,
     fromSource: object.fromSource,
     replacesSource: Boolean(object.fromSource || object.replacesSource),
-    sourceInitial: object.sourceInitial,
+    sourceInitial,
     name: text,
   });
+}
+
+async function loadEmbeddedFonts(markup) {
+  if (typeof FontFace === "undefined" || !document.fonts) return;
+  const documentNode = new DOMParser().parseFromString(markup, "image/svg+xml");
+  const fonts = JSON.parse(documentNode.documentElement.getAttribute("data-editor-fonts") || "{}");
+  await Promise.all(Object.entries(fonts).map(([family, url]) => {
+    const key = `${family}:${url}`;
+    if (!fontLoadCache.has(key)) {
+      fontLoadCache.set(key, new FontFace(family, `url("${url}")`).load().then((font) => {
+        document.fonts.add(font);
+        return font;
+      }).catch((error) => {
+        fontLoadCache.delete(key);
+        console.warn(`Font PDF non caricato: ${family}`, error);
+        return null;
+      }));
+    }
+    return fontLoadCache.get(key);
+  }));
 }
 
 function detachFromSvgGroup(object) {
@@ -86,13 +122,18 @@ function detachFromSvgGroup(object) {
 }
 
 async function loadSourceSvg(fabric, asset) {
-  const result = await fabric.loadSVGFromURL(asset, (element, object) => {
+  const response = await fetch(asset);
+  if (!response.ok) throw new Error(`Template SVG non disponibile: ${response.status}`);
+  const markup = await response.text();
+  await loadEmbeddedFonts(markup);
+  const result = await fabric.loadSVGFromString(markup, (element, object) => {
     const wrapper = element.closest?.("[data-editor-id]");
     decorateObject(object, {
       editorId: wrapper?.getAttribute("data-editor-id") || uid(),
       sourceKind: wrapper?.getAttribute("data-editor-kind") || element.tagName.toLowerCase(),
       sourceText: wrapper?.getAttribute("data-editor-text") || "",
       sourceFontSize: Number.parseFloat(wrapper?.getAttribute("data-editor-font-size") || "") || null,
+      sourceFontFamily: wrapper?.getAttribute("data-editor-font-family") || null,
       sourceFontWeight: wrapper?.getAttribute("data-editor-font-weight") || null,
       sourceFill: wrapper?.getAttribute("data-editor-fill") || null,
     });
@@ -147,7 +188,7 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
       if (object.referenceLayer) continue;
       if (object.fromSource) {
         const initial = object.sourceInitial || { left: object.left || 0, top: object.top || 0, scaleX: object.scaleX || 1, scaleY: object.scaleY || 1, angle: object.angle || 0 };
-        sourceEdits[object.editorId] = {
+        const sourceEdit = {
           dx: (object.left || 0) - initial.left,
           dy: (object.top || 0) - initial.top,
           scaleX: (object.scaleX || 1) / (initial.scaleX || 1),
@@ -157,6 +198,8 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
           hidden: object.visible === false,
           ...(object.replacesSource ? { text: object.text || "", fontSize: object.fontSize, fontFamily: object.fontFamily, fontWeight: object.fontWeight, color: object.fill } : {}),
         };
+        sourceEdits[object.editorId] = sourceEdit;
+        object.sourceEdit = sourceEdit;
         continue;
       }
       const serialized = object.toObject(CUSTOM_PROPERTIES);
@@ -187,9 +230,9 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
       angle: Math.round(object.angle || 0),
       opacity: object.opacity ?? 1,
       fill: typeof object.fill === "string" ? object.fill : "#111111",
-      fontFamily: object.fontFamily,
-      fontSize: object.fontSize,
-      fontWeight: object.fontWeight,
+      fontFamily: object.fontFamily || object.sourceFontFamily,
+      fontSize: object.fontSize || object.sourceFontSize,
+      fontWeight: object.fontWeight || object.sourceFontWeight,
       textAlign: object.textAlign,
       locked: object.lockMovementX === true,
       dataBinding: object.dataBinding || "",
@@ -285,15 +328,31 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
           object.fromSource = true;
           object.sourceInitial = { left: object.left || 0, top: object.top || 0, scaleX: object.scaleX || 1, scaleY: object.scaleY || 1, angle: object.angle || 0 };
           const edit = page.svgEdits?.[object.editorId] || page.fabricJson?.sourceEdits?.[object.editorId];
-          if (edit) object.set({ left: (object.left || 0) + (Number(edit.dx) || 0), top: (object.top || 0) + (Number(edit.dy) || 0), scaleX: (object.scaleX || 1) * (Number(edit.scaleX) || 1), scaleY: (object.scaleY || 1) * (Number(edit.scaleY) || 1), angle: (object.angle || 0) + (Number(edit.rotation) || 0), opacity: edit.opacity ?? 1, visible: !edit.hidden });
+          object.sourceEdit = edit || {};
+          if (edit && !(edit.text != null && object.sourceKind === "text")) object.set({ left: (object.left || 0) + (Number(edit.dx) || 0), top: (object.top || 0) + (Number(edit.dy) || 0), scaleX: (object.scaleX || 1) * (Number(edit.scaleX) || 1), scaleY: (object.scaleY || 1) * (Number(edit.scaleY) || 1), angle: (object.angle || 0) + (Number(edit.rotation) || 0), opacity: edit.opacity ?? 1, visible: !edit.hidden });
         }
         canvas.add(...objects);
         for (const object of [...objects]) {
           const edit = page.svgEdits?.[object.editorId] || page.fabricJson?.sourceEdits?.[object.editorId];
           if (edit?.text == null || object.sourceKind !== "text") continue;
-          const bounds = object.getBoundingRect();
+          object.sourceEdit = {};
           const replacement = editableTextFromObject(fabric, object, edit.text);
-          replacement.set({ fontSize: edit.fontSize || replacement.fontSize, fontFamily: edit.fontFamily || replacement.fontFamily, fontWeight: edit.fontWeight || replacement.fontWeight, fill: edit.color || replacement.fill, opacity: edit.opacity ?? 1 });
+          const initial = replacement.sourceInitial;
+          replacement.set({
+            left: initial.left + (Number(edit.dx) || 0),
+            top: initial.top + (Number(edit.dy) || 0),
+            scaleX: initial.scaleX * (Number(edit.scaleX) || 1),
+            scaleY: initial.scaleY * (Number(edit.scaleY) || 1),
+            angle: initial.angle + (Number(edit.rotation) || 0),
+            fontSize: edit.fontSize || replacement.fontSize,
+            fontFamily: edit.fontFamily || replacement.fontFamily,
+            fontWeight: edit.fontWeight || replacement.fontWeight,
+            fill: edit.color || replacement.fill,
+            opacity: edit.opacity ?? 1,
+            visible: !edit.hidden,
+          });
+          replacement.sourceEdit = edit;
+          replacement.setCoords();
           canvas.remove(object); canvas.add(replacement);
         }
         if (page.fabricJson?.objects?.length) {

@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 import { JSDOM } from "jsdom";
 import * as fontkit from "fontkit";
 
@@ -9,6 +10,7 @@ const pdfjs = require("pdfjs-dist/legacy/build/pdf.js");
 const projectRoot = process.cwd();
 const inputPath = process.argv[2] || "/Users/marcocerasa/Downloads/cchio.pdf";
 const outputDir = path.join(projectRoot, "public/commerciale/hoon-template-svg");
+const fontsDir = path.join(outputDir, "fonts");
 const startPage = Math.max(1, Number(process.argv[3]) || 1);
 const dom = new JSDOM("<!doctype html><html><body></body></html>");
 
@@ -111,6 +113,7 @@ const loadingTask = pdfjs.getDocument({
 });
 const pdf = await loadingTask.promise;
 await mkdir(outputDir, { recursive: true });
+await mkdir(fontsDir, { recursive: true });
 
 const pages = [];
 const elementNames = ["path", "image"];
@@ -145,8 +148,17 @@ for (let pageNumber = startPage; pageNumber <= pdf.numPages; pageNumber += 1) {
   const matches = [...(styleElement?.textContent || "").matchAll(/font-family:\s*"([^"]+)";\s*src:\s*url\((blob:[^)]+)\)/g)];
   for (const [, family, blobUrl] of matches) {
     const response = await fetch(blobUrl);
-    fontFaces.set(family, fontkit.create(Buffer.from(await response.arrayBuffer())));
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const signature = buffer.subarray(0, 4).toString("latin1");
+    const extension = signature === "wOFF" ? "woff" : signature === "wOF2" ? "woff2" : signature === "OTTO" ? "otf" : "ttf";
+    const fileName = `${createHash("sha1").update(buffer).digest("hex").slice(0, 16)}.${extension}`;
+    await writeFile(path.join(fontsDir, fileName), buffer);
+    fontFaces.set(family, {
+      font: fontkit.create(buffer),
+      url: `/commerciale/hoon-template-svg/fonts/${fileName}`,
+    });
   }
+  svg.setAttribute("data-editor-fonts", JSON.stringify(Object.fromEntries([...fontFaces].map(([family, value]) => [family, value.url]))));
 
   let editorIndex = 0;
   for (const [textIndex, textElement] of textElements.entries()) {
@@ -160,11 +172,12 @@ for (let pageNumber = startPage; pageNumber <= pdf.numPages; pageNumber += 1) {
     group.setAttribute("data-editor-x", firstTspan?.getAttribute("x")?.split(/\s+/)[0] || "0");
     group.setAttribute("data-editor-y", firstTspan?.getAttribute("y") || "0");
     group.setAttribute("data-editor-font-size", firstTspan?.getAttribute("font-size") || "16");
+    group.setAttribute("data-editor-font-family", firstTspan?.getAttribute("font-family") || "Arial");
     group.setAttribute("data-editor-font-weight", firstTspan?.getAttribute("font-weight") || "400");
     group.setAttribute("data-editor-fill", firstTspan?.getAttribute("fill") || "#000000");
 
     for (const tspan of [...textElement.children]) {
-      const font = fontFaces.get(tspan.getAttribute("font-family"));
+      const font = fontFaces.get(tspan.getAttribute("font-family"))?.font;
       const fontSize = Number.parseFloat(tspan.getAttribute("font-size") || "16");
       const xValues = String(tspan.getAttribute("x") || "0").trim().split(/\s+/).map(Number);
       const y = Number.parseFloat(tspan.getAttribute("y") || "0");
