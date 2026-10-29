@@ -172,6 +172,8 @@ const PageSchema = new Schema({
   background: { type: String, default: "#ffffff" },
   backgroundImage: { type: String, default: "" },
   backgroundImageOpacity: { type: Number, default: 1, min: 0, max: 1 },
+  svgAsset: { type: String, default: "" },
+  svgEdits: { type: Schema.Types.Mixed, default: () => ({}) },
   includedByDefault: { type: Boolean, default: false },
   sourcePage: { type: Number, default: null },
   serviceKeys: { type: [String], default: [] },

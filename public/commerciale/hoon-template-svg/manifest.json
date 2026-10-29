@@ -1,0 +1,293 @@
+{
+  "source": "cchio.pdf",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "asset": "/commerciale/hoon-template-svg/page-01.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 7,
+      "textObjects": 1
+    },
+    {
+      "pageNumber": 2,
+      "asset": "/commerciale/hoon-template-svg/page-02.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 69,
+      "textObjects": 52
+    },
+    {
+      "pageNumber": 3,
+      "asset": "/commerciale/hoon-template-svg/page-03.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 90,
+      "textObjects": 70
+    },
+    {
+      "pageNumber": 4,
+      "asset": "/commerciale/hoon-template-svg/page-04.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 68,
+      "textObjects": 52
+    },
+    {
+      "pageNumber": 5,
+      "asset": "/commerciale/hoon-template-svg/page-05.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 73,
+      "textObjects": 47
+    },
+    {
+      "pageNumber": 6,
+      "asset": "/commerciale/hoon-template-svg/page-06.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 82,
+      "textObjects": 51
+    },
+    {
+      "pageNumber": 7,
+      "asset": "/commerciale/hoon-template-svg/page-07.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 82,
+      "textObjects": 51
+    },
+    {
+      "pageNumber": 8,
+      "asset": "/commerciale/hoon-template-svg/page-08.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 81,
+      "textObjects": 55
+    },
+    {
+      "pageNumber": 9,
+      "asset": "/commerciale/hoon-template-svg/page-09.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 83,
+      "textObjects": 58
+    },
+    {
+      "pageNumber": 10,
+      "asset": "/commerciale/hoon-template-svg/page-10.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 69,
+      "textObjects": 45
+    },
+    {
+      "pageNumber": 11,
+      "asset": "/commerciale/hoon-template-svg/page-11.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 81,
+      "textObjects": 54
+    },
+    {
+      "pageNumber": 12,
+      "asset": "/commerciale/hoon-template-svg/page-12.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 104,
+      "textObjects": 66
+    },
+    {
+      "pageNumber": 13,
+      "asset": "/commerciale/hoon-template-svg/page-13.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 97,
+      "textObjects": 62
+    },
+    {
+      "pageNumber": 14,
+      "asset": "/commerciale/hoon-template-svg/page-14.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 73,
+      "textObjects": 48
+    },
+    {
+      "pageNumber": 15,
+      "asset": "/commerciale/hoon-template-svg/page-15.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 71,
+      "textObjects": 49
+    },
+    {
+      "pageNumber": 16,
+      "asset": "/commerciale/hoon-template-svg/page-16.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 72,
+      "textObjects": 48
+    },
+    {
+      "pageNumber": 17,
+      "asset": "/commerciale/hoon-template-svg/page-17.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 84,
+      "textObjects": 58
+    },
+    {
+      "pageNumber": 18,
+      "asset": "/commerciale/hoon-template-svg/page-18.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 81,
+      "textObjects": 56
+    },
+    {
+      "pageNumber": 19,
+      "asset": "/commerciale/hoon-template-svg/page-19.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 94,
+      "textObjects": 65
+    },
+    {
+      "pageNumber": 20,
+      "asset": "/commerciale/hoon-template-svg/page-20.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 87,
+      "textObjects": 57
+    },
+    {
+      "pageNumber": 21,
+      "asset": "/commerciale/hoon-template-svg/page-21.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 91,
+      "textObjects": 64
+    },
+    {
+      "pageNumber": 22,
+      "asset": "/commerciale/hoon-template-svg/page-22.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 86,
+      "textObjects": 56
+    },
+    {
+      "pageNumber": 23,
+      "asset": "/commerciale/hoon-template-svg/page-23.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 64,
+      "textObjects": 42
+    },
+    {
+      "pageNumber": 24,
+      "asset": "/commerciale/hoon-template-svg/page-24.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 87,
+      "textObjects": 60
+    },
+    {
+      "pageNumber": 25,
+      "asset": "/commerciale/hoon-template-svg/page-25.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 85,
+      "textObjects": 59
+    },
+    {
+      "pageNumber": 26,
+      "asset": "/commerciale/hoon-template-svg/page-26.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 86,
+      "textObjects": 60
+    },
+    {
+      "pageNumber": 27,
+      "asset": "/commerciale/hoon-template-svg/page-27.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 86,
+      "textObjects": 60
+    },
+    {
+      "pageNumber": 28,
+      "asset": "/commerciale/hoon-template-svg/page-28.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 89,
+      "textObjects": 63
+    },
+    {
+      "pageNumber": 29,
+      "asset": "/commerciale/hoon-template-svg/page-29.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 95,
+      "textObjects": 71
+    },
+    {
+      "pageNumber": 30,
+      "asset": "/commerciale/hoon-template-svg/page-30.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 84,
+      "textObjects": 54
+    },
+    {
+      "pageNumber": 31,
+      "asset": "/commerciale/hoon-template-svg/page-31.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 83,
+      "textObjects": 54
+    },
+    {
+      "pageNumber": 32,
+      "asset": "/commerciale/hoon-template-svg/page-32.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 97,
+      "textObjects": 60
+    },
+    {
+      "pageNumber": 33,
+      "asset": "/commerciale/hoon-template-svg/page-33.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 83,
+      "textObjects": 53
+    },
+    {
+      "pageNumber": 34,
+      "asset": "/commerciale/hoon-template-svg/page-34.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 88,
+      "textObjects": 57
+    },
+    {
+      "pageNumber": 35,
+      "asset": "/commerciale/hoon-template-svg/page-35.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 55,
+      "textObjects": 37
+    },
+    {
+      "pageNumber": 36,
+      "asset": "/commerciale/hoon-template-svg/page-36.svg",
+      "width": 595.5,
+      "height": 842.2499787,
+      "editableObjects": 46,
+      "textObjects": 27
+    }
+  ]
+}

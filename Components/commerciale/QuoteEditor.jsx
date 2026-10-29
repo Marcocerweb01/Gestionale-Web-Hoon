@@ -60,6 +60,7 @@ const visualStyle = (block) => ({
 
 function PageThumbnail({ page, resolveText = (text) => text }) {
   return <div className="aspect-[595/842] rounded bg-white border relative overflow-hidden" style={{ background: page.background || "#ffffff" }}>
+    {page.svgAsset && <img src={page.svgAsset} alt="" className="absolute inset-0 h-full w-full object-fill" />}
     {page.backgroundImage && <img src={page.backgroundImage} alt="" className="absolute inset-0 w-full h-full object-fill" style={{ opacity: page.backgroundImageOpacity ?? 1 }} />}
     {[...(page.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} className="absolute overflow-hidden" style={{
       left: `${(block.x / 595) * 100}%`, top: `${(block.y / 842) * 100}%`, width: `${(block.width / 595) * 100}%`, height: `${(block.height / 842) * 100}%`,
@@ -74,6 +75,101 @@ function PageThumbnail({ page, resolveText = (text) => text }) {
   </div>;
 }
 
+function SourceSvgLayer({ asset, edits = {}, selectedId, preview, onSelect, onEdit, onInteractionStart }) {
+  const [markup, setMarkup] = useState("");
+  const layerRef = useRef(null);
+  const pointerRef = useRef(null);
+
+  useEffect(() => {
+    if (!asset) return setMarkup("");
+    const controller = new AbortController();
+    fetch(asset, { signal: controller.signal }).then((response) => {
+      if (!response.ok) throw new Error("Template SVG non disponibile");
+      return response.text();
+    }).then(setMarkup).catch((error) => {
+      if (error.name !== "AbortError") console.error(error);
+    });
+    return () => controller.abort();
+  }, [asset]);
+
+  useEffect(() => {
+    const root = layerRef.current;
+    if (!root || !markup) return;
+    for (const element of root.querySelectorAll("[data-editor-id]")) {
+      const id = element.getAttribute("data-editor-id");
+      const edit = edits[id] || {};
+      const baseTransform = element.getAttribute("data-editor-base-transform") || "";
+      const dx = Number(edit.dx) || 0;
+      const dy = Number(edit.dy) || 0;
+      const rotation = Number(edit.rotation) || 0;
+      const scaleX = Number(edit.scaleX) || 1;
+      const scaleY = Number(edit.scaleY) || 1;
+      element.setAttribute("transform", `${baseTransform} translate(${dx} ${dy}) rotate(${rotation}) scale(${scaleX} ${scaleY})`.trim());
+      element.style.display = edit.hidden ? "none" : "";
+      element.style.opacity = edit.opacity == null ? "" : String(edit.opacity);
+      element.toggleAttribute("data-editor-selected", !preview && id === selectedId);
+
+      if (element.getAttribute("data-editor-kind") === "text") {
+        const replacement = element.querySelector(":scope > [data-editor-replacement]");
+        const hasReplacement = edit.text != null;
+        for (const path of element.querySelectorAll(":scope > path")) path.style.display = hasReplacement ? "none" : "";
+        if (!hasReplacement) replacement?.remove();
+        else {
+          const text = replacement || document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("data-editor-replacement", "true");
+          text.setAttribute("x", element.getAttribute("data-editor-x") || "0");
+          text.setAttribute("y", element.getAttribute("data-editor-y") || "0");
+          text.setAttribute("font-size", String(edit.fontSize || element.getAttribute("data-editor-font-size") || 16));
+          text.setAttribute("font-family", edit.fontFamily || "Arial, sans-serif");
+          text.setAttribute("font-weight", String(edit.fontWeight || 700));
+          text.setAttribute("fill", edit.color || element.getAttribute("data-editor-fill") || "#111111");
+          text.textContent = edit.text;
+          if (!replacement) element.append(text);
+        }
+      }
+    }
+  }, [edits, markup, preview, selectedId]);
+
+  const pointerDown = (event) => {
+    if (preview) return;
+    const element = event.target.closest?.("[data-editor-id]");
+    if (!element || !layerRef.current?.contains(element)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const id = element.getAttribute("data-editor-id");
+    const kind = element.getAttribute("data-editor-kind") || "vector";
+    onSelect({ id, kind, text: element.getAttribute("data-editor-text") || "" });
+    pointerRef.current = { id, x: event.clientX, y: event.clientY, dx: Number(edits[id]?.dx) || 0, dy: Number(edits[id]?.dy) || 0, started: false };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const pointerMove = (event) => {
+    const pointer = pointerRef.current;
+    if (!pointer || !layerRef.current) return;
+    const distance = Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y);
+    if (!pointer.started && distance < 3) return;
+    if (!pointer.started) {
+      pointer.started = true;
+      onInteractionStart();
+    }
+    const rect = layerRef.current.getBoundingClientRect();
+    onEdit(pointer.id, {
+      dx: Math.round((pointer.dx + (event.clientX - pointer.x) * (PAGE_WIDTH / rect.width)) * 10) / 10,
+      dy: Math.round((pointer.dy + (event.clientY - pointer.y) * (PAGE_HEIGHT / rect.height)) * 10) / 10,
+    }, false);
+  };
+
+  return <div
+    ref={layerRef}
+    className="absolute inset-0 z-[1] [&>svg]:block [&>svg]:h-full [&>svg]:w-full [&_[data-editor-id]]:cursor-move [&_[data-editor-id]:hover]:[filter:drop-shadow(0_0_2px_#2563eb)] [&_[data-editor-selected]]:[filter:drop-shadow(0_0_3px_#2563eb)]"
+    onPointerDown={pointerDown}
+    onPointerMove={pointerMove}
+    onPointerUp={() => { pointerRef.current = null; }}
+    onPointerCancel={() => { pointerRef.current = null; }}
+    dangerouslySetInnerHTML={{ __html: markup }}
+  />;
+}
+
 export default function QuoteEditor({ quote, template, onClose, onSaved }) {
   const isTemplate = Boolean(template);
   const initialVersion = useMemo(() => isTemplate
@@ -85,6 +181,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
   const [paymentConditions, setPaymentConditions] = useState(initialVersion?.paymentConditions || "");
   const [pageIndex, setPageIndex] = useState(0);
   const [selectedId, setSelectedId] = useState("");
+  const [selectedSource, setSelectedSource] = useState(null);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -102,6 +199,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
 
   const currentPage = pages[pageIndex];
   const selected = currentPage?.blocks?.find((block) => block.id === selectedId);
+  const selectedSourceEdit = selectedSource ? (currentPage?.svgEdits?.[selectedSource.id] || {}) : null;
   const totals = useMemo(() => items.reduce((acc, item) => {
     const net = (Number(item.quantity) || 0) * (Number(item.discountedPrice) || 0);
     const vat = net * ((Number(item.vatRate) || 0) / 100);
@@ -126,6 +224,15 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
   }, [pageIndex, remember]);
 
   const updateBlock = useCallback((patch, withHistory = true) => updateBlockById(selectedId, patch, withHistory), [selectedId, updateBlockById]);
+
+  const updateSvgEdit = useCallback((objectId, patch, withHistory = true) => {
+    if (withHistory) remember();
+    setPages((old) => old.map((page, index) => index === pageIndex ? {
+      ...page,
+      svgEdits: { ...(page.svgEdits || {}), [objectId]: { ...(page.svgEdits?.[objectId] || {}), ...patch } },
+    } : page));
+    setDirty(true);
+  }, [pageIndex, remember]);
 
   const save = useCallback(async ({ newVersion = false, silent = false } = {}) => {
     if (savingRef.current) return;
@@ -227,6 +334,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
     if (preview || block.locked || editingTextId === block.id) return;
     event.preventDefault();
     event.stopPropagation();
+    setSelectedSource(null);
     setSelectedId(block.id);
     dragRef.current = {
       id: block.id,
@@ -297,6 +405,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
   const addBlock = (type) => {
     const block = { id: uid(), type, text: type === "text" ? "Nuovo testo" : "", imageUrl: "", x: 60, y: 100, width: 260, height: type === "shape" ? 60 : 90, fontSize: 22, fontWeight: 400, fontFamily: "Arial", lineHeight: 1.2, letterSpacing: 0, color: "#111111", background: type === "shape" ? "#ffd800" : "transparent", align: "left", layer: (currentPage?.blocks?.length || 0) + 1, shapeType: "rectangle", borderColor: "#111111", borderWidth: 0, borderRadius: 0, opacity: 1, rotation: 0, objectFit: "contain", locked: false };
     mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, blocks: [...page.blocks, block] } : page));
+    setSelectedSource(null);
     setSelectedId(block.id);
     if (type === "text") setEditingTextId(block.id);
   };
@@ -391,7 +500,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
           <div className="mr-auto"><h2 className="font-bold">{isTemplate ? template.name : quote.number}</h2><p className="text-xs text-gray-500">{isTemplate ? "Editor master del template · le modifiche valgono per i nuovi preventivi" : `Versione ${quote.currentVersion} · ${quote.organization?.businessName || ""}`}</p></div>
           <button onClick={undo} disabled={!history.length} className="p-2 rounded hover:bg-gray-100 disabled:opacity-30"><Undo2 className="w-4 h-4" /></button>
           <button onClick={redo} disabled={!future.length} className="p-2 rounded hover:bg-gray-100 disabled:opacity-30"><Redo2 className="w-4 h-4" /></button>
-          <button onClick={() => { setPreview((value) => !value); setSelectedId(""); setEditingTextId(""); }} className={`inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm ${preview ? "bg-blue-50 border-blue-400" : ""}`}>{preview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}{preview ? "Modifica" : "Anteprima"}</button>
+          <button onClick={() => { setPreview((value) => !value); setSelectedId(""); setSelectedSource(null); setEditingTextId(""); }} className={`inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm ${preview ? "bg-blue-50 border-blue-400" : ""}`}>{preview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}{preview ? "Modifica" : "Anteprima"}</button>
           {!isTemplate && <><select value={quote.status} onChange={(event) => changeStatus(event.target.value)} className="border rounded-lg px-3 py-2 text-sm"><option value="draft">Bozza</option><option value="ready">Pronto</option><option value="presented">Presentato</option><option value="accepted">Accettato</option><option value="rejected">Rifiutato</option><option value="postponed">Posticipato</option><option value="archived">Archiviato</option></select>
           <a href={`/api/commerciale/quotes/${quote._id}/pdf?version=${quote.currentVersion}`} target="_blank" className="inline-flex items-center gap-2 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm"><Download className="w-4 h-4" />PDF</a>
           <button onClick={() => save({ newVersion: true })} className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm"><Copy className="w-4 h-4" />Nuova versione</button></>}
@@ -402,7 +511,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
         <div className={`flex-1 min-h-0 grid grid-cols-1 ${preview ? "lg:grid-cols-1" : "lg:grid-cols-[210px_minmax(620px,1fr)_310px]"}`}>
           {!preview && <aside className="hidden lg:block bg-white border-r overflow-y-auto p-3">
             <div className="flex items-center justify-between mb-3"><strong className="text-sm">Pagine</strong><button onClick={addPage} className="p-1 hover:bg-gray-100 rounded"><Plus className="w-4 h-4" /></button></div>
-            <div className="space-y-2">{pages.map((page, index) => <button key={page.id} onClick={() => { setPageIndex(index); setSelectedId(""); }} className={`w-full text-left border rounded-lg p-2 ${index === pageIndex ? "border-yellow-500 bg-yellow-50" : "border-gray-200"}`}><PageThumbnail page={page} resolveText={(text) => isTemplate ? text : resolveQuoteVariables(text, quote, { ...initialVersion, items, projectDescription, paymentConditions, totals })} /><span className="mt-2 block truncate text-xs font-medium">{index + 1}. {page.name}</span></button>)}</div>
+            <div className="space-y-2">{pages.map((page, index) => <button key={page.id} onClick={() => { setPageIndex(index); setSelectedId(""); setSelectedSource(null); }} className={`w-full text-left border rounded-lg p-2 ${index === pageIndex ? "border-yellow-500 bg-yellow-50" : "border-gray-200"}`}><PageThumbnail page={page} resolveText={(text) => isTemplate ? text : resolveQuoteVariables(text, quote, { ...initialVersion, items, projectDescription, paymentConditions, totals })} /><span className="mt-2 block truncate text-xs font-medium">{index + 1}. {page.name}</span></button>)}</div>
             <div className="sticky bottom-0 mt-3 grid grid-cols-4 gap-1 bg-white py-2">
               <button title="Sposta pagina su" onClick={() => movePage(-1)} disabled={pageIndex === 0} className="grid place-items-center border rounded-lg py-2 disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
               <button title="Sposta pagina giù" onClick={() => movePage(1)} disabled={pageIndex === pages.length - 1} className="grid place-items-center border rounded-lg py-2 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
@@ -421,14 +530,15 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
               <label className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs shadow">Zoom<input type="range" min="0.35" max="1.5" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} className="w-24" /><span className="w-10 text-right">{Math.round(zoom * 100)}%</span></label>
             </div>}
             {currentPage && <div className="relative mx-auto" style={{ width: PAGE_WIDTH * zoom, height: PAGE_HEIGHT * zoom }}>
-              <div ref={canvasRef} className="absolute left-0 top-0 shadow-2xl touch-none overflow-hidden" style={{ width: PAGE_WIDTH, height: PAGE_HEIGHT, background: currentPage.background, transform: `scale(${zoom})`, transformOrigin: "top left" }} onPointerDown={() => { setSelectedId(""); setEditingTextId(""); }}>
+              <div ref={canvasRef} className="absolute left-0 top-0 shadow-2xl touch-none overflow-hidden" style={{ width: PAGE_WIDTH, height: PAGE_HEIGHT, background: currentPage.background, transform: `scale(${zoom})`, transformOrigin: "top left" }} onPointerDown={() => { setSelectedId(""); setSelectedSource(null); setEditingTextId(""); }}>
+                {currentPage.svgAsset && <SourceSvgLayer asset={currentPage.svgAsset} edits={currentPage.svgEdits || {}} selectedId={selectedSource?.id || ""} preview={preview} onSelect={(source) => { setSelectedId(""); setEditingTextId(""); setSelectedSource(source); }} onEdit={updateSvgEdit} onInteractionStart={remember} />}
                 {currentPage.backgroundImage && <img src={currentPage.backgroundImage} alt="Sfondo del template" className="absolute inset-0 w-full h-full object-fill pointer-events-none" style={{ opacity: currentPage.backgroundImageOpacity ?? 1 }} />}
                 {guides.x !== null && <div className="absolute top-0 bottom-0 w-px bg-fuchsia-500 z-[9999] pointer-events-none" style={{ left: guides.x }} />}
                 {guides.y !== null && <div className="absolute left-0 right-0 h-px bg-fuchsia-500 z-[9999] pointer-events-none" style={{ top: guides.y }} />}
                 {[...(currentPage.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => {
                   const isSelected = !preview && selectedId === block.id;
                   const isEditing = editingTextId === block.id;
-                  return <div key={block.id} onPointerDown={(event) => startInteraction(event, block)} onDoubleClick={(event) => { if (!preview && block.type === "text" && !block.locked) { event.stopPropagation(); setSelectedId(block.id); setEditingTextId(block.id); } }} className={`absolute ${preview || block.locked ? "cursor-default" : "cursor-move hover:outline hover:outline-1 hover:outline-blue-400"} ${isSelected ? "ring-2 ring-blue-500" : ""}`} style={visualStyle(block)}>
+                  return <div key={block.id} onPointerDown={(event) => startInteraction(event, block)} onDoubleClick={(event) => { if (!preview && block.type === "text" && !block.locked) { event.stopPropagation(); setSelectedSource(null); setSelectedId(block.id); setEditingTextId(block.id); } }} className={`absolute z-[2] ${preview || block.locked ? "cursor-default" : "cursor-move hover:outline hover:outline-1 hover:outline-blue-400"} ${isSelected ? "ring-2 ring-blue-500" : ""}`} style={visualStyle(block)}>
                     <div className="w-full h-full overflow-hidden" style={{ borderRadius: block.shapeType === "ellipse" ? "9999px" : block.borderRadius || 0 }}>
                       {block.type === "text" && (isEditing ? <textarea autoFocus value={block.text} onChange={(event) => updateBlockById(block.id, { text: event.target.value }, false)} onBlur={() => { setEditingTextId(""); setDirty(true); }} onPointerDown={(event) => event.stopPropagation()} className="w-full h-full resize-none border-0 bg-transparent p-1 outline-none" style={{ color: block.color, fontFamily: block.fontFamily || "Arial", fontSize: block.fontSize, fontWeight: block.fontWeight, lineHeight: block.lineHeight || 1.2, letterSpacing: block.letterSpacing || 0, textAlign: block.align }} /> : <div className="w-full h-full p-1 whitespace-pre-wrap">{isTemplate ? block.text : resolveQuoteVariables(block.text, quote, { ...initialVersion, items, projectDescription, paymentConditions, totals })}</div>)}
                       {block.type === "image" && (block.imageUrl ? <img src={block.imageUrl} alt="" draggable="false" className={`w-full h-full pointer-events-none ${block.objectFit === "cover" ? "object-cover" : block.objectFit === "fill" ? "object-fill" : "object-contain"}`} /> : <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full h-full border-2 border-dashed grid place-items-center text-xs text-gray-400">Carica immagine</button>)}
@@ -445,7 +555,21 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
           </main>
 
           {!preview && <aside className="bg-white border-l overflow-y-auto p-4 space-y-5">
-            {selected ? <section><div className="flex items-center justify-between"><h3 className="font-bold flex items-center gap-2"><Layers className="w-4 h-4" />Elemento {selected.type === "text" ? "testo" : selected.type === "image" ? "immagine" : "forma"}</h3><div className="flex items-center"><button title="Duplica elemento" onClick={duplicateBlock} className="p-1 text-gray-700"><Copy className="w-4 h-4" /></button><button title={selected.locked ? "Sblocca" : "Blocca"} onClick={() => updateBlock({ locked: !selected.locked })} className="p-1 text-gray-700">{selected.locked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}</button><button title="Elimina elemento" onClick={() => { mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, blocks: page.blocks.filter((block) => block.id !== selectedId) } : page)); setSelectedId(""); }} className="p-1 text-red-600"><Trash2 className="w-4 h-4" /></button></div></div>
+            {selectedSource ? <section>
+              <div className="flex items-center justify-between"><h3 className="font-bold flex items-center gap-2"><Layers className="w-4 h-4" />Elemento PDF · {selectedSource.kind === "text" ? "testo" : selectedSource.kind === "image" ? "immagine" : "vettore"}</h3><button title="Nascondi elemento" onClick={() => updateSvgEdit(selectedSource.id, { hidden: true })} className="p-1 text-red-600"><Trash2 className="w-4 h-4" /></button></div>
+              <p className="mt-1 text-[11px] text-gray-500">Questo è un oggetto del PDF originale. Trascinalo direttamente sul foglio oppure usa i controlli precisi.</p>
+              {selectedSource.kind === "text" && <textarea value={selectedSourceEdit?.text ?? selectedSource.text} onChange={(event) => updateSvgEdit(selectedSource.id, { text: event.target.value }, false)} onBlur={() => setDirty(true)} rows={5} className="mt-3 w-full border rounded-lg p-2 text-sm" />}
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <label className="text-xs">Sposta X<input type="number" step="0.5" value={selectedSourceEdit?.dx || 0} onChange={(event) => updateSvgEdit(selectedSource.id, { dx: Number(event.target.value) }, false)} className="mt-1 w-full border rounded p-1" /></label>
+                <label className="text-xs">Sposta Y<input type="number" step="0.5" value={selectedSourceEdit?.dy || 0} onChange={(event) => updateSvgEdit(selectedSource.id, { dy: Number(event.target.value) }, false)} className="mt-1 w-full border rounded p-1" /></label>
+                <label className="text-xs">Larghezza %<input type="number" min="10" step="1" value={Math.round((selectedSourceEdit?.scaleX || 1) * 100)} onChange={(event) => updateSvgEdit(selectedSource.id, { scaleX: Number(event.target.value) / 100 }, false)} className="mt-1 w-full border rounded p-1" /></label>
+                <label className="text-xs">Altezza %<input type="number" min="10" step="1" value={Math.round((selectedSourceEdit?.scaleY || 1) * 100)} onChange={(event) => updateSvgEdit(selectedSource.id, { scaleY: Number(event.target.value) / 100 }, false)} className="mt-1 w-full border rounded p-1" /></label>
+              </div>
+              <label className="mt-2 block text-xs">Rotazione<input type="number" min="-360" max="360" value={selectedSourceEdit?.rotation || 0} onChange={(event) => updateSvgEdit(selectedSource.id, { rotation: Number(event.target.value) }, false)} className="mt-1 w-full border rounded p-1" /></label>
+              {selectedSource.kind === "text" && <div className="grid grid-cols-2 gap-2 mt-3"><label className="text-xs">Dimensione<input type="number" min="6" value={selectedSourceEdit?.fontSize || 18} onChange={(event) => updateSvgEdit(selectedSource.id, { fontSize: Number(event.target.value), text: selectedSourceEdit?.text ?? selectedSource.text }, false)} className="mt-1 w-full border rounded p-1" /></label><label className="text-xs">Colore<input type="color" value={selectedSourceEdit?.color || "#111111"} onChange={(event) => updateSvgEdit(selectedSource.id, { color: event.target.value, text: selectedSourceEdit?.text ?? selectedSource.text }, false)} className="mt-1 h-8 w-full" /></label></div>}
+              <label className="mt-3 block text-xs">Opacità {Math.round((selectedSourceEdit?.opacity ?? 1) * 100)}%<input type="range" min="0.1" max="1" step="0.05" value={selectedSourceEdit?.opacity ?? 1} onChange={(event) => updateSvgEdit(selectedSource.id, { opacity: Number(event.target.value) }, false)} className="mt-1 w-full" /></label>
+              <button onClick={() => { remember(); setPages((old) => old.map((page, index) => { if (index !== pageIndex) return page; const svgEdits = { ...(page.svgEdits || {}) }; delete svgEdits[selectedSource.id]; return { ...page, svgEdits }; })); setDirty(true); }} className="mt-4 w-full rounded-lg border py-2 text-sm">Ripristina originale</button>
+            </section> : selected ? <section><div className="flex items-center justify-between"><h3 className="font-bold flex items-center gap-2"><Layers className="w-4 h-4" />Elemento {selected.type === "text" ? "testo" : selected.type === "image" ? "immagine" : "forma"}</h3><div className="flex items-center"><button title="Duplica elemento" onClick={duplicateBlock} className="p-1 text-gray-700"><Copy className="w-4 h-4" /></button><button title={selected.locked ? "Sblocca" : "Blocca"} onClick={() => updateBlock({ locked: !selected.locked })} className="p-1 text-gray-700">{selected.locked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}</button><button title="Elimina elemento" onClick={() => { mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, blocks: page.blocks.filter((block) => block.id !== selectedId) } : page)); setSelectedId(""); }} className="p-1 text-red-600"><Trash2 className="w-4 h-4" /></button></div></div>
               <p className="mt-1 text-[11px] text-gray-500">Trascina sul foglio · usa le maniglie per ridimensionare · doppio clic sul testo per scrivere.</p>
               {selected.type === "text" && <textarea value={selected.text} onChange={(event) => updateBlock({ text: event.target.value }, false)} onBlur={() => setDirty(true)} rows={5} className="mt-3 w-full border rounded-lg p-2 text-sm" />}
               {selected.type === "image" && <div className="mt-3 space-y-2"><button onClick={() => imageInputRef.current?.click()} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white"><ImagePlus className="w-4 h-4" />Sostituisci immagine</button><input value={selected.imageUrl} onChange={(event) => updateBlock({ imageUrl: event.target.value }, false)} placeholder="Oppure incolla URL o data:image…" className="w-full border rounded-lg p-2 text-sm" /><label className="block text-xs">Adattamento<select value={selected.objectFit || "contain"} onChange={(event) => updateBlock({ objectFit: event.target.value })} className="mt-1 w-full border rounded p-2"><option value="contain">Contieni</option><option value="cover">Riempi e ritaglia</option><option value="fill">Stira</option></select></label></div>}
