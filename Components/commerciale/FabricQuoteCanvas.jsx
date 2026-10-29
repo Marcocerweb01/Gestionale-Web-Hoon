@@ -54,7 +54,7 @@ function editableTextFromObject(fabric, object, text = object.sourceText || "") 
     fontSize: Math.max(6, Number(object.sourceFontSize) || bounds.height || 18),
     fontFamily: object.sourceFontFamily || object.fontFamily || "Arial",
     fontWeight: object.fontWeight || object.sourceFontWeight || 400,
-    fill: objectFill(object) || object.sourceFill || "#111111",
+    fill: object.sourceFill || objectFill(object) || "#111111",
     opacity: object.opacity ?? 1,
     objectCaching: false,
     perPixelTargetFind: true,
@@ -158,6 +158,10 @@ async function loadSourceSvg(fabric, asset) {
       editorId,
       sourceKind: first.sourceKind,
       sourceText: first.sourceText,
+      sourceFontSize: first.sourceFontSize,
+      sourceFontFamily: first.sourceFontFamily,
+      sourceFontWeight: first.sourceFontWeight,
+      sourceFill: first.sourceFill,
       name: first.sourceText || first.sourceKind,
     });
   });
@@ -229,7 +233,9 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
       height: Math.round(bounds?.height ?? object.getScaledHeight?.() ?? object.height ?? 0),
       angle: Math.round(object.angle || 0),
       opacity: object.opacity ?? 1,
-      fill: typeof object.fill === "string" ? object.fill : "#111111",
+      fill: ["i-text", "textbox", "text"].includes(object.type)
+        ? (typeof object.fill === "string" ? object.fill : "#111111")
+        : object.sourceFill || (typeof object.fill === "string" ? object.fill : "#111111"),
       fontFamily: object.fontFamily || object.sourceFontFamily,
       fontSize: object.fontSize || object.sourceFontSize,
       fontWeight: object.fontWeight || object.sourceFontWeight,
