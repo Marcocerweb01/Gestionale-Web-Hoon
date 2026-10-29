@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Copy, Download, Eye, EyeOff, ImagePlus, Layers, Lock, Plus, Redo2, Save, Trash2, Undo2, Unlock, X } from "lucide-react";
+import { normalizeQuotePages, resolveQuoteVariables } from "@/lib/commerciale/quoteCanvas";
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const money = (value) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(value) || 0);
@@ -57,17 +58,17 @@ const visualStyle = (block) => ({
   borderRadius: block.shapeType === "ellipse" ? "9999px" : block.borderRadius || 0,
 });
 
-function PageThumbnail({ page }) {
+function PageThumbnail({ page, resolveText = (text) => text }) {
   return <div className="aspect-[595/842] rounded bg-white border relative overflow-hidden" style={{ background: page.background || "#ffffff" }}>
     {page.backgroundImage && <img src={page.backgroundImage} alt="" className="absolute inset-0 w-full h-full object-fill" style={{ opacity: page.backgroundImageOpacity ?? 1 }} />}
-    {[...(page.blocks || [])].filter((block) => !block.referenceMode || block.modified).sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} className="absolute overflow-hidden" style={{
+    {[...(page.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} className="absolute overflow-hidden" style={{
       left: `${(block.x / 595) * 100}%`, top: `${(block.y / 842) * 100}%`, width: `${(block.width / 595) * 100}%`, height: `${(block.height / 842) * 100}%`,
       color: block.color, background: block.background, fontSize: Math.max(2, (block.fontSize || 12) * 0.25), fontWeight: block.fontWeight,
       textAlign: block.align, opacity: block.opacity ?? 1, zIndex: block.layer,
       border: Number(block.borderWidth) > 0 ? `${Math.max(0.5, block.borderWidth * 0.25)}px solid ${block.borderColor || "#111111"}` : undefined,
       borderRadius: block.shapeType === "ellipse" ? "9999px" : Math.max(0, (block.borderRadius || 0) * 0.25),
     }}>
-      {block.type === "text" && <div className="whitespace-pre-wrap leading-tight">{block.text}</div>}
+      {block.type === "text" && <div className="whitespace-pre-wrap leading-tight">{resolveText(block.text)}</div>}
       {block.type === "image" && block.imageUrl && <img src={block.imageUrl} alt="" className={`w-full h-full ${block.objectFit === "cover" ? "object-cover" : block.objectFit === "fill" ? "object-fill" : "object-contain"}`} />}
     </div>)}
   </div>;
@@ -78,7 +79,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
   const initialVersion = useMemo(() => isTemplate
     ? { pages: template.pages || [], items: [], projectDescription: "", paymentConditions: "" }
     : quote.versions.find((item) => item.version === quote.currentVersion) || quote.versions.at(-1), [isTemplate, quote, template]);
-  const [pages, setPages] = useState(() => clone(initialVersion?.pages || []));
+  const [pages, setPages] = useState(() => normalizeQuotePages(clone(initialVersion?.pages || [])));
   const [items, setItems] = useState(() => clone(initialVersion?.items || []));
   const [projectDescription, setProjectDescription] = useState(initialVersion?.projectDescription || "");
   const [paymentConditions, setPaymentConditions] = useState(initialVersion?.paymentConditions || "");
@@ -120,9 +121,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
 
   const updateBlockById = useCallback((blockId, patch, withHistory = true) => {
     if (withHistory) remember();
-    const visualKeys = ["x", "y", "width", "height", "rotation", "text", "imageUrl", "fontSize", "fontWeight", "fontFamily", "lineHeight", "letterSpacing", "color", "background", "align", "shapeType", "borderColor", "borderWidth", "borderRadius", "opacity", "objectFit"];
-    const changesVisual = visualKeys.some((key) => Object.prototype.hasOwnProperty.call(patch, key));
-    setPages((old) => old.map((page, index) => index === pageIndex ? { ...page, blocks: page.blocks.map((block) => block.id === blockId ? { ...block, ...patch, ...(block.referenceMode && changesVisual ? { modified: true } : {}) } : block) } : page));
+    setPages((old) => old.map((page, index) => index === pageIndex ? { ...page, blocks: page.blocks.map((block) => block.id === blockId ? { ...block, ...patch } : block) } : page));
     setDirty(true);
   }, [pageIndex, remember]);
 
@@ -165,6 +164,12 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
       const interaction = dragRef.current;
       const canvas = canvasRef.current;
       if (!interaction || !canvas) return;
+      const pointerDistance = Math.hypot(event.clientX - interaction.pointerX, event.clientY - interaction.pointerY);
+      if (!interaction.started && pointerDistance < 3) return;
+      if (!interaction.started) {
+        interaction.started = true;
+        remember();
+      }
       const rect = canvas.getBoundingClientRect();
       const dx = (event.clientX - interaction.pointerX) * (PAGE_WIDTH / rect.width);
       const dy = (event.clientY - interaction.pointerY) * (PAGE_HEIGHT / rect.height);
@@ -216,14 +221,13 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
     return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
-  }, [currentPage?.blocks, updateBlockById]);
+  }, [currentPage?.blocks, remember, updateBlockById]);
 
   const startInteraction = (event, block, mode = "drag", handle = "") => {
-    if (block.locked || editingTextId === block.id) return;
+    if (preview || block.locked || editingTextId === block.id) return;
     event.preventDefault();
     event.stopPropagation();
     setSelectedId(block.id);
-    remember();
     dragRef.current = {
       id: block.id,
       mode,
@@ -231,6 +235,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
       block: clone(block),
       pointerX: event.clientX,
       pointerY: event.clientY,
+      started: false,
     };
   };
 
@@ -397,7 +402,7 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
         <div className={`flex-1 min-h-0 grid grid-cols-1 ${preview ? "lg:grid-cols-1" : "lg:grid-cols-[210px_minmax(620px,1fr)_310px]"}`}>
           {!preview && <aside className="hidden lg:block bg-white border-r overflow-y-auto p-3">
             <div className="flex items-center justify-between mb-3"><strong className="text-sm">Pagine</strong><button onClick={addPage} className="p-1 hover:bg-gray-100 rounded"><Plus className="w-4 h-4" /></button></div>
-            <div className="space-y-2">{pages.map((page, index) => <button key={page.id} onClick={() => { setPageIndex(index); setSelectedId(""); }} className={`w-full text-left border rounded-lg p-2 ${index === pageIndex ? "border-yellow-500 bg-yellow-50" : "border-gray-200"}`}><PageThumbnail page={page} /><span className="mt-2 block truncate text-xs font-medium">{index + 1}. {page.name}</span></button>)}</div>
+            <div className="space-y-2">{pages.map((page, index) => <button key={page.id} onClick={() => { setPageIndex(index); setSelectedId(""); }} className={`w-full text-left border rounded-lg p-2 ${index === pageIndex ? "border-yellow-500 bg-yellow-50" : "border-gray-200"}`}><PageThumbnail page={page} resolveText={(text) => isTemplate ? text : resolveQuoteVariables(text, quote, { ...initialVersion, items, projectDescription, paymentConditions, totals })} /><span className="mt-2 block truncate text-xs font-medium">{index + 1}. {page.name}</span></button>)}</div>
             <div className="sticky bottom-0 mt-3 grid grid-cols-4 gap-1 bg-white py-2">
               <button title="Sposta pagina su" onClick={() => movePage(-1)} disabled={pageIndex === 0} className="grid place-items-center border rounded-lg py-2 disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
               <button title="Sposta pagina giù" onClick={() => movePage(1)} disabled={pageIndex === pages.length - 1} className="grid place-items-center border rounded-lg py-2 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
@@ -408,8 +413,8 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
 
           <main ref={canvasViewportRef} className="overflow-auto p-4 md:p-8 bg-gray-200">
             {!preview && <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-              <button onClick={() => addBlock("text")} className="px-3 py-2 bg-white rounded-lg shadow text-sm">+ Testo</button>
-              <button onClick={() => addBlock("shape")} className="px-3 py-2 bg-white rounded-lg shadow text-sm">+ Forma</button>
+              <button onClick={() => addBlock("text")} className="px-3 py-2 bg-white rounded-lg shadow text-sm">+ Aggiungi testo</button>
+              <button onClick={() => addBlock("shape")} className="px-3 py-2 bg-white rounded-lg shadow text-sm">+ Aggiungi forma</button>
               <button onClick={() => imageInputRef.current?.click()} className="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow text-sm"><ImagePlus className="w-4 h-4" />Carica immagine</button>
               <input ref={imageInputRef} type="file" accept="image/*" onChange={uploadImage} className="hidden" />
               <span className="mx-2 h-6 border-l" />
@@ -418,17 +423,15 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
             {currentPage && <div className="relative mx-auto" style={{ width: PAGE_WIDTH * zoom, height: PAGE_HEIGHT * zoom }}>
               <div ref={canvasRef} className="absolute left-0 top-0 shadow-2xl touch-none overflow-hidden" style={{ width: PAGE_WIDTH, height: PAGE_HEIGHT, background: currentPage.background, transform: `scale(${zoom})`, transformOrigin: "top left" }} onPointerDown={() => { setSelectedId(""); setEditingTextId(""); }}>
                 {currentPage.backgroundImage && <img src={currentPage.backgroundImage} alt="Sfondo del template" className="absolute inset-0 w-full h-full object-fill pointer-events-none" style={{ opacity: currentPage.backgroundImageOpacity ?? 1 }} />}
-                {(currentPage.blocks || []).filter((block) => block.referenceMode && block.modified).map((block) => <div key={`mask-${block.id}`} className="absolute pointer-events-none" style={{ left: block.sourceX ?? block.x, top: block.sourceY ?? block.y, width: block.sourceWidth ?? block.width, height: block.sourceHeight ?? block.height, background: block.sourceMaskColor || "#ffffff", zIndex: Math.max(-1, (Number(block.layer) || 0) - 0.5) }} />)}
                 {guides.x !== null && <div className="absolute top-0 bottom-0 w-px bg-fuchsia-500 z-[9999] pointer-events-none" style={{ left: guides.x }} />}
                 {guides.y !== null && <div className="absolute left-0 right-0 h-px bg-fuchsia-500 z-[9999] pointer-events-none" style={{ top: guides.y }} />}
                 {[...(currentPage.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => {
                   const isSelected = !preview && selectedId === block.id;
                   const isEditing = editingTextId === block.id;
-                  const pristineReference = block.referenceMode && !block.modified;
-                  return <div key={block.id} onPointerDown={(event) => startInteraction(event, block)} onDoubleClick={(event) => { if (block.type === "text" && !block.locked) { event.stopPropagation(); updateBlockById(block.id, { modified: true }); setSelectedId(block.id); setEditingTextId(block.id); } }} className={`absolute ${preview || block.locked ? "cursor-default" : "cursor-move hover:outline hover:outline-1 hover:outline-blue-400"} ${isSelected ? "ring-2 ring-blue-500" : ""}`} style={{ ...visualStyle(block), ...(pristineReference ? { background: "transparent", border: "none", opacity: 1 } : {}) }}>
+                  return <div key={block.id} onPointerDown={(event) => startInteraction(event, block)} onDoubleClick={(event) => { if (!preview && block.type === "text" && !block.locked) { event.stopPropagation(); setSelectedId(block.id); setEditingTextId(block.id); } }} className={`absolute ${preview || block.locked ? "cursor-default" : "cursor-move hover:outline hover:outline-1 hover:outline-blue-400"} ${isSelected ? "ring-2 ring-blue-500" : ""}`} style={visualStyle(block)}>
                     <div className="w-full h-full overflow-hidden" style={{ borderRadius: block.shapeType === "ellipse" ? "9999px" : block.borderRadius || 0 }}>
-                      {block.type === "text" && (isEditing ? <textarea autoFocus value={block.text} onChange={(event) => updateBlock({ text: event.target.value }, false)} onBlur={() => { setEditingTextId(""); setDirty(true); }} onPointerDown={(event) => event.stopPropagation()} className="w-full h-full resize-none border-0 bg-transparent p-1 outline-none" style={{ color: block.color, fontFamily: block.fontFamily || "Arial", fontSize: block.fontSize, fontWeight: block.fontWeight, lineHeight: block.lineHeight || 1.2, letterSpacing: block.letterSpacing || 0, textAlign: block.align }} /> : !pristineReference && <div className="w-full h-full p-1 whitespace-pre-wrap">{block.text}</div>)}
-                      {block.type === "image" && !pristineReference && (block.imageUrl ? <img src={block.imageUrl} alt="" draggable="false" className={`w-full h-full pointer-events-none ${block.objectFit === "cover" ? "object-cover" : block.objectFit === "fill" ? "object-fill" : "object-contain"}`} /> : <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full h-full border-2 border-dashed grid place-items-center text-xs text-gray-400">Carica immagine</button>)}
+                      {block.type === "text" && (isEditing ? <textarea autoFocus value={block.text} onChange={(event) => updateBlockById(block.id, { text: event.target.value }, false)} onBlur={() => { setEditingTextId(""); setDirty(true); }} onPointerDown={(event) => event.stopPropagation()} className="w-full h-full resize-none border-0 bg-transparent p-1 outline-none" style={{ color: block.color, fontFamily: block.fontFamily || "Arial", fontSize: block.fontSize, fontWeight: block.fontWeight, lineHeight: block.lineHeight || 1.2, letterSpacing: block.letterSpacing || 0, textAlign: block.align }} /> : <div className="w-full h-full p-1 whitespace-pre-wrap">{isTemplate ? block.text : resolveQuoteVariables(block.text, quote, { ...initialVersion, items, projectDescription, paymentConditions, totals })}</div>)}
+                      {block.type === "image" && (block.imageUrl ? <img src={block.imageUrl} alt="" draggable="false" className={`w-full h-full pointer-events-none ${block.objectFit === "cover" ? "object-cover" : block.objectFit === "fill" ? "object-fill" : "object-contain"}`} /> : <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full h-full border-2 border-dashed grid place-items-center text-xs text-gray-400">Carica immagine</button>)}
                     </div>
                     {isSelected && !block.locked && !isEditing && <>
                       {resizeHandles.map((handle) => <button type="button" aria-label={`Ridimensiona ${handle}`} key={handle} onPointerDown={(event) => startInteraction(event, block, "resize", handle)} className={`absolute z-[10000] h-3 w-3 rounded-sm border border-blue-700 bg-white ${handlePosition[handle]}`} />)}

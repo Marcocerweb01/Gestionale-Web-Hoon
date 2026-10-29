@@ -16,6 +16,7 @@ import {
   selectQuoteTemplatePages,
   shouldUpgradeHoonQuoteTemplate,
 } from "../lib/commerciale/core.js";
+import { normalizeQuotePages, resolveQuoteVariables } from "../lib/commerciale/quoteCanvas.js";
 
 test("il modulo commerciale è riservato all'account amministratore corretto", () => {
   assert.equal(COMMERCIAL_ADMIN_EMAIL, "marcocerasaweb@gmail.com");
@@ -54,17 +55,15 @@ test("i template specifici esistenti restano nativi e multipagina", () => {
   assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.background === "#ffd800"));
 });
 
-test("il preventivo generale Hoon usa tutte le 36 pagine fedeli del master", () => {
+test("il preventivo generale Hoon usa 36 pagine native e completamente modificabili", () => {
   const pages = buildDefaultQuotePages();
   assert.equal(pages.length, 36);
   assert.equal(pages[0].name, "Copertina");
   assert.equal(pages.at(-1).name, "Assistenza - orari");
   assert.equal(new Set(pages.map((page) => page.id)).size, pages.length);
-  assert.equal(pages[0].backgroundImage, "/commerciale/hoon-template/page-01.jpg");
-  assert.equal(pages.at(-1).backgroundImage, "/commerciale/hoon-template/page-36.jpg");
-  assert.ok(pages.every((page) => page.backgroundImage));
+  assert.ok(pages.every((page) => !page.backgroundImage));
   assert.ok(pages.every((page) => page.blocks.length > 0));
-  assert.ok(pages.every((page) => page.blocks.every((block) => block.referenceMode && block.modified === false)));
+  assert.ok(pages.every((page) => page.blocks.every((block) => !block.referenceMode && block.modified === true)));
   assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.type === "text"));
   assert.ok(pages.flatMap((page) => page.blocks).some((block) => block.type === "shape"));
   assert.deepEqual(pages.filter((page) => page.includedByDefault).map((page) => page.sourcePage), [1, 2, 35, 36]);
@@ -77,7 +76,22 @@ test("il vecchio master senza versione viene aggiornato", () => {
   assert.equal(shouldUpgradeHoonQuoteTemplate(1), true);
   assert.equal(shouldUpgradeHoonQuoteTemplate(2), true);
   assert.equal(shouldUpgradeHoonQuoteTemplate(3), true);
-  assert.equal(shouldUpgradeHoonQuoteTemplate(4), false);
+  assert.equal(shouldUpgradeHoonQuoteTemplate(4), true);
+  assert.equal(shouldUpgradeHoonQuoteTemplate(5), false);
+});
+
+test("le vecchie pagine JPG con hotspot vengono convertite senza duplicare il testo", () => {
+  const [page] = normalizeQuotePages([{ id: "old", backgroundImage: "/page.jpg", blocks: [{ id: "title", type: "text", text: "Titolo", referenceMode: true, modified: false, sourceX: 1, sourceMaskColor: "#fff" }] }]);
+  assert.equal(page.backgroundImage, "");
+  assert.equal(page.blocks[0].referenceMode, false);
+  assert.equal(page.blocks[0].modified, true);
+  assert.equal("sourceX" in page.blocks[0], false);
+  assert.equal("sourceMaskColor" in page.blocks[0], false);
+});
+
+test("l'editor mostra i valori reali al posto dei segnaposto del template", () => {
+  const text = resolveQuoteVariables("{{azienda}} - {{prezzo_totale}}", { organization: { businessName: "Azienda Demo" } }, { totals: { gross: 122 } });
+  assert.equal(text, "Azienda Demo - 122,00 €");
 });
 
 test("la selezione servizi copia solo pagine comuni e pagine collegate", () => {
