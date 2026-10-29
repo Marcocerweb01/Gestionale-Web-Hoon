@@ -4,7 +4,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
-const CUSTOM_PROPERTIES = ["editorId", "sourceKind", "sourceText", "dataBinding", "referenceLayer", "maskLayer", "fromSource", "replacesSource", "sourceInitial", "name"];
+const CUSTOM_PROPERTIES = ["editorId", "sourceKind", "sourceText", "sourceFontSize", "sourceFontWeight", "sourceFill", "dataBinding", "referenceLayer", "maskLayer", "fromSource", "replacesSource", "sourceInitial", "name"];
 
 const uid = () => `fabric-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -13,6 +13,9 @@ function decorateObject(object, values = {}) {
     editorId: values.editorId || object.editorId || uid(),
     sourceKind: values.sourceKind || object.sourceKind || object.type,
     sourceText: values.sourceText ?? object.sourceText ?? "",
+    sourceFontSize: values.sourceFontSize ?? object.sourceFontSize ?? null,
+    sourceFontWeight: values.sourceFontWeight ?? object.sourceFontWeight ?? null,
+    sourceFill: values.sourceFill ?? object.sourceFill ?? null,
     dataBinding: values.dataBinding ?? object.dataBinding ?? "",
     referenceLayer: values.referenceLayer ?? object.referenceLayer ?? false,
     maskLayer: values.maskLayer ?? object.maskLayer ?? false,
@@ -29,6 +32,44 @@ function decorateObject(object, values = {}) {
   });
   object.setControlsVisibility?.({ mtr: true });
   return object;
+}
+
+function objectFill(object) {
+  if (typeof object?.fill === "string" && object.fill !== "none") return object.fill;
+  for (const child of object?.getObjects?.() || []) {
+    const fill = objectFill(child);
+    if (fill) return fill;
+  }
+  return "#111111";
+}
+
+function editableTextFromObject(fabric, object, text = object.sourceText || "") {
+  const bounds = object.getBoundingRect();
+  const replacement = new fabric.IText(text, {
+    left: bounds.left,
+    top: bounds.top,
+    angle: object.angle || 0,
+    fontSize: Math.max(6, bounds.height || Number(object.sourceFontSize) || 18),
+    fontFamily: object.fontFamily || "Arial",
+    fontWeight: object.fontWeight || object.sourceFontWeight || 400,
+    fill: objectFill(object) || object.sourceFill || "#111111",
+    opacity: object.opacity ?? 1,
+    objectCaching: false,
+    perPixelTargetFind: true,
+  });
+  return decorateObject(replacement, {
+    editorId: object.editorId,
+    sourceKind: "text",
+    sourceText: object.sourceText || text,
+    sourceFontSize: object.sourceFontSize,
+    sourceFontWeight: object.sourceFontWeight,
+    sourceFill: object.sourceFill,
+    dataBinding: object.dataBinding,
+    fromSource: object.fromSource,
+    replacesSource: Boolean(object.fromSource || object.replacesSource),
+    sourceInitial: object.sourceInitial,
+    name: text,
+  });
 }
 
 function detachFromSvgGroup(object) {
@@ -51,6 +92,9 @@ async function loadSourceSvg(fabric, asset) {
       editorId: wrapper?.getAttribute("data-editor-id") || uid(),
       sourceKind: wrapper?.getAttribute("data-editor-kind") || element.tagName.toLowerCase(),
       sourceText: wrapper?.getAttribute("data-editor-text") || "",
+      sourceFontSize: Number.parseFloat(wrapper?.getAttribute("data-editor-font-size") || "") || null,
+      sourceFontWeight: wrapper?.getAttribute("data-editor-font-weight") || null,
+      sourceFill: wrapper?.getAttribute("data-editor-fill") || null,
     });
   });
 
@@ -84,6 +128,8 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
   const fabricRef = useRef(null);
   const pageIdRef = useRef("");
   const loadingRef = useRef(false);
+  const clipboardRef = useRef([]);
+  const pasteOffsetRef = useRef(0);
   const changeRef = useRef(onChange);
   const selectionRef = useRef(onSelection);
   const [readyVersion, setReadyVersion] = useState(0);
@@ -188,6 +234,28 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
       canvas.on("object:moving", snap);
       canvas.on("object:modified", () => { commit(true); emitSelection(); });
       canvas.on("text:changed", () => { commit(false); emitSelection(); });
+      canvas.on("mouse:dblclick", (event) => {
+        let object = event.target;
+        if (!object || object.sourceKind !== "text" || preview) return;
+        if (!["i-text", "textbox"].includes(object.type)) {
+          const replacement = editableTextFromObject(fabric, object);
+          canvas.remove(object);
+          canvas.add(replacement);
+          canvas.setActiveObject(replacement);
+          object = replacement;
+          commit(true);
+        } else {
+          canvas.setActiveObject(object);
+          commit(true);
+        }
+        const cursor = object.getSelectionStartFromPointer?.(event.e) ?? String(object.text || "").length;
+        object.enterEditing?.();
+        object.setSelectionStart?.(cursor);
+        object.setSelectionEnd?.(cursor);
+        object.hiddenTextarea?.focus?.();
+        canvas.requestRenderAll();
+        emitSelection();
+      });
       canvas.on("selection:created", emitSelection);
       canvas.on("selection:updated", emitSelection);
       canvas.on("selection:cleared", emitSelection);
@@ -224,7 +292,8 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
           const edit = page.svgEdits?.[object.editorId] || page.fabricJson?.sourceEdits?.[object.editorId];
           if (edit?.text == null || object.sourceKind !== "text") continue;
           const bounds = object.getBoundingRect();
-          const replacement = decorateObject(new fabric.IText(edit.text, { left: bounds.left, top: bounds.top, fontSize: edit.fontSize || Math.max(8, Math.min(72, bounds.height * 0.75)), fontFamily: edit.fontFamily || "Arial", fontWeight: edit.fontWeight || "bold", fill: edit.color || "#111111", opacity: edit.opacity ?? 1 }), { editorId: object.editorId, sourceKind: "text", sourceText: object.sourceText, fromSource: true, replacesSource: true, sourceInitial: object.sourceInitial, name: edit.text });
+          const replacement = editableTextFromObject(fabric, object, edit.text);
+          replacement.set({ fontSize: edit.fontSize || replacement.fontSize, fontFamily: edit.fontFamily || replacement.fontFamily, fontWeight: edit.fontWeight || replacement.fontWeight, fill: edit.color || replacement.fill, opacity: edit.opacity ?? 1 });
           canvas.remove(object); canvas.add(replacement);
         }
         if (page.fabricJson?.objects?.length) {
@@ -316,8 +385,7 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
       const fabric = fabricRef.current; const canvas = canvasRef.current; const object = active(); if (!fabric || !canvas || !object) return;
       if (["i-text", "textbox", "text"].includes(object.type)) { object.set({ text }); object.sourceText = text; object.name = text; object.setCoords(); }
       else {
-        const bounds = object.getBoundingRect();
-        const replacement = decorateObject(new fabric.IText(text, { left: bounds.left, top: bounds.top, fontSize: Math.max(8, Math.min(72, bounds.height * 0.75)), fontFamily: "Arial", fontWeight: "bold", fill: "#111111" }), { editorId: object.editorId, sourceKind: "text", sourceText: object.sourceText || text, fromSource: object.fromSource, replacesSource: Boolean(object.fromSource), sourceInitial: object.sourceInitial, name: text });
+        const replacement = editableTextFromObject(fabric, object, text);
         canvas.remove(object); canvas.add(replacement); canvas.setActiveObject(replacement);
       }
       canvas.requestRenderAll(); commit(true); emitSelection();
@@ -332,6 +400,33 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
     },
     deleteSelected() { const canvas = canvasRef.current; const object = active(); if (!canvas || !object) return; const objects = object.type === "activeselection" ? object.getObjects() : [object]; canvas.discardActiveObject(); for (const item of objects) { if (item.fromSource) item.set({ visible: false, selectable: false, evented: false }); else canvas.remove(item); } commit(true); emitSelection(); },
     async duplicateSelected() { const canvas = canvasRef.current; const object = active(); if (!canvas || !object) return; const copy = await object.clone(CUSTOM_PROPERTIES); decorateObject(copy, { editorId: uid(), fromSource: false, replacesSource: false, sourceInitial: null, name: `${object.name || object.type} copia` }); copy.set({ left: (object.left || 0) + 12, top: (object.top || 0) + 12 }); canvas.add(copy); canvas.setActiveObject(copy); commit(true); emitSelection(); },
+    async copySelected() {
+      const object = active();
+      if (!object) return false;
+      const objects = object.type === "activeselection" ? object.getObjects() : [object];
+      clipboardRef.current = await Promise.all(objects.map((item) => item.clone(CUSTOM_PROPERTIES)));
+      pasteOffsetRef.current = 0;
+      return true;
+    },
+    async pasteSelected() {
+      const fabric = fabricRef.current; const canvas = canvasRef.current;
+      if (!fabric || !canvas || !clipboardRef.current.length) return false;
+      pasteOffsetRef.current += 12;
+      const pasted = await Promise.all(clipboardRef.current.map((item) => item.clone(CUSTOM_PROPERTIES)));
+      for (const object of pasted) {
+        decorateObject(object, { editorId: uid(), fromSource: false, replacesSource: false, sourceInitial: null, name: `${object.name || object.type} copia` });
+        object.set({ left: (object.left || 0) + pasteOffsetRef.current, top: (object.top || 0) + pasteOffsetRef.current });
+        object.setCoords();
+        canvas.add(object);
+      }
+      const selection = pasted.length === 1 ? pasted[0] : new fabric.ActiveSelection(pasted, { canvas });
+      canvas.setActiveObject(selection);
+      canvas.requestRenderAll();
+      commit(true);
+      emitSelection();
+      return true;
+    },
+    isEditingText() { return Boolean(active()?.isEditing); },
     layer(direction) { const canvas = canvasRef.current; const object = active(); if (!canvas || !object) return; if (direction === "front") canvas.bringObjectToFront(object); else if (direction === "back") canvas.sendObjectToBack(object); else if (direction === "up") canvas.bringObjectForward(object); else canvas.sendObjectBackwards(object); commit(true); },
     toggleLock() { const object = active(); if (!object) return; const lock = !object.lockMovementX; object.set({ lockMovementX: lock, lockMovementY: lock, lockScalingX: lock, lockScalingY: lock, lockRotation: lock }); commit(true); emitSelection(); },
     getLayers() { return (canvasRef.current?.getObjects() || []).map((object, index) => ({ editorId: object.editorId, name: object.name || object.sourceText || object.type, type: object.type, index, visible: object.visible !== false, locked: object.lockMovementX === true })).reverse(); },

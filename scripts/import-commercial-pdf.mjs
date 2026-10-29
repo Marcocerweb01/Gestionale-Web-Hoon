@@ -19,6 +19,89 @@ globalThis.DOMParser = dom.window.DOMParser;
 globalThis.Image = dom.window.Image;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
+const IDENTITY_MATRIX = [1, 0, 0, 1, 0, 0];
+
+function multiplyMatrices(left, right) {
+  return [
+    left[0] * right[0] + left[2] * right[1],
+    left[1] * right[0] + left[3] * right[1],
+    left[0] * right[2] + left[2] * right[3],
+    left[1] * right[2] + left[3] * right[3],
+    left[0] * right[4] + left[2] * right[5] + left[4],
+    left[1] * right[4] + left[3] * right[5] + left[5],
+  ];
+}
+
+function parseSvgTransform(value = "") {
+  let matrix = IDENTITY_MATRIX;
+  for (const match of value.matchAll(/(matrix|translate|scale|rotate)\(([^)]+)\)/g)) {
+    const values = match[2].trim().split(/[\s,]+/).map(Number);
+    let operation = IDENTITY_MATRIX;
+    if (match[1] === "matrix" && values.length >= 6) operation = values.slice(0, 6);
+    else if (match[1] === "translate") operation = [1, 0, 0, 1, values[0] || 0, values[1] || 0];
+    else if (match[1] === "scale") operation = [values[0] ?? 1, 0, 0, values[1] ?? values[0] ?? 1, 0, 0];
+    else if (match[1] === "rotate") {
+      const radians = (values[0] || 0) * Math.PI / 180;
+      const rotation = [Math.cos(radians), Math.sin(radians), -Math.sin(radians), Math.cos(radians), 0, 0];
+      if (values.length >= 3) {
+        const [cx, cy] = values.slice(1);
+        operation = multiplyMatrices(
+          multiplyMatrices([1, 0, 0, 1, cx, cy], rotation),
+          [1, 0, 0, 1, -cx, -cy],
+        );
+      } else operation = rotation;
+    }
+    matrix = multiplyMatrices(matrix, operation);
+  }
+  return matrix;
+}
+
+function absoluteSvgMatrix(element, svg) {
+  const chain = [];
+  for (let node = element; node && node !== svg; node = node.parentElement) chain.unshift(node);
+  return chain.reduce((matrix, node) => multiplyMatrices(matrix, parseSvgTransform(node.getAttribute("transform") || "")), IDENTITY_MATRIX);
+}
+
+function inkLength(value = "") {
+  return [...String(value).replace(/\s/gu, "")].length;
+}
+
+function matchSvgTextItems(svg, textElements, textItems, viewport) {
+  const candidates = textItems.map((item, index) => {
+    const matrix = pdfjs.Util.transform(viewport.transform, item.transform);
+    return { item, index, x: matrix[4], y: matrix[5], ink: inkLength(item.str) };
+  });
+  const used = new Set();
+
+  return textElements.map((element) => {
+    const tspan = element.children[0];
+    const x = Number.parseFloat(tspan?.getAttribute("x")?.split(/\s+/)[0] || "0");
+    const y = Number.parseFloat(tspan?.getAttribute("y") || "0");
+    const matrix = absoluteSvgMatrix(element, svg);
+    const point = {
+      x: matrix[0] * x + matrix[2] * y + matrix[4],
+      y: matrix[1] * x + matrix[3] * y + matrix[5],
+    };
+    const expectedInk = inkLength(element.textContent);
+    let best = null;
+
+    for (const candidate of candidates) {
+      if (used.has(candidate.index)) continue;
+      const distance = Math.hypot(point.x - candidate.x, point.y - candidate.y);
+      const inkDifference = Math.abs(expectedInk - candidate.ink);
+      const score = inkDifference * 10000 + distance;
+      if (!best || score < best.score) best = { ...candidate, distance, inkDifference, score };
+    }
+
+    if (!best || best.inkDifference > 0) {
+      const rawText = element.textContent || "";
+      return /^[\x20-\x7E\u00A0-\u024F]+$/u.test(rawText) ? rawText : "";
+    }
+    used.add(best.index);
+    return best.item.str;
+  });
+}
+
 const data = new Uint8Array(await readFile(inputPath));
 const loadingTask = pdfjs.getDocument({
   data,
@@ -55,6 +138,7 @@ for (let pageNumber = startPage; pageNumber <= pdf.numPages; pageNumber += 1) {
   const textContent = await page.getTextContent();
   const textItems = textContent.items.filter((item) => "str" in item && item.str);
   const textElements = getElements("text");
+  const matchedText = matchSvgTextItems(svg, textElements, textItems, viewport);
 
   const fontFaces = new Map();
   const styleElement = getElements("style")[0];
@@ -71,11 +155,12 @@ for (let pageNumber = startPage; pageNumber <= pdf.numPages; pageNumber += 1) {
     group.setAttribute("data-editor-id", `p${pageNumber}-text-${editorIndex++}`);
     group.setAttribute("data-editor-kind", "text");
     group.setAttribute("data-editor-base-transform", textElement.getAttribute("transform") || "");
-    group.setAttribute("data-editor-text", textItems[textIndex]?.str || "");
+    group.setAttribute("data-editor-text", matchedText[textIndex] || "");
     const firstTspan = textElement.children[0];
     group.setAttribute("data-editor-x", firstTspan?.getAttribute("x")?.split(/\s+/)[0] || "0");
     group.setAttribute("data-editor-y", firstTspan?.getAttribute("y") || "0");
     group.setAttribute("data-editor-font-size", firstTspan?.getAttribute("font-size") || "16");
+    group.setAttribute("data-editor-font-weight", firstTspan?.getAttribute("font-weight") || "400");
     group.setAttribute("data-editor-fill", firstTspan?.getAttribute("fill") || "#000000");
 
     for (const tspan of [...textElement.children]) {

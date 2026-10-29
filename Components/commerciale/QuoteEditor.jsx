@@ -412,6 +412,39 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
     setCanvasGeneration((value) => value + 1);
   };
 
+  useEffect(() => {
+    const onEditorShortcut = (event) => {
+      if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+      const target = event.target;
+      const isFormField = target?.matches?.("input, textarea, select, [contenteditable='true']");
+      if (isFormField || fabricCanvasRef.current?.isEditingText?.()) return;
+      const key = event.key.toLowerCase();
+
+      if (key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+        return;
+      }
+      if (key === "y" && !event.metaKey) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+      if (key === "c" && fabricSelection) {
+        event.preventDefault();
+        fabricCanvasRef.current?.copySelected?.();
+        return;
+      }
+      if (key === "v") {
+        event.preventDefault();
+        fabricCanvasRef.current?.pasteSelected?.();
+      }
+    };
+    window.addEventListener("keydown", onEditorShortcut);
+    return () => window.removeEventListener("keydown", onEditorShortcut);
+  }, [fabricSelection, future, history, pages]);
+
   const addBlock = (type) => {
     const block = { id: uid(), type, text: type === "text" ? "Nuovo testo" : "", imageUrl: "", x: 60, y: 100, width: 260, height: type === "shape" ? 60 : 90, fontSize: 22, fontWeight: 400, fontFamily: "Arial", lineHeight: 1.2, letterSpacing: 0, color: "#111111", background: type === "shape" ? "#ffd800" : "transparent", align: "left", layer: (currentPage?.blocks?.length || 0) + 1, shapeType: "rectangle", borderColor: "#111111", borderWidth: 0, borderRadius: 0, opacity: 1, rotation: 0, objectFit: "contain", locked: false };
     mutatePages((old) => old.map((page, index) => index === pageIndex ? { ...page, blocks: [...page.blocks, block] } : page));
@@ -622,8 +655,8 @@ export default function QuoteEditor({ quote, template, onClose, onSaved }) {
           {!preview && <aside className="bg-white border-l overflow-y-auto p-4 space-y-5">
             {fabricSelection ? <section>
               <div className="flex items-center justify-between"><h3 className="font-bold flex items-center gap-2"><Layers className="h-4 w-4" />{fabricSelection.count > 1 ? `${fabricSelection.count} elementi` : fabricSelection.sourceKind === "text" ? "Testo PDF" : fabricSelection.sourceKind === "image" ? "Immagine" : "Elemento grafico"}</h3><div className="flex"><button title="Duplica" onClick={() => fabricCanvasRef.current?.duplicateSelected()} className="p-1"><Copy className="h-4 w-4" /></button><button title="Blocca o sblocca" onClick={() => fabricCanvasRef.current?.toggleLock()} className="p-1">{fabricSelection.locked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}</button><button title="Elimina" onClick={() => fabricCanvasRef.current?.deleteSelected()} className="p-1 text-red-600"><Trash2 className="h-4 w-4" /></button></div></div>
-              <p className="mt-1 text-[11px] text-gray-500">Oggetto Fabric.js reale: trascina, ridimensiona con le maniglie, ruota dal controllo superiore. Shift abilita la selezione multipla.</p>
-              {(fabricSelection.sourceKind === "text" || ["i-text", "textbox", "text", "group"].includes(fabricSelection.type) && fabricSelection.sourceText) && <textarea value={fabricSelection.text ?? fabricSelection.sourceText ?? ""} onChange={(event) => { setFabricSelection((old) => ({ ...old, text: event.target.value })); fabricCanvasRef.current?.replaceSelectedText(event.target.value); }} rows={5} className="mt-3 w-full rounded-lg border p-2 text-sm" />}
+              <p className="mt-1 text-[11px] text-gray-500">Trascina, ridimensiona con le maniglie e ruota dal controllo superiore. Shift abilita la selezione multipla.</p>
+              {(fabricSelection.sourceKind === "text" || ["i-text", "textbox", "text"].includes(fabricSelection.type)) && <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-2 text-xs text-blue-800">Doppio clic direttamente sul testo nel foglio per modificarlo.</div>}
               <div className="mt-3 grid grid-cols-2 gap-2">{[["X", "left"], ["Y", "top"], ["Larghezza", "width"], ["Altezza", "height"]].map(([label, key]) => <label key={key} className="text-xs">{label}<input type="number" value={fabricSelection[key] ?? 0} onChange={(event) => fabricCanvasRef.current?.updateSelected({ [key]: Number(event.target.value) })} className="mt-1 w-full rounded border p-1" /></label>)}</div>
               <label className="mt-2 block text-xs">Rotazione<input type="number" value={fabricSelection.angle || 0} onChange={(event) => fabricCanvasRef.current?.updateSelected({ angle: Number(event.target.value) })} className="mt-1 w-full rounded border p-1" /></label>
               {(fabricSelection.sourceKind === "text" || ["i-text", "textbox", "text"].includes(fabricSelection.type)) && <div className="mt-3 space-y-2"><label className="block text-xs">Font<select value={fabricSelection.fontFamily || "Arial"} onChange={(event) => fabricCanvasRef.current?.updateSelected({ fontFamily: event.target.value })} className="mt-1 w-full rounded border p-2"><option>Arial</option><option>Helvetica</option><option>Montserrat</option><option>Georgia</option><option>Times New Roman</option><option>Courier New</option></select></label><div className="grid grid-cols-2 gap-2"><label className="text-xs">Dimensione<input type="number" min="6" value={fabricSelection.fontSize || 18} onChange={(event) => fabricCanvasRef.current?.updateSelected({ fontSize: Number(event.target.value) })} className="mt-1 w-full rounded border p-1" /></label><label className="text-xs">Peso<select value={fabricSelection.fontWeight || 400} onChange={(event) => fabricCanvasRef.current?.updateSelected({ fontWeight: event.target.value })} className="mt-1 w-full rounded border p-1"><option value="400">Normale</option><option value="700">Bold</option><option value="900">Black</option></select></label></div></div>}
