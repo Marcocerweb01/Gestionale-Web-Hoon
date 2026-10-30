@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
+const TEXT_EDIT_VERSION = 2;
 const CUSTOM_PROPERTIES = ["editorId", "sourceKind", "sourceText", "sourceFontSize", "sourceFontFamily", "sourceFontWeight", "sourceFill", "dataBinding", "referenceLayer", "maskLayer", "fromSource", "replacesSource", "sourceInitial", "name"];
 const fontLoadCache = new Map();
 
@@ -50,6 +51,8 @@ function editableTextFromObject(fabric, object, text = object.sourceText || "") 
   const replacement = new fabric.IText(text, {
     left: bounds.left,
     top: bounds.top,
+    originX: "left",
+    originY: "top",
     angle: object.angle || 0,
     fontSize: Math.max(6, Number(object.sourceFontSize) || bounds.height || 18),
     fontFamily: object.sourceFontFamily || object.fontFamily || "Arial",
@@ -200,7 +203,7 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
           rotation: (object.angle || 0) - (initial.angle || 0),
           opacity: object.opacity ?? 1,
           hidden: object.visible === false,
-          ...(object.replacesSource ? { text: object.text || "", fontSize: object.fontSize, fontFamily: object.fontFamily, fontWeight: object.fontWeight, color: object.fill } : {}),
+          ...(object.replacesSource ? { text: object.text || "", fontSize: object.fontSize, fontFamily: object.fontFamily, fontWeight: object.fontWeight, color: object.fill, textEditVersion: TEXT_EDIT_VERSION } : {}),
         };
         sourceEdits[object.editorId] = sourceEdit;
         object.sourceEdit = sourceEdit;
@@ -328,18 +331,27 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
     canvas.backgroundColor = page.background || "#ffffff";
 
     (async () => {
+      let migratedLegacyText = false;
       if (page.svgAsset) {
         const objects = await loadSourceSvg(fabric, page.svgAsset);
         for (const object of objects) {
           object.fromSource = true;
           object.sourceInitial = { left: object.left || 0, top: object.top || 0, scaleX: object.scaleX || 1, scaleY: object.scaleY || 1, angle: object.angle || 0 };
           const edit = page.svgEdits?.[object.editorId] || page.fabricJson?.sourceEdits?.[object.editorId];
-          object.sourceEdit = edit || {};
-          if (edit && !(edit.text != null && object.sourceKind === "text")) object.set({ left: (object.left || 0) + (Number(edit.dx) || 0), top: (object.top || 0) + (Number(edit.dy) || 0), scaleX: (object.scaleX || 1) * (Number(edit.scaleX) || 1), scaleY: (object.scaleY || 1) * (Number(edit.scaleY) || 1), angle: (object.angle || 0) + (Number(edit.rotation) || 0), opacity: edit.opacity ?? 1, visible: !edit.hidden });
+          const legacyTextEdit = object.sourceKind === "text" && edit?.text != null && edit.textEditVersion !== TEXT_EDIT_VERSION;
+          const sanitizedEdit = legacyTextEdit
+            ? (edit.text === object.sourceText ? null : { text: edit.text })
+            : edit;
+          if (legacyTextEdit) migratedLegacyText = true;
+          object.sourceEdit = sanitizedEdit || {};
+          if (sanitizedEdit && !(sanitizedEdit.text != null && object.sourceKind === "text")) object.set({ left: (object.left || 0) + (Number(sanitizedEdit.dx) || 0), top: (object.top || 0) + (Number(sanitizedEdit.dy) || 0), scaleX: (object.scaleX || 1) * (Number(sanitizedEdit.scaleX) || 1), scaleY: (object.scaleY || 1) * (Number(sanitizedEdit.scaleY) || 1), angle: (object.angle || 0) + (Number(sanitizedEdit.rotation) || 0), opacity: sanitizedEdit.opacity ?? 1, visible: !sanitizedEdit.hidden });
         }
         canvas.add(...objects);
         for (const object of [...objects]) {
-          const edit = page.svgEdits?.[object.editorId] || page.fabricJson?.sourceEdits?.[object.editorId];
+          const persistedEdit = page.svgEdits?.[object.editorId] || page.fabricJson?.sourceEdits?.[object.editorId];
+          const edit = object.sourceKind === "text" && persistedEdit?.text != null && persistedEdit.textEditVersion !== TEXT_EDIT_VERSION
+            ? (persistedEdit.text === object.sourceText ? null : { text: persistedEdit.text })
+            : persistedEdit;
           if (edit?.text == null || object.sourceKind !== "text") continue;
           object.sourceEdit = {};
           const replacement = editableTextFromObject(fabric, object, edit.text);
@@ -399,7 +411,7 @@ const FabricQuoteCanvas = forwardRef(function FabricQuoteCanvas({ page, preview,
       canvas.getObjects().forEach((object) => decorateObject(object));
       canvas.requestRenderAll();
       loadingRef.current = false;
-      if (!page.fabricJson?.objects) commit(false);
+      if (migratedLegacyText || !page.fabricJson?.objects) commit(false);
     })().catch((error) => {
       loadingRef.current = false;
       console.error("Errore caricamento pagina Fabric", error);

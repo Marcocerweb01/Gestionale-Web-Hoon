@@ -61,7 +61,7 @@ const visualStyle = (block) => ({
 
 function PageThumbnail({ page, resolveText = (text) => text }) {
   return <div className="aspect-[595/842] rounded bg-white border relative overflow-hidden" style={{ background: page.background || "#ffffff" }}>
-    {page.svgAsset && <img src={page.svgAsset} alt="" className="absolute inset-0 h-full w-full object-fill" />}
+    {page.svgAsset && <SourceSvgLayer asset={page.svgAsset} edits={page.svgEdits || page.fabricJson?.sourceEdits || {}} preview />}
     {page.backgroundImage && <img src={page.backgroundImage} alt="" className="absolute inset-0 w-full h-full object-fill" style={{ opacity: page.backgroundImageOpacity ?? 1 }} />}
     {[...(page.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} className="absolute overflow-hidden" style={{
       left: `${(block.x / 595) * 100}%`, top: `${(block.y / 842) * 100}%`, width: `${(block.width / 595) * 100}%`, height: `${(block.height / 842) * 100}%`,
@@ -121,8 +121,8 @@ function SourceSvgLayer({ asset, edits = {}, selectedId, preview, onSelect, onEd
           text.setAttribute("x", element.getAttribute("data-editor-x") || "0");
           text.setAttribute("y", element.getAttribute("data-editor-y") || "0");
           text.setAttribute("font-size", String(edit.fontSize || element.getAttribute("data-editor-font-size") || 16));
-          text.setAttribute("font-family", edit.fontFamily || "Arial, sans-serif");
-          text.setAttribute("font-weight", String(edit.fontWeight || 700));
+          text.setAttribute("font-family", edit.fontFamily || element.getAttribute("data-editor-font-family") || "Arial, sans-serif");
+          text.setAttribute("font-weight", String(edit.fontWeight || element.getAttribute("data-editor-font-weight") || 400));
           text.setAttribute("fill", edit.color || element.getAttribute("data-editor-fill") || "#111111");
           text.textContent = edit.text;
           if (!replacement) element.append(text);
