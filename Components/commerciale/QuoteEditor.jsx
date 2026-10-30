@@ -61,7 +61,7 @@ const visualStyle = (block) => ({
 
 function PageThumbnail({ page, resolveText = (text) => text }) {
   return <div className="aspect-[595/842] rounded bg-white border relative overflow-hidden" style={{ background: page.background || "#ffffff" }}>
-    {page.svgAsset && <SourceSvgLayer asset={page.svgAsset} edits={page.svgEdits || page.fabricJson?.sourceEdits || {}} preview />}
+    {page.svgAsset && <img src={page.svgAsset} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-fill" />}
     {page.backgroundImage && <img src={page.backgroundImage} alt="" className="absolute inset-0 w-full h-full object-fill" style={{ opacity: page.backgroundImageOpacity ?? 1 }} />}
     {[...(page.blocks || [])].sort((a, b) => (a.layer || 0) - (b.layer || 0)).map((block) => <div key={block.id} className="absolute overflow-hidden" style={{
       left: `${(block.x / 595) * 100}%`, top: `${(block.y / 842) * 100}%`, width: `${(block.width / 595) * 100}%`, height: `${(block.height / 842) * 100}%`,
