@@ -3,6 +3,7 @@ import { connectToDB } from '@/utils/database';
 import Notifica from '@/models/Notifica';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import NotificationLegacyDismissal from '@/models/NotificationLegacyDismissal';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export async function PATCH(req, { params }) {
     await connectToDB();
     const { id } = await params;
 
-    const scope = session.user.role === 'amministratore' ? { _id: id, $or: [{ destinatario: null }, { destinatario: session.user.id }] } : { _id: id, destinatario: session.user.id };
+    const scope = { _id: id, destinatario: session.user.id };
     const notifica = await Notifica.findOneAndUpdate(
       scope,
       { letta: true },
@@ -46,8 +47,18 @@ export async function DELETE(req, { params }) {
     await connectToDB();
     const { id } = await params;
 
-    const scope = session.user.role === 'amministratore' ? { _id: id, $or: [{ destinatario: null }, { destinatario: session.user.id }] } : { _id: id, destinatario: session.user.id };
-    await Notifica.findOneAndDelete(scope);
+    const scope = { _id: id, destinatario: session.user.id };
+    const notification = await Notifica.findOneAndDelete(scope);
+    if (!notification) {
+      return NextResponse.json({ error: 'Non trovata' }, { status: 404 });
+    }
+    if (notification.legacySourceId) {
+      await NotificationLegacyDismissal.findOneAndUpdate(
+        { userId: session.user.id, legacySourceId: notification.legacySourceId },
+        { $setOnInsert: { userId: session.user.id, legacySourceId: notification.legacySourceId } },
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -6,8 +6,46 @@ import Collaborazione from '@/models/Collaborazioni';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { isValidObjectId } from 'mongoose';
+import NotificationLegacyDismissal from '@/models/NotificationLegacyDismissal';
 
 export const dynamic = 'force-dynamic';
+
+async function materializeLegacyAdminNotifications(userId) {
+  const legacyNotifications = await Notifica.find({ destinatario: null }).lean();
+  if (legacyNotifications.length === 0) return;
+  const dismissed = await NotificationLegacyDismissal.find({ userId })
+    .select('legacySourceId')
+    .lean();
+  const dismissedIds = new Set(dismissed.map((item) => item.legacySourceId.toString()));
+  const visibleLegacyNotifications = legacyNotifications.filter(
+    (notification) => !dismissedIds.has(notification._id.toString())
+  );
+  if (visibleLegacyNotifications.length === 0) return;
+
+  await Notifica.bulkWrite(
+    visibleLegacyNotifications.map((notification) => ({
+      updateOne: {
+        filter: { destinatario: userId, legacySourceId: notification._id },
+        update: {
+          $setOnInsert: {
+            tipo: notification.tipo,
+            titolo: notification.titolo,
+            messaggio: notification.messaggio,
+            letta: false,
+            link: notification.link,
+            refId: notification.refId,
+            legacySourceId: notification._id,
+            destinatario: userId,
+            destinatarioModel: 'Amministratore',
+            createdAt: notification.createdAt,
+          },
+        },
+        upsert: true,
+      },
+    })),
+    { ordered: false }
+  );
+}
 
 // GET - Tutte le notifiche (con ?limit=5 per dropdown)
 export async function GET(req) {
@@ -19,12 +57,14 @@ export async function GET(req) {
 
     await connectToDB();
 
+    if (session.user.role === 'amministratore') {
+      await materializeLegacyAdminNotifications(session.user.id);
+    }
+
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '0');
 
-    const scope = session.user.role === 'amministratore'
-      ? { $or: [{ destinatario: null }, { destinatario: session.user.id }] }
-      : { destinatario: session.user.id };
+    const scope = { destinatario: session.user.id };
     let query = Notifica.find(scope).sort({ createdAt: -1 });
     if (limit > 0) query = query.limit(limit);
 
@@ -79,7 +119,24 @@ export async function DELETE() {
     }
 
     await connectToDB();
-    const scope = session.user.role === 'amministratore' ? { $or: [{ destinatario: null }, { destinatario: session.user.id }] } : { destinatario: session.user.id };
+    const scope = { destinatario: session.user.id };
+    const readLegacyNotifications = await Notifica.find({
+      ...scope,
+      letta: true,
+      legacySourceId: { $ne: null },
+    }).select('legacySourceId').lean();
+    if (readLegacyNotifications.length > 0) {
+      await NotificationLegacyDismissal.bulkWrite(
+        readLegacyNotifications.map((notification) => ({
+          updateOne: {
+            filter: { userId: session.user.id, legacySourceId: notification.legacySourceId },
+            update: { $setOnInsert: { userId: session.user.id, legacySourceId: notification.legacySourceId } },
+            upsert: true,
+          },
+        })),
+        { ordered: false }
+      );
+    }
     const result = await Notifica.deleteMany({ ...scope, letta: true });
 
     return NextResponse.json({ eliminati: result.deletedCount });

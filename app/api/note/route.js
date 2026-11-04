@@ -2,24 +2,37 @@ import Nota from "@/models/Note";
 import Collaborazione from "@/models/Collaborazioni";
 import { connectToDB } from "@/utils/database";
 import { createNotifica } from "@/utils/createNotifica";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(req) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || !["amministratore", "collaboratore"].includes(session.user.role)) {
+      return new Response(JSON.stringify({ message: "Non autorizzato" }), { status: 403 });
+    }
+
     await connectToDB();
 
-    const { nota, autoreId, autore, collaborazione, tipo, data_appuntamento, feeling_emoji, feeling_note } = await req.json();
+    const { nota, collaborazione, tipo, data_appuntamento, feeling_emoji, feeling_note } = await req.json();
 
-    if (!nota || !autore || !collaborazione || !tipo) {
+    if (!nota || !collaborazione || !tipo) {
       return new Response(JSON.stringify({ message: "Dati mancanti" }), { status: 400 });
     }
     if (tipo === 'appuntamento' && !feeling_emoji) {
       return new Response(JSON.stringify({ message: "L'emoji del Feeling Report è obbligatoria per gli appuntamenti" }), { status: 400 });
     }
 
+    const sessionAuthorId = session.user.id;
+    const sessionAuthorName = [session.user.nome, session.user.cognome]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || session.user.email || "Utente";
+
     const newNote = new Nota({
       nota,
-      autoreId,
-      autore,
+      autoreId: sessionAuthorId,
+      autore: sessionAuthorName,
       collaborazione,
       tipo,
       data_appuntamento: tipo === 'appuntamento' ? data_appuntamento : null,
@@ -33,12 +46,12 @@ export async function POST(req) {
     if (tipo === 'problema') {
       const collab = await Collaborazione.findById(collaborazione).lean();
       const clienteNome = collab?.aziendaRagioneSociale || 'cliente';
-      const collaboratoreId = collab?.collaboratore?.toString() || autoreId;
+      const collaboratoreId = collab?.collaboratore?.toString() || sessionAuthorId;
       const feedLink = `/Feed-2/${encodeURIComponent(collaboratoreId)}?collaborazioneId=${encodeURIComponent(collaborazione)}&notaId=${encodeURIComponent(newNote._id.toString())}`;
       await createNotifica({
         tipo: 'nota_problema',
-        titolo: `Nota problema da ${autore}`,
-        messaggio: `${autore} ha segnalato un problema per ${clienteNome}: "${nota.substring(0, 80)}${nota.length > 80 ? '…' : ''}"`,
+        titolo: `Nota problema da ${sessionAuthorName}`,
+        messaggio: `${sessionAuthorName} ha segnalato un problema per ${clienteNome}: "${nota.substring(0, 80)}${nota.length > 80 ? '…' : ''}"`,
         link: feedLink,
         refId: newNote._id.toString(),
       });

@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models } from 'mongoose';
 
 const NotificaSchema = new Schema(
   {
@@ -13,9 +13,20 @@ const NotificaSchema = new Schema(
     link: { type: String, default: '' },
     // Metadati extra per evitare duplicati
     refId: { type: String, default: '' }, // es. id nota o id dominio
-    destinatario: { type: Schema.Types.ObjectId, ref: 'Collaboratore', default: null, index: true },
+    legacySourceId: { type: Schema.Types.ObjectId, default: null, index: true },
+    destinatario: { type: Schema.Types.ObjectId, default: null, index: true },
+    destinatarioModel: {
+      type: String,
+      enum: ['Amministratore', 'Collaboratore'],
+      default: 'Collaboratore',
+    },
   },
   { timestamps: true }
+);
+
+NotificaSchema.index(
+  { destinatario: 1, legacySourceId: 1 },
+  { unique: true, partialFilterExpression: { legacySourceId: { $type: 'objectId' } } }
 );
 
 const Notifica = models.Notifica || model('Notifica', NotificaSchema);

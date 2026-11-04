@@ -55,7 +55,7 @@ export async function POST(req) {
     await connectToDB();
     const payload = await validateAdminEventPayload(await req.json());
     const created = await Evento.create({ ...payload, createdBy: session.user.id, updatedBy: session.user.id });
-    const recipients = await Collaboratore.find({ status: { $ne: "non_attivo" } }).select("nome email telefono").lean();
+    const recipients = await Collaboratore.find({ status: { $ne: "non_attivo" } }).select("nome email telefono isAdmin").lean();
     await queueUserNotifications(recipients, {
       tipo: payload.tipo === "shooting" ? "shooting_disponibilita" : "evento_disponibilita",
       titolo: `Nuovo ${payload.tipo === "shooting" ? "shooting" : "evento"}: ${payload.nome}`,
