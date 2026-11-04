@@ -4,8 +4,11 @@ import {
   getActiveSocialCollaborationFilter,
   syncSocialCollaborationStatuses,
 } from "@/utils/socialCollaborationStatus";
+import { requireAdminSession } from "@/lib/adminAuth";
 
 export async function POST(req) {
+  const auth = await requireAdminSession();
+  if (auth.error) return auth.error;
   try {
     await connectToDB();
     await syncSocialCollaborationStatuses(Collaborazione);

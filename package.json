@@ -10,6 +10,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "cron-report-chiusure": "node scripts/cron-report-chiusure.js",
     "lint": "next lint",
     "migrate:v3:hoonweb": "node scripts/migrate-new-web-area-to-v3-hoonweb.mjs"
   },

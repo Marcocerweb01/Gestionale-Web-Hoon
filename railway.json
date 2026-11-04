@@ -9,9 +9,9 @@
   },
   "cron": [
     {
-      "name": "monthly-snapshot",
-      "schedule": "0 1 1 * *",
-      "command": "npm run cron-monthly"
+      "name": "closing-reports",
+      "schedule": "55 * * * *",
+      "command": "npm run cron-report-chiusure"
     }
   ]
 }

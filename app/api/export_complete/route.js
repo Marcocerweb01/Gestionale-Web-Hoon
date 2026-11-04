@@ -9,8 +9,11 @@ import {
   getActiveSocialCollaborationFilter,
   syncSocialCollaborationStatuses,
 } from "@/utils/socialCollaborationStatus";
+import { requireAdminSession } from "@/lib/adminAuth";
 
 export async function GET(req) {
+  const auth = await requireAdminSession();
+  if (auth.error) return auth.error;
   try {
     console.log("🚀 Inizio export completo (JSON + Excel)...");
     await connectToDB();

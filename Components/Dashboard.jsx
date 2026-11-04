@@ -818,6 +818,16 @@ const Dashboard = () => {
       )} */}
 
       {/* Admin Panel - Mobile Responsive */}
+      {session?.user?.role === "amministratore" && (
+        <Link href="/Report-chiusure" className="flex items-center justify-between rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-4 text-indigo-950 shadow-sm transition hover:border-indigo-400 md:p-5">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white"><Download className="h-5 w-5" /></span>
+            <div><p className="font-bold">Chiusure e snapshot</p><p className="text-sm text-indigo-700">Visualizza i file mensili e trimestrali e approva i reset</p></div>
+          </div>
+          <span className="font-bold">Apri →</span>
+        </Link>
+      )}
+
       {(session?.user?.role === "amministratore" || session?.user?.role === "segretaria") && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
           <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6 flex items-center">
@@ -985,41 +995,11 @@ const Dashboard = () => {
 
           {/* Contenuto Sezione Funzioni - Arancione */}
           {sezioneAperta === 'funzioni' && (
-            <div className="mt-4 md:mt-6 grid grid-cols-3 gap-3 md:gap-4 border-t border-orange-200 pt-4 md:pt-6">
-              <button 
-                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 group" 
-                onClick={downloadxlsx}
-              >
-                <Download className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-sm md:text-base">Download Dati</span>
-              </button>
-              
-              <button 
-                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 group" 
-                onClick={handleResetPosts}
-                disabled={resetLoading}
-              >
-                <RotateCcw className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
-                <span className="font-medium text-sm md:text-base">{resetLoading ? "Reset..." : "Reset Post"}</span>
-              </button>
-              
-              <button 
-                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 group" 
-                onClick={handleResetTrimestrali}
-                disabled={resetLoading}
-              >
-                <RotateCcw className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
-                <span className="font-medium text-sm md:text-base">{resetLoading ? "Reset..." : "Reset Trimestrali"}</span>
-              </button>
-
-              <button 
-                className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 group" 
-                onClick={handleRiattivaTrimestrali}
-                disabled={resetLoading}
-              >
-                <RotateCcw className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${resetLoading ? 'animate-spin' : 'group-hover:scale-110'}`} />
-                <span className="font-medium text-sm md:text-base">{resetLoading ? "Riattivazione..." : "Riattiva Trimestrali"}</span>
-              </button>
+            <div className="mt-4 md:mt-6 border-t border-orange-200 pt-4 md:pt-6">
+              <Link href="/Report-chiusure" className="flex w-full items-center justify-center space-x-2 rounded-lg bg-orange-500 px-4 py-3 font-medium text-white transition-colors hover:bg-orange-600">
+                <Download className="h-5 w-5" />
+                <span>Report, snapshot e reset approvati</span>
+              </Link>
             </div>
           )}
 

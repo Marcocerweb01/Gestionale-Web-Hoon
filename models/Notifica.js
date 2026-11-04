@@ -4,7 +4,7 @@ const NotificaSchema = new Schema(
   {
     tipo: {
       type: String,
-      enum: ['nota_problema', 'dominio_scadenza', 'fine_mese', 'evento_disponibilita', 'shooting_disponibilita', 'seo_assegnazione', 'commerciale'],
+      enum: ['nota_problema', 'dominio_scadenza', 'fine_mese', 'evento_disponibilita', 'shooting_disponibilita', 'seo_assegnazione', 'commerciale', 'report_chiusura'],
       required: true,
     },
     titolo: { type: String, required: true },

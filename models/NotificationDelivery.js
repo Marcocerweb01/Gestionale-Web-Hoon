@@ -8,6 +8,8 @@ const NotificationDeliverySchema = new Schema({
   subject: { type: String, required: true },
   message: { type: String, required: true },
   link: { type: String, default: "" },
+  attachmentSnapshotId: { type: Schema.Types.ObjectId, ref: "ReportChiusura", default: null },
+  attachmentFilename: { type: String, default: "" },
   status: { type: String, enum: ["pending", "processing", "sent", "failed", "skipped"], default: "pending", index: true },
   attempts: { type: Number, default: 0 },
   lastError: { type: String, default: "" },

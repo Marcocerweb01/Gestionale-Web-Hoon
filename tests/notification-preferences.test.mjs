@@ -8,11 +8,12 @@ import {
   sanitizeAdminNotificationPreferences,
 } from "../lib/notification-preference-catalog.js";
 
-test("espone tutte le sette categorie e abilita le email per i problemi", () => {
+test("espone tutte le otto categorie e abilita le email per problemi e report", () => {
   const preferences = normalizeAdminNotificationPreferences();
-  assert.equal(ADMIN_NOTIFICATION_CATALOG.length, 7);
-  assert.equal(Object.keys(preferences).length, 7);
+  assert.equal(ADMIN_NOTIFICATION_CATALOG.length, 8);
+  assert.equal(Object.keys(preferences).length, 8);
   assert.deepEqual(preferences.nota_problema, { inApp: true, email: true });
+  assert.deepEqual(preferences.report_chiusura, { inApp: true, email: true });
 });
 
 test("le preferenze sono isolate per account e ignorano categorie sconosciute", () => {

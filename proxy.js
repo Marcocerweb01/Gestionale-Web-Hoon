@@ -51,7 +51,7 @@ export async function proxy(req) {
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
-  } else if (["/Feed-comm", "/Gestione-Utenti", "/Storico-Interviste-Webdesigner"].includes(pathname)) {
+  } else if (["/Feed-comm", "/Gestione-Utenti", "/Storico-Interviste-Webdesigner", "/Report-chiusure", "/Manage-snapshots"].includes(pathname)) {
     if (token.role !== "amministratore") {
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
