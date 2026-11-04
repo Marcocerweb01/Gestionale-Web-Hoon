@@ -18,6 +18,7 @@ import {
   WEB_DESIGN_WORKFLOW_VERSION,
   isWorkflowPhaseUnlocked,
 } from '@/lib/webdesign-v2-workflow.mjs';
+import { calculateTaskCollectionProgress, isWebDesignTaskCompleted } from '@/lib/webdesign-v2-progress.mjs';
 
 const PHASE_META = {
   struttura: { label: 'Struttura', period: 'Giorni 1-5', Icon: Building2 },
@@ -66,13 +67,8 @@ const formatDate = (value) =>
     : 'Da pianificare';
 
 const dateInput = (value) => (value ? new Date(value).toISOString().slice(0, 10) : '');
-const isDone = (task) =>
-  task.stato ? ['completata', 'non applicabile'].includes(task.stato) : Boolean(task.completata);
-
-const progressOf = (tasks = []) => {
-  if (!tasks.length) return 0;
-  return Math.round((tasks.filter(isDone).length / tasks.length) * 100);
-};
+const isDone = isWebDesignTaskCompleted;
+const progressOf = calculateTaskCollectionProgress;
 
 const inputClass =
   'w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400';
@@ -556,7 +552,7 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
               <div>
                 <h4 className="font-bold text-orange-950">Data di avvio non disponibile</h4>
                 <p className="text-sm text-orange-800">
-                  Verifica la data di avvio della collaborazione. L'intervista non modifica la timeline contrattuale.
+                  Verifica la data di avvio della collaborazione. L’intervista non modifica la timeline contrattuale.
                 </p>
               </div>
               <Link

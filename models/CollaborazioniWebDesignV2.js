@@ -1,6 +1,15 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import mongoose from 'mongoose';
+
+const { Schema, model, models } = mongoose;
+import { createIntegrationTaskId } from '../lib/webdesign-v2-task-id.mjs';
 
 const TaskV2Schema = new Schema({
+  integrationTaskId: {
+    type: String,
+    required: true,
+    immutable: true,
+    default: createIntegrationTaskId,
+  },
   codice: { type: String, default: '' },
   giorno: { type: String, default: '' },
   giornoLavorativo: { type: Number, default: null },

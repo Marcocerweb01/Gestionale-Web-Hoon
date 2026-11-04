@@ -5,6 +5,11 @@ import Link from 'next/link';
 import { ChevronDown, ChevronRight, CheckSquare, Loader2, Square, Trash2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { createPublicationChecklist } from '@/lib/webdesign-v2-publication-checklist';
+import {
+  calculateTaskCollectionProgress,
+  calculateWebDesignProgress,
+  isWebDesignTaskCompleted,
+} from '@/lib/webdesign-v2-progress.mjs';
 import WebDesignV2StandardWorkflow from '@/Components/webdesign-v2-standard-workflow';
 import { isStandardWorkflowProject } from '@/lib/webdesign-v2-workflow.mjs';
 
@@ -391,17 +396,12 @@ const getFaseIndexByName = (fasi, nomeFase) => {
 
 const getFaseProgress = (fase) => {
   if (!fase?.tasks?.length) return { done: 0, total: 0, pct: 0 };
-  const done = fase.tasks.filter((t) => t.completata).length;
+  const done = fase.tasks.filter(isWebDesignTaskCompleted).length;
   const total = fase.tasks.length;
-  return { done, total, pct: Math.round((done / total) * 100) };
+  return { done, total, pct: calculateTaskCollectionProgress(fase.tasks) };
 };
 
-const getProjectProgress = (fasi) => {
-  if (!fasi?.length) return 0;
-  const allTasks = fasi.flatMap((f) => f.tasks || []);
-  if (!allTasks.length) return 0;
-  return Math.round((allTasks.filter((t) => t.completata).length / allTasks.length) * 100);
-};
+const getProjectProgress = (fasi) => calculateWebDesignProgress({ fasi });
 
 const getCalendarTasks = (fasi) => {
   const items = [];

@@ -10,8 +10,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test:life-os": "node --test tests/life-os-integration-v1.test.mjs",
+    "backfill:life-os-task-ids": "node scripts/backfill-webdesign-v2-task-ids.mjs",
     "cron-report-chiusure": "node scripts/cron-report-chiusure.js",
-    "lint": "next lint",
+    "lint": "eslint .",
     "migrate:v3:hoonweb": "node scripts/migrate-new-web-area-to-v3-hoonweb.mjs"
   },
   "dependencies": {
