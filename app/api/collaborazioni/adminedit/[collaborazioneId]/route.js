@@ -36,14 +36,17 @@ export async function PATCH(req, { params }) {
       return new Response(JSON.stringify({ message: "Collaborazione non trovata" }), { status: 404 });
     }
 
-    const nextStartDate = data_inizio_contratto !== undefined
+    const hasStartDateUpdate = data_inizio_contratto !== undefined
+      && data_inizio_contratto !== null
+      && data_inizio_contratto !== "";
+    const nextStartDate = hasStartDateUpdate
       ? parseContractDate(data_inizio_contratto)
       : currentCollaboration.data_inizio_contratto;
     const nextEndDate = data_fine_contratto !== undefined
       ? parseContractDate(data_fine_contratto)
       : currentCollaboration.data_fine_contratto;
 
-    if (data_inizio_contratto !== undefined && !nextStartDate) {
+    if (hasStartDateUpdate && !nextStartDate) {
       return new Response(
         JSON.stringify({ message: "La data di inizio contratto è obbligatoria" }),
         { status: 400 }
@@ -65,9 +68,9 @@ export async function PATCH(req, { params }) {
       ...(post_totali_previsti !== undefined && { post_totali_previsti: Number(post_totali_previsti) }),
       ...(appuntamenti_totali_previsti !== undefined && { appuntamenti_totali_previsti: Number(appuntamenti_totali_previsti) }),
       ...(durata_contratto !== undefined && { durata_contratto: durata_contratto || null }),
-      ...(data_inizio_contratto !== undefined && { data_inizio_contratto: nextStartDate }),
+      ...(hasStartDateUpdate && { data_inizio_contratto: nextStartDate }),
       ...(data_fine_contratto !== undefined && { data_fine_contratto: nextEndDate }),
-      ...((data_inizio_contratto !== undefined || currentCollaboration.stato === "pending") && {
+      ...((hasStartDateUpdate || currentCollaboration.stato === "pending") && {
         stato: getSocialCollaborationStatus(nextStartDate, currentCollaboration.stato),
       }),
     };

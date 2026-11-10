@@ -141,12 +141,8 @@ const AdminCollaborationsList = ({ id }) => {
       return;
     }
 
-    if (!tempData.data_inizio_contratto) {
-      setError("La data di inizio contratto è obbligatoria.");
-      return;
-    }
-
     if (
+      tempData.data_inizio_contratto &&
       tempData.data_fine_contratto &&
       tempData.data_fine_contratto < tempData.data_inizio_contratto
     ) {
@@ -165,9 +161,11 @@ const AdminCollaborationsList = ({ id }) => {
         post_linkedin: tempData.postLinkedin,
         post_totali_previsti: tempData.post_totali_previsti,
         appuntamenti_totali_previsti: tempData.appuntamenti_totali_previsti,
-        durata_contratto: tempData.durata_contratto || null,
-        data_inizio_contratto: tempData.data_inizio_contratto || null,
-        data_fine_contratto: tempData.data_fine_contratto || null,
+        ...(tempData.data_inizio_contratto && {
+          durata_contratto: tempData.durata_contratto || null,
+          data_inizio_contratto: tempData.data_inizio_contratto,
+          data_fine_contratto: tempData.data_fine_contratto || null,
+        }),
       };
       
       console.log("📤 Payload da inviare:", payload);
