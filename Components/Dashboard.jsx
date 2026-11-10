@@ -21,10 +21,8 @@ import {
   DollarSign,
   PlusCircle,
   Clock,
-  History,
   MessageSquare,
   Settings,
-  Monitor,
   Table,
   Sparkles,
   TrendingUp,
@@ -961,34 +959,20 @@ const Dashboard = () => {
                 </Link>
               </div>
               
-              {/* Gestione Collaborazioni Utente + Gestione Domini + Lista Web Designer */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              {/* Gestione Collaborazioni Utente */}
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
                 <Link href="/Gestione-Collaborazioni-Utente">
                   <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
                     <Users className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
                     <span className="font-medium text-sm md:text-base">🗂️ Gestione Collaborazioni</span>
                   </button>
                 </Link>
-                <Link href="/Gestione-Domini">
+                <Link href="/Chiusure-Attivazioni">
                   <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
-                    <Monitor className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                    <span className="font-medium text-sm md:text-base">🌐 Gestione Domini Web Design</span>
+                    <Clock className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium text-sm md:text-base">Chiusure / Attivazioni</span>
                   </button>
                 </Link>
-                <Link href="/Lista_webdesigner">
-                  <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
-                    <Monitor className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                    <span className="font-medium text-sm md:text-base">🖥️ Lista Web Designer</span>
-                  </button>
-                </Link>
-                {session?.user?.role === "amministratore" && (
-                  <Link href="/Storico-Interviste-Webdesigner">
-                    <button className="w-full flex items-center justify-center space-x-2 px-3 md:px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 group border-2 border-purple-400">
-                      <History className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-                      <span className="font-medium text-sm md:text-base">Storico Interviste</span>
-                    </button>
-                  </Link>
-                )}
               </div>
             </div>
           )}
@@ -1051,7 +1035,10 @@ const Dashboard = () => {
         
         <div className="p-4 md:p-6">
           {(session?.user?.role === "amministratore" || session?.user?.role === "segretaria") ? (
-            <ListaCollaboratori collaboratori={collaboratoriAttivi} />
+            <ListaCollaboratori
+              collaboratori={collaboratoriAttivi}
+              isAdmin={session?.user?.role === "amministratore"}
+            />
           ) : (
             <>
               {/* Lead Commerciali */}

@@ -17,7 +17,7 @@ const roleMap = {
   "meta ads": "Meta ADS",
 };
 
-const Lista_collaboratori = ({ collaboratori }) => {
+const Lista_collaboratori = ({ collaboratori, isAdmin = false }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -149,16 +149,38 @@ const Lista_collaboratori = ({ collaboratori }) => {
       {/* Area Web Designers */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 p-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <h2 className="text-xl font-bold text-gray-900 cursor-pointer" onClick={toggleWeb}>
               💻 Web Designer ({webDesigners.length})
             </h2>
-            <button 
-              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-              onClick={toggleWeb}
-            >
-              {openWeb ? "Chiudi Lista" : "Apri Lista"}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/Gestione-Domini"
+                className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-50"
+              >
+                🌐 Gestione Domini Web Design
+              </Link>
+              <Link
+                href="/Lista_webdesigner"
+                className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-50"
+              >
+                🖥️ Lista Web Designer
+              </Link>
+              {isAdmin && (
+                <Link
+                  href="/Storico-Interviste-Webdesigner"
+                  className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-50"
+                >
+                  ↶ Storico Interviste
+                </Link>
+              )}
+              <button
+                className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                onClick={toggleWeb}
+              >
+                {openWeb ? "Chiudi Lista" : "Apri Lista"}
+              </button>
+            </div>
           </div>
         </div>
         {openWeb && webDesigners.length > 0 && (

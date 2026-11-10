@@ -7,6 +7,10 @@
       {
         "path": "/api/notifiche/process",
         "schedule": "*/10 * * * *"
+      },
+      {
+        "path": "/api/cron/chiusure-attivazioni",
+        "schedule": "5 2 * * *"
       }
     ],
     "headers": [

@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { syncSocialCollaborationStatuses } from "@/utils/socialCollaborationStatus";
+import { processaEventiScaduti } from "@/lib/chiusure-attivazioni";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,7 @@ export async function GET(req) {
     }
     
     await connectToDB();
+    await processaEventiScaduti();
     await syncSocialCollaborationStatuses(Collaborazioni);
     
     // Recupera tutte le collaborazioni social
