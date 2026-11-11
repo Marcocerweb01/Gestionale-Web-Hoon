@@ -8,10 +8,12 @@ import {
   ArrowLeft,
   CalendarClock,
   CirclePlay,
+  Pencil,
   PowerOff,
   RefreshCw,
   Trash2,
   UserRoundPlus,
+  X,
 } from "lucide-react";
 import Header from "@/Components/Header";
 
@@ -51,6 +53,7 @@ export default function ChiusureAttivazioniPage() {
   const [activation, setActivation] = useState(emptyActivation);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState("");
+  const [editing, setEditing] = useState(null);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -161,6 +164,27 @@ export default function ChiusureAttivazioniPage() {
     }
   };
 
+  const update = async (event, body) => {
+    event.preventDefault();
+    setSaving(editing._id);
+    setError("");
+    try {
+      const response = await fetch(`/api/chiusure-attivazioni/${editing._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Errore durante la modifica");
+      setEditing(null);
+      await load();
+    } catch (updateError) {
+      setError(updateError.message);
+    } finally {
+      setSaving("");
+    }
+  };
+
   if (status === "loading") return <div className="min-h-screen grid place-items-center">Caricamento…</div>;
   if (status === "unauthenticated" || !["amministratore", "segretaria"].includes(session?.user?.role)) {
     router.push("/Login");
@@ -187,8 +211,8 @@ export default function ChiusureAttivazioniPage() {
         {error && <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">{error}</div>}
 
         <div className="mb-8 grid gap-6 xl:grid-cols-2">
-          <EventList title="Chiusure programmate" items={chiusure} empty="Nessuna chiusura registrata" remove={remove} saving={saving} />
-          <EventList title="Attivazioni" items={attivazioni} empty="Nessuna attivazione registrata" remove={remove} saving={saving} activation />
+          <EventList title="Chiusure programmate" items={chiusure} empty="Nessuna chiusura registrata" edit={setEditing} remove={remove} saving={saving} />
+          <EventList title="Attivazioni" items={attivazioni} empty="Nessuna attivazione registrata" edit={setEditing} remove={remove} saving={saving} activation />
         </div>
 
         <div className="grid gap-6 xl:grid-cols-2">
@@ -238,10 +262,11 @@ export default function ChiusureAttivazioniPage() {
 
       </div>
     </main>
+    {editing && <EditEventModal item={editing} collaborationOptions={collaborationOptions} collaboratori={collaboratori} fieldClass={fieldClass} saving={saving} onClose={() => setEditing(null)} onSave={update} />}
   </>;
 }
 
-function EventList({ title, items, empty, remove, saving, activation = false }) {
+function EventList({ title, items, empty, edit, remove, saving, activation = false }) {
   return <section className="overflow-hidden rounded-2xl border bg-white shadow-sm">
     <h2 className="border-b p-5 text-xl font-bold text-slate-900">{title} <span className="ml-2 text-sm text-slate-400">({items.length})</span></h2>
     <div className="divide-y">
@@ -257,8 +282,61 @@ function EventList({ title, items, empty, remove, saving, activation = false }) 
           {item.note && <p className="mt-2 text-sm text-slate-500">{item.note}</p>}
           {item.errore && <p className="mt-2 text-sm font-semibold text-red-600">{item.errore}</p>}
         </div>
-        <button onClick={() => remove(item._id)} disabled={saving === item._id} title="Elimina o annulla" className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50"><Trash2 size={18} /></button>
+        <div className="flex shrink-0 gap-1">
+          <button onClick={() => edit(item)} disabled={saving === item._id} title="Modifica" className="rounded-lg p-2 text-indigo-600 hover:bg-indigo-50 disabled:opacity-50"><Pencil size={18} /></button>
+          <button onClick={() => remove(item._id)} disabled={saving === item._id} title="Elimina o annulla" className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50"><Trash2 size={18} /></button>
+        </div>
       </article>)}
     </div>
   </section>;
+}
+
+function EditEventModal({ item, collaborationOptions, collaboratori, fieldClass, saving, onClose, onSave }) {
+  const activation = item.categoria === "attivazione";
+  const currentCollaborationKey = `${item.collaborazioneTipo}:${item.collaborazioneId}`;
+  const currentOptionExists = collaborationOptions.some((option) => option.key === currentCollaborationKey);
+  const [form, setForm] = useState(activation ? {
+    ragioneSociale: item.ragioneSociale || "", referente: item.referente || "", email: item.email || "",
+    telefono: item.telefono || "", partitaIva: item.partitaIva || "", servizio: item.servizio || "",
+    dataEvento: String(item.dataEvento || "").slice(0, 10), importo: item.importo || "",
+    periodicita: item.periodicita || "mensile", collaboratore: item.collaboratore?._id || item.collaboratore || "", note: item.note || "",
+  } : { collaborazioneKey: currentCollaborationKey, dataEvento: String(item.dataEvento || "").slice(0, 10), note: item.note || "" });
+
+  const submit = (event) => {
+    if (activation) {
+      const person = collaboratori.find((candidate) => candidate.id === form.collaboratore);
+      onSave(event, { ...form, collaboratoreNome: person ? `${person.nome || ""} ${person.cognome || ""}`.trim() : item.collaboratoreNome || "" });
+      return;
+    }
+    const selected = collaborationOptions.find((option) => option.key === form.collaborazioneKey);
+    const fallback = form.collaborazioneKey === currentCollaborationKey ? {
+      id: item.collaborazioneId, tipo: item.collaborazioneTipo, label: item.collaborazioneEtichetta,
+    } : null;
+    const collaboration = selected || fallback;
+    onSave(event, { dataEvento: form.dataEvento, note: form.note, collaborazioneId: collaboration?.id, collaborazioneTipo: collaboration?.tipo, collaborazioneEtichetta: collaboration?.label });
+  };
+
+  const change = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  return <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/50 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <section className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+      <div className="flex items-center justify-between border-b p-5"><h2 className="text-xl font-black text-slate-950">Modifica {activation ? "attivazione" : "chiusura"}</h2><button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X size={20} /></button></div>
+      <form onSubmit={submit} className={`grid gap-4 p-5 ${activation ? "sm:grid-cols-2" : ""}`}>
+        {activation ? <>
+          <label className="text-sm font-bold text-slate-700 sm:col-span-2">Ragione sociale *<input required value={form.ragioneSociale} onChange={(e) => change("ragioneSociale", e.target.value)} className={`${fieldClass} mt-1`} /></label>
+          <label className="text-sm font-bold text-slate-700">Referente Hoon<input value={form.referente} onChange={(e) => change("referente", e.target.value)} className={`${fieldClass} mt-1`} /></label>
+          <label className="text-sm font-bold text-slate-700">Partita IVA<input value={form.partitaIva} onChange={(e) => change("partitaIva", e.target.value)} className={`${fieldClass} mt-1`} /></label>
+          <label className="text-sm font-bold text-slate-700">Email<input type="email" value={form.email} onChange={(e) => change("email", e.target.value)} className={`${fieldClass} mt-1`} /></label>
+          <label className="text-sm font-bold text-slate-700">Telefono<input value={form.telefono} onChange={(e) => change("telefono", e.target.value)} className={`${fieldClass} mt-1`} /></label>
+          <label className="text-sm font-bold text-slate-700 sm:col-span-2">Servizio *<input required value={form.servizio} onChange={(e) => change("servizio", e.target.value)} className={`${fieldClass} mt-1`} /></label>
+          <label className="text-sm font-bold text-slate-700">Data partenza *<input required type="date" value={form.dataEvento} onChange={(e) => change("dataEvento", e.target.value)} className={`${fieldClass} mt-1`} /></label>
+          <label className="text-sm font-bold text-slate-700">Collaboratore<select required value={form.collaboratore} onChange={(e) => change("collaboratore", e.target.value)} className={`${fieldClass} mt-1`}><option value="">Seleziona…</option>{collaboratori.map((person) => <option key={person.id} value={person.id}>{person.nome} {person.cognome}</option>)}</select></label>
+          <label className="text-sm font-bold text-slate-700">Quanto paga (€) *<input required value={form.importo} onChange={(e) => change("importo", e.target.value)} className={`${fieldClass} mt-1`} /></label>
+          <label className="text-sm font-bold text-slate-700">Periodicità<select value={form.periodicita} onChange={(e) => change("periodicita", e.target.value)} className={`${fieldClass} mt-1`}><option>una tantum</option><option>mensile</option><option>trimestrale</option><option>semestrale</option><option>annuale</option></select></label>
+        </> : <label className="text-sm font-bold text-slate-700">Collaborazione<select required value={form.collaborazioneKey} onChange={(e) => change("collaborazioneKey", e.target.value)} className={`${fieldClass} mt-1`}>{!currentOptionExists && <option value={currentCollaborationKey}>{item.collaborazioneEtichetta}</option>}{collaborationOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>}
+        {!activation && <label className="text-sm font-bold text-slate-700">Data fine *<input required type="date" value={form.dataEvento} onChange={(e) => change("dataEvento", e.target.value)} className={`${fieldClass} mt-1`} /></label>}
+        <label className={`text-sm font-bold text-slate-700 ${activation ? "sm:col-span-2" : ""}`}>Note<textarea value={form.note} onChange={(e) => change("note", e.target.value)} className={`${fieldClass} mt-1 min-h-20`} /></label>
+        <div className={`flex justify-end gap-3 ${activation ? "sm:col-span-2" : ""}`}><button type="button" onClick={onClose} className="rounded-xl border px-4 py-2.5 font-bold text-slate-700">Annulla</button><button disabled={saving === item._id} className="rounded-xl bg-indigo-600 px-5 py-2.5 font-bold text-white disabled:opacity-50">Salva modifiche</button></div>
+      </form>
+    </section>
+  </div>;
 }
