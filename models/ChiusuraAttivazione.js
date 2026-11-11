@@ -32,7 +32,7 @@ const ChiusuraAttivazioneSchema = new Schema(
     telefono: { type: String, trim: true, default: "" },
     partitaIva: { type: String, trim: true, default: "" },
     servizio: { type: String, trim: true, default: "" },
-    importo: { type: Number, min: 0, default: 0 },
+    importo: { type: String, trim: true, default: "" },
     periodicita: {
       type: String,
       enum: ["una tantum", "mensile", "trimestrale", "semestrale", "annuale"],

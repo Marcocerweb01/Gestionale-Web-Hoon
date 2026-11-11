@@ -89,7 +89,7 @@ export async function POST(request) {
         telefono: String(body.telefono || "").trim(),
         partitaIva: String(body.partitaIva || "").trim(),
         servizio: String(body.servizio).trim(),
-        importo: Math.max(0, Number(body.importo) || 0),
+        importo: String(body.importo || "").trim(),
         periodicita: body.periodicita || "mensile",
         collaboratore: mongoose.Types.ObjectId.isValid(body.collaboratore) ? body.collaboratore : null,
         collaboratoreNome,

@@ -33,11 +33,6 @@ const emptyActivation = {
 const formatDate = (value) => value
   ? new Date(value).toLocaleDateString("it-IT", { timeZone: "Europe/Rome" })
   : "—";
-const formatMoney = (value) => new Intl.NumberFormat("it-IT", {
-  style: "currency",
-  currency: "EUR",
-}).format(Number(value) || 0);
-
 const statusStyle = {
   programmata: "bg-amber-100 text-amber-800",
   attiva: "bg-emerald-100 text-emerald-800",
@@ -191,6 +186,11 @@ export default function ChiusureAttivazioniPage() {
 
         {error && <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">{error}</div>}
 
+        <div className="mb-8 grid gap-6 xl:grid-cols-2">
+          <EventList title="Chiusure programmate" items={chiusure} empty="Nessuna chiusura registrata" remove={remove} saving={saving} />
+          <EventList title="Attivazioni" items={attivazioni} empty="Nessuna attivazione registrata" remove={remove} saving={saving} activation />
+        </div>
+
         <div className="grid gap-6 xl:grid-cols-2">
           <section className="rounded-2xl border border-red-100 bg-white shadow-sm">
             <div className="border-b border-red-100 bg-red-50 p-5">
@@ -221,14 +221,14 @@ export default function ChiusureAttivazioniPage() {
             </div>
             <form onSubmit={saveActivation} className="grid gap-4 p-5 sm:grid-cols-2">
               <label className="text-sm font-bold text-slate-700 sm:col-span-2">Ragione sociale *<input required value={activation.ragioneSociale} onChange={(e) => setActivation({ ...activation, ragioneSociale: e.target.value })} className={`${fieldClass} mt-1`} /></label>
-              <label className="text-sm font-bold text-slate-700">Referente<input value={activation.referente} onChange={(e) => setActivation({ ...activation, referente: e.target.value })} className={`${fieldClass} mt-1`} /></label>
+              <label className="text-sm font-bold text-slate-700">Referente Hoon<input value={activation.referente} onChange={(e) => setActivation({ ...activation, referente: e.target.value })} className={`${fieldClass} mt-1`} /></label>
               <label className="text-sm font-bold text-slate-700">Partita IVA<input value={activation.partitaIva} onChange={(e) => setActivation({ ...activation, partitaIva: e.target.value })} className={`${fieldClass} mt-1`} /></label>
               <label className="text-sm font-bold text-slate-700">Email<input type="email" value={activation.email} onChange={(e) => setActivation({ ...activation, email: e.target.value })} className={`${fieldClass} mt-1`} /></label>
               <label className="text-sm font-bold text-slate-700">Telefono<input value={activation.telefono} onChange={(e) => setActivation({ ...activation, telefono: e.target.value })} className={`${fieldClass} mt-1`} /></label>
               <label className="text-sm font-bold text-slate-700 sm:col-span-2">Servizio *<input required value={activation.servizio} onChange={(e) => setActivation({ ...activation, servizio: e.target.value })} placeholder="Es. Social, sito web, Google Ads…" className={`${fieldClass} mt-1`} /></label>
               <label className="text-sm font-bold text-slate-700">Data partenza *<input required type="date" value={activation.dataEvento} onChange={(e) => setActivation({ ...activation, dataEvento: e.target.value })} className={`${fieldClass} mt-1`} /></label>
               <label className="text-sm font-bold text-slate-700">Collaboratore<select required value={activation.collaboratore} onChange={(e) => setActivation({ ...activation, collaboratore: e.target.value })} className={`${fieldClass} mt-1`}><option value="">Seleziona…</option>{collaboratori.map((item) => <option key={item.id} value={item.id}>{item.nome} {item.cognome}</option>)}</select></label>
-              <label className="text-sm font-bold text-slate-700">Quanto paga (€) *<input required min="0" step="0.01" type="number" value={activation.importo} onChange={(e) => setActivation({ ...activation, importo: e.target.value })} className={`${fieldClass} mt-1`} /></label>
+              <label className="text-sm font-bold text-slate-700">Quanto paga (€) *<input required type="text" value={activation.importo} onChange={(e) => setActivation({ ...activation, importo: e.target.value })} placeholder="Es. 500 + IVA" className={`${fieldClass} mt-1`} /></label>
               <label className="text-sm font-bold text-slate-700">Periodicità<select value={activation.periodicita} onChange={(e) => setActivation({ ...activation, periodicita: e.target.value })} className={`${fieldClass} mt-1`}><option>una tantum</option><option>mensile</option><option>trimestrale</option><option>semestrale</option><option>annuale</option></select></label>
               <label className="text-sm font-bold text-slate-700 sm:col-span-2">Note<textarea value={activation.note} onChange={(e) => setActivation({ ...activation, note: e.target.value })} className={`${fieldClass} mt-1 min-h-20`} /></label>
               <button disabled={saving === "attivazione"} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 font-bold text-white disabled:opacity-50 sm:col-span-2"><CirclePlay size={18} /> Salva attivazione</button>
@@ -236,10 +236,6 @@ export default function ChiusureAttivazioniPage() {
           </section>
         </div>
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-2">
-          <EventList title="Chiusure programmate" items={chiusure} empty="Nessuna chiusura registrata" remove={remove} saving={saving} />
-          <EventList title="Attivazioni" items={attivazioni} empty="Nessuna attivazione registrata" remove={remove} saving={saving} activation />
-        </div>
       </div>
     </main>
   </>;
@@ -257,7 +253,7 @@ function EventList({ title, items, empty, remove, saving, activation = false }) 
             <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusStyle[item.stato] || "bg-slate-100"}`}>{item.stato}</span>
           </div>
           <p className="mt-1 text-sm text-slate-600">{activation ? `Parte il ${formatDate(item.dataEvento)} · ${item.servizio}` : `Fine: ${formatDate(item.dataEvento)}`}</p>
-          {activation && <p className="mt-1 text-sm font-semibold text-emerald-700">{formatMoney(item.importo)} · {item.periodicita} · {item.collaboratoreNome || "Collaboratore non indicato"}</p>}
+          {activation && <p className="mt-1 text-sm font-semibold text-emerald-700">{item.importo || "—"} · {item.periodicita} · {item.collaboratoreNome || "Collaboratore non indicato"}</p>}
           {item.note && <p className="mt-2 text-sm text-slate-500">{item.note}</p>}
           {item.errore && <p className="mt-2 text-sm font-semibold text-red-600">{item.errore}</p>}
         </div>

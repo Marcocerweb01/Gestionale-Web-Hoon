@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
-import { User, LogOut, ArrowLeft, Search, X } from "lucide-react";
+import { User, LogOut, ArrowLeft, Search, X, CalendarClock, Settings } from "lucide-react";
 import NotificheDropdown from "./NotificheDropdown";
 
 const Header = () => {
@@ -17,8 +17,10 @@ const Header = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
+  const settingsRef = useRef(null);
   
   // Salva i parametri della home in localStorage quando siamo sulla home
   useEffect(() => {
@@ -32,6 +34,9 @@ const Header = () => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setSearchOpen(false);
         if (!globalSearch.trim()) setSearchVisible(false);
+      }
+      if (settingsRef.current && !settingsRef.current.contains(event.target)) {
+        setSettingsOpen(false);
       }
     };
 
@@ -170,16 +175,6 @@ const Header = () => {
               </div>
             ) : session ? (
               <div className="flex items-center space-x-4">
-                {session.user.email?.trim().toLowerCase() === "marcocerasaweb@gmail.com" &&
-                  session.user.role === "amministratore" && (
-                    <Link
-                      href="/Commerciale"
-                      className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-900 bg-yellow-300 hover:bg-yellow-400 rounded-lg transition-all duration-200"
-                    >
-                      <span className="text-lg">◎</span>
-                      <span className="hidden md:block">Commerciale</span>
-                    </Link>
-                  )}
                 {session.user.role !== "hoon_lab" && (
                 <div className="relative" ref={searchRef}>
                   <div className="flex items-center gap-2">
@@ -263,41 +258,50 @@ const Header = () => {
                 </div>
                 )}
 
-                {/* Link Fatturazione - Solo per amministratori */}
                 {(session.user.role === "amministratore" || session.user.role === "segretaria") && (
-                  <Link 
-                    href="/Fatturazione"
-                    className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                  >
-                    <span className="text-lg">💰</span>
-                    <span className="hidden md:block">Fatturazione</span>
-                  </Link>
-                )}
-
-                {["amministratore", "hoon_lab"].includes(session.user.role) && (
                   <Link
-                    href="/Hoon-Lab"
-                    className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200"
+                    href="/Chiusure-Attivazioni"
+                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
                   >
-                    <span className="text-lg">🧪</span>
-                    <span className="hidden md:block">Hoon Lab</span>
-                  </Link>
-                )}
-
-                {/* Gestione Utenti - Solo amministratori */}
-                {session.user.role === "amministratore" && (
-                  <Link
-                    href="/Gestione-Utenti"
-                    className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
-                  >
-                    <span className="text-lg">🔐</span>
-                    <span className="hidden md:block">Utenti</span>
+                    <CalendarClock className="h-4 w-4" />
+                    <span className="hidden xl:block">Chiusure e attivazioni</span>
                   </Link>
                 )}
 
                 {/* Campanella notifiche */}
                 {["amministratore", "collaboratore"].includes(session.user.role) && (
                   <NotificheDropdown />
+                )}
+
+                {["amministratore", "segretaria", "hoon_lab"].includes(session.user.role) && (
+                  <div className="relative" ref={settingsRef}>
+                    <button
+                      type="button"
+                      onClick={() => setSettingsOpen((open) => !open)}
+                      className="inline-flex items-center justify-center rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                      title="Strumenti e impostazioni"
+                      aria-label="Apri strumenti e impostazioni"
+                      aria-expanded={settingsOpen}
+                    >
+                      <Settings className="h-5 w-5" />
+                    </button>
+                    {settingsOpen && (
+                      <div className="absolute right-0 top-12 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-xl">
+                        {session.user.email?.trim().toLowerCase() === "marcocerasaweb@gmail.com" && session.user.role === "amministratore" && (
+                          <HeaderMenuLink href="/Commerciale" icon="◎" label="Nuovo commerciale" onClick={() => setSettingsOpen(false)} />
+                        )}
+                        {["amministratore", "hoon_lab"].includes(session.user.role) && (
+                          <HeaderMenuLink href="/Hoon-Lab" icon="🧪" label="Hoon Lab" onClick={() => setSettingsOpen(false)} />
+                        )}
+                        {["amministratore", "segretaria"].includes(session.user.role) && (
+                          <HeaderMenuLink href="/Fatturazione" icon="💰" label="Fatturazione" onClick={() => setSettingsOpen(false)} />
+                        )}
+                        {session.user.role === "amministratore" && (
+                          <HeaderMenuLink href="/Gestione-Utenti" icon="🔐" label="Utenti e password" onClick={() => setSettingsOpen(false)} />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
                 
                 
@@ -324,5 +328,12 @@ const Header = () => {
     </header>
   );
 };
+
+const HeaderMenuLink = ({ href, icon, label, onClick }) => (
+  <Link href={href} onClick={onClick} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-950">
+    <span className="text-lg" aria-hidden="true">{icon}</span>
+    <span>{label}</span>
+  </Link>
+);
 
 export default Header;
