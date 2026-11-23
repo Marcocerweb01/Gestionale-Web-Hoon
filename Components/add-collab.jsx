@@ -261,6 +261,20 @@ const selectCollaboratore = (collaboratore) => {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">
+              📆 Data Inizio Contratto <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="data_inizio_contratto"
+              required
+              value={formData.data_inizio_contratto}
+              onChange={(e) => setFormData(prev => ({ ...prev, data_inizio_contratto: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            />
+          </div>
+
           {/* Grid per i campi numerici */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -396,20 +410,6 @@ const selectCollaboratore = (collaboratore) => {
                   <option value="6 mesi">6 mesi</option>
                   <option value="1 anno">1 anno</option>
                 </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
-                  📆 Data Inizio Contratto <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type='date'
-                  name="data_inizio_contratto"
-                  required
-                  value={formData.data_inizio_contratto}
-                  onChange={(e) => setFormData(prev => ({ ...prev, data_inizio_contratto: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                />
               </div>
 
               <div className="space-y-2 md:col-span-2 lg:col-span-1">
