@@ -194,6 +194,7 @@ const CollaborazioneWebDesignV2Schema = new Schema(
     },
     cliente: { type: Schema.Types.ObjectId, ref: 'Azienda', required: true },
     webDesigner: { type: Schema.Types.ObjectId, ref: 'Collaboratore', required: true },
+    designCollaboratore: { type: Schema.Types.ObjectId, ref: 'Collaboratore' },
     aziendaRagioneSociale: { type: String, required: true },
     collaboratoreNome: { type: String, required: true },
     collaboratoreCognome: { type: String, required: true },

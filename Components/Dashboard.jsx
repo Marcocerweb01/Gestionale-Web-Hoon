@@ -9,6 +9,7 @@ import TimelineLead from './TimelineLead';
 import CreaLead from './CreaLead';
 import VistaGoogleAdsCollaboratore from './VistaGoogleAdsCollaboratore';
 import SeoCollaborations from './SeoCollaborations';
+import DesignServices from './DesignServices';
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import { 
@@ -1045,6 +1046,7 @@ const Dashboard = () => {
         </div>
         
         <div className="p-4 md:p-6">
+          {session?.user?.id && <DesignServices key={session.user.id} />}
           {(session?.user?.role === "amministratore" || session?.user?.role === "segretaria") ? (
             <ListaCollaboratori
               collaboratori={collaboratoriAttivi}

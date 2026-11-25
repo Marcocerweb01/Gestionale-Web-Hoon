@@ -8,6 +8,7 @@ import { createPublicationChecklist } from '@/lib/webdesign-v2-publication-check
 import { createWebDesignWorkflow, normalizeProjectType } from '@/lib/webdesign-v2-workflow.mjs';
 import { createSeoCollaborationForWebProject, findSeoAssignee } from '@/lib/seo-collaborations';
 import { queueUserNotifications } from '@/lib/user-notifications';
+import { isObjectIdOrHexString } from 'mongoose';
 
 const VALID_PROJECT_TYPES = ['vetrina', 'e-commerce', 'one-page', 'landing-page', 'blog'];
 
@@ -23,7 +24,7 @@ export async function POST(req) {
       return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
     }
 
-    const { tipoProgetto, clienteId, webDesignerId, note, dataInizioContratto } =
+    const { tipoProgetto, clienteId, webDesignerId, designCollaboratoreId, note, dataInizioContratto } =
       await req.json();
 
     if (!tipoProgetto || !clienteId || !webDesignerId || !dataInizioContratto) {
@@ -31,6 +32,9 @@ export async function POST(req) {
     }
     if (!VALID_PROJECT_TYPES.includes(tipoProgetto)) {
       return new Response(JSON.stringify({ message: 'Tipo progetto non valido' }), { status: 400 });
+    }
+    if (designCollaboratoreId !== undefined && !isObjectIdOrHexString(designCollaboratoreId)) {
+      return new Response(JSON.stringify({ message: 'Collaboratore Design non valido' }), { status: 400 });
     }
 
     const [azienda, collaboratore] = await Promise.all([
@@ -42,6 +46,10 @@ export async function POST(req) {
       return new Response(JSON.stringify({ message: 'Azienda o collaboratore non trovati' }), {
         status: 404,
       });
+    }
+    const designCollaboratore = designCollaboratoreId ?? collaboratore.id;
+    if (designCollaboratore !== collaboratore.id && !(await Collaboratore.exists({ _id: designCollaboratore }))) {
+      return new Response(JSON.stringify({ message: 'Collaboratore Design non trovato' }), { status: 404 });
     }
 
     // One Page, Landing Page e Blog confluiscono nella timeline Vetrina finché
@@ -57,6 +65,7 @@ export async function POST(req) {
       tipoProgetto: normalizedProjectType,
       cliente: clienteId,
       webDesigner: webDesignerId,
+      designCollaboratore,
       aziendaRagioneSociale: azienda.ragioneSociale,
       collaboratoreNome: collaboratore.nome,
       collaboratoreCognome: collaboratore.cognome,

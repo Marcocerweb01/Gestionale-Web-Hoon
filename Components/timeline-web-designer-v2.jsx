@@ -929,6 +929,11 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                       {new Date(collab.dataInizioContratto).toLocaleDateString('it-IT')} →{' '}
                       {new Date(collab.dataFineContratto).toLocaleDateString('it-IT')}
                     </p>
+                    {collab.designCollaboratore && (
+                      <p className="text-sm text-gray-700">
+                        Design svolto da {collab.designCollaboratore.nome} {collab.designCollaboratore.cognome}
+                      </p>
+                    )}
                   </div>
                 </div>
 

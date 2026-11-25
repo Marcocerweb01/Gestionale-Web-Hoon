@@ -194,8 +194,21 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
       };
     });
     const next = { ...project, fasi: nextFasi };
-    if (saveNow) patch({ fasi: nextFasi }, next);
-    else setDraftProject(next);
+    if (!saveNow) {
+      setDraftProject(next);
+      return;
+    }
+    const phase = fasi[phaseIndex];
+    const taskId = phase.tasks[taskIndex].integrationTaskId;
+    if (taskId && typeof changes.stato === 'string' && Object.keys(changes).length === 1) {
+      patch({ aggiornaTask: {
+        fase: phase.nome,
+        taskId,
+        completata: changes.stato === 'completata',
+      } }, next);
+      return;
+    }
+    patch({ fasi: nextFasi }, next);
   };
 
   const updateControl = (controlIndex, changes, saveNow = true) => {

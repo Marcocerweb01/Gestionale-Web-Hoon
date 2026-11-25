@@ -42,11 +42,13 @@ const AddWebDesignV2Form = () => {
   const [formData, setFormData] = useState({
     clienteId: '',
     webDesignerId: '',
+    designCollaboratoreId: '',
     tipoProgetto: '',
     note: '',
     dataInizioContratto: '',
     dataFineContratto: '',
   });
+  const [designSvoltoDalReferente, setDesignSvoltoDalReferente] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -106,6 +108,7 @@ const AddWebDesignV2Form = () => {
       `${c.nome} ${c.cognome}`.toLowerCase().includes(collaboratoreSearch.toLowerCase())
     );
   });
+  const altriCollaboratori = collaboratori.filter((c) => c.id !== formData.webDesignerId);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,7 +120,12 @@ const AddWebDesignV2Form = () => {
       const response = await fetch('/api/collaborazioni-webdesign-v2/crea', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          designCollaboratoreId: designSvoltoDalReferente
+            ? formData.webDesignerId
+            : formData.designCollaboratoreId,
+        }),
       });
 
       const data = await response.json();
@@ -144,7 +152,12 @@ const AddWebDesignV2Form = () => {
   };
 
   const selectCollaboratore = (collaboratore) => {
-    setFormData((prev) => ({ ...prev, webDesignerId: collaboratore.id }));
+    setFormData((prev) => ({
+      ...prev,
+      webDesignerId: collaboratore.id,
+      designCollaboratoreId:
+        prev.designCollaboratoreId === collaboratore.id ? '' : prev.designCollaboratoreId,
+    }));
     setCollaboratoreSearch(`${collaboratore.nome} ${collaboratore.cognome}`);
     setShowCollaboratoriDropdown(false);
   };
@@ -256,6 +269,43 @@ const AddWebDesignV2Form = () => {
             </div>
           </div>
 
+          <div className="space-y-3">
+            <label className="flex min-h-10 cursor-pointer items-center gap-3 text-sm font-semibold text-gray-900">
+              <input
+                type="checkbox"
+                checked={designSvoltoDalReferente}
+                onChange={(e) => setDesignSvoltoDalReferente(e.target.checked)}
+                className="h-4 w-4 shrink-0 accent-violet-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+              />
+              Design svolto dal referente
+            </label>
+            {!designSvoltoDalReferente && (
+              <div>
+                <label htmlFor="design-collaboratore" className="mb-2 block text-sm font-semibold text-gray-900">
+                  Design svolto da <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="design-collaboratore"
+                  value={formData.designCollaboratoreId}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, designCollaboratoreId: e.target.value }))
+                  }
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  required
+                >
+                  <option value="">
+                    {altriCollaboratori.length ? 'Seleziona un collaboratore' : 'Nessun altro collaboratore disponibile'}
+                  </option>
+                  {altriCollaboratori.map((collaboratore) => (
+                    <option key={collaboratore.id} value={collaboratore.id}>
+                      {collaboratore.nome} {collaboratore.cognome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
           {/* Tipo Progetto */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -360,6 +410,7 @@ const AddWebDesignV2Form = () => {
                 loading ||
                 !formData.clienteId ||
                 !formData.webDesignerId ||
+                (!designSvoltoDalReferente && !formData.designCollaboratoreId) ||
                 !formData.tipoProgetto ||
                 !formData.dataInizioContratto ||
                 !formData.dataFineContratto

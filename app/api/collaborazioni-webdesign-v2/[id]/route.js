@@ -50,6 +50,7 @@ export async function GET(req, { params }) {
     const collaborazioni = await CollaborazioneWebDesignV2.find({ webDesigner: id })
       .populate('cliente', 'etichetta ragioneSociale nome')
       .populate('webDesigner', 'nome cognome')
+      .populate('designCollaboratore', 'nome cognome')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -113,7 +114,7 @@ export async function PATCH(req, { params }) {
     const session = await getServerSession(authOptions);
     const isAdministrator = session?.user?.role === 'amministratore';
 
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return new Response(JSON.stringify({ message: 'Non autenticato' }), { status: 401 });
     }
 
@@ -135,13 +136,47 @@ export async function PATCH(req, { params }) {
         status: 404,
       });
     }
-    if (
-      !isStaff(session) &&
-      collaborationToUpdate.webDesigner?.toString() !== session.user.id
-    ) {
+    const canManageProject = isStaff(session) ||
+      collaborationToUpdate.webDesigner?.toString() === session.user.id;
+    const isDesignAssignee = collaborationToUpdate.designCollaboratore?.toString() === session.user.id;
+    if (!canManageProject && !(isDesignAssignee && body.aggiornaTask)) {
       return new Response(JSON.stringify({ message: 'Non autorizzato' }), { status: 403 });
     }
     const standardWorkflow = isStandardWorkflowProject(collaborationToUpdate);
+
+    if (body.aggiornaTask) {
+      const { fase, taskId, completata } = body.aggiornaTask;
+      if (!canManageProject && fase !== 'design') {
+        return Response.json({ message: 'Non autorizzato' }, { status: 403 });
+      }
+      if (Object.keys(body).length !== 1 || typeof taskId !== 'string' || typeof completata !== 'boolean') {
+        return Response.json({ message: 'Aggiornamento attività non valido' }, { status: 400 });
+      }
+      const phase = collaborationToUpdate.fasi?.find((item) => item.nome === fase);
+      if (!phase?.tasks?.some((task) => task.integrationTaskId === taskId)) {
+        return Response.json({ message: 'Attività non trovata' }, { status: 404 });
+      }
+      if ((!canManageProject && collaborationToUpdate.stato !== 'in corso') ||
+          (standardWorkflow && !isWorkflowPhaseUnlocked(fase, collaborationToUpdate.fasiControllo, Boolean(collaborationToUpdate.dataAvvioOperativo)))) {
+        return Response.json({ message: 'La fase non è disponibile per la modifica' }, { status: 409 });
+      }
+      const updated = await CollaborazioneWebDesignV2.findOneAndUpdate(
+        { _id: id, updatedAt: collaborationToUpdate.updatedAt },
+        { $set: {
+          'fasi.$[fase].tasks.$[task].stato': completata ? 'completata' : 'da fare',
+          'fasi.$[fase].tasks.$[task].completata': completata,
+        } },
+        {
+          arrayFilters: [{ 'fase.nome': fase }, { 'task.integrationTaskId': taskId }],
+          new: true,
+          runValidators: true,
+        }
+      );
+      if (!updated) {
+        return Response.json({ message: 'Il progetto è stato aggiornato. Ricarica e riprova.' }, { status: 409 });
+      }
+      return Response.json(canManageProject ? { collaborazione: updated } : { completata });
+    }
 
     const updatePayload = {};
 
@@ -494,13 +529,16 @@ export async function PATCH(req, { params }) {
       }
     }
 
-    const updated = await CollaborazioneWebDesignV2.findByIdAndUpdate(
-      id,
+    const updated = await CollaborazioneWebDesignV2.findOneAndUpdate(
+      updatePayload.fasi ? { _id: id, updatedAt: collaborationToUpdate.updatedAt } : { _id: id },
       { $set: updatePayload },
       { new: true, runValidators: true }
     );
 
     if (!updated) {
+      if (updatePayload.fasi) {
+        return Response.json({ message: 'Il progetto è stato aggiornato. Ricarica e riprova.' }, { status: 409 });
+      }
       return new Response(JSON.stringify({ message: 'Collaborazione non trovata' }), {
         status: 404,
       });
