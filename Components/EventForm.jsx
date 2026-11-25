@@ -124,7 +124,7 @@ export default function EventForm({ event, defaultType = "evento", access = "adm
     e.preventDefault();
     const action = e.nativeEvent.submitter?.value;
     const requestAvailability = access === "admin" && action === "request-availability";
-    const confermaTeam = access === "admin" && action === "confirm-team";
+    const confermaTeam = access === "admin" && Boolean(event) && action === "confirm-team";
     setLoading(true);
     setError("");
     try {
@@ -231,9 +231,11 @@ export default function EventForm({ event, defaultType = "evento", access = "adm
 
       <TeamPicker
         title="Team"
-        description={event?.teamConfermato === true
-          ? "Seleziona chi partecipa all’evento."
-          : "Dopo aver controllato le risposte, seleziona chi partecipa e premi Conferma team. La raccolta delle disponibilità si chiuderà."}
+        description={!event
+          ? "Seleziona chi partecipa già. Queste persone non riceveranno la richiesta di disponibilità."
+          : event.teamConfermato === true
+            ? "Seleziona chi partecipa."
+            : "Dopo aver controllato le risposte, seleziona chi partecipa e premi Conferma team per chiudere la raccolta."}
         people={options.collaboratori}
         selected={form.collaboratori}
         onChange={(ids) => set("collaboratori", ids)}
@@ -278,7 +280,13 @@ export default function EventForm({ event, defaultType = "evento", access = "adm
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.report} onChange={(e) => set("report", e.target.checked)} /> Report completato</label>
         </div>
       </Section>
-      <Actions loading={loading} onCancel={onCancel} type={form.tipo} canConfirmTeam={access === "admin" && event?.teamConfermato !== true} />
+      <Actions
+        loading={loading}
+        onCancel={onCancel}
+        type={form.tipo}
+        canRequestAvailability={access === "admin" && event?.teamConfermato !== true}
+        canConfirmTeam={access === "admin" && Boolean(event) && event.teamConfermato !== true}
+      />
     </form>
   );
 }
@@ -326,14 +334,14 @@ function Section({ title, children }) { return <section className="space-y-4"><h
 function DatePanel({ title, tone, children }) { const colors = tone === "violet" ? "border-violet-200 bg-violet-50/60 text-violet-900" : "border-blue-200 bg-blue-50/60 text-blue-900"; return <section className={`space-y-4 rounded-2xl border p-5 ${colors}`}><h3 className="text-sm font-black tracking-[0.12em]">{title}</h3>{children}</section>; }
 function DateBadge({ value, onRemove }) { return <span className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-600 px-3 py-1.5 text-sm font-bold text-white">{new Date(`${value}T12:00:00.000Z`).toLocaleDateString("it-IT", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })}{onRemove && <button type="button" onClick={onRemove} className="text-blue-100 hover:text-white" aria-label={`Rimuovi ${value}`}>×</button>}</span>; }
 const SOCIALS = [{ value: "instagram", label: "Instagram" }, { value: "facebook", label: "Facebook" }, { value: "tiktok", label: "TikTok" }, { value: "youtube", label: "YouTube" }, { value: "linkedin", label: "LinkedIn" }];
-function Actions({ loading, onCancel, type = "evento", canConfirmTeam = false }) {
+function Actions({ loading, onCancel, type = "evento", canRequestAvailability = false, canConfirmTeam = false }) {
   return (
     <div className="flex flex-wrap justify-end gap-3 border-t border-gray-200 pt-5">
       {onCancel && <button type="button" disabled={loading} onClick={onCancel} className="rounded-lg border border-gray-300 px-4 py-2 font-semibold text-gray-700">Annulla</button>}
       <button type="submit" disabled={loading} className="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
         {loading ? "Salvataggio…" : `Salva ${type}`}
       </button>
-      {canConfirmTeam && (
+      {canRequestAvailability && (
         <button type="submit" value="request-availability" disabled={loading} className="rounded-lg border border-blue-600 px-5 py-2 font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50">
           Salva e richiedi disponibilità
         </button>

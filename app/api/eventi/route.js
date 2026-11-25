@@ -28,8 +28,11 @@ export async function GET(req) {
     const to = searchParams.get("to");
     const query = {};
     if (!isAdmin(session)) {
-      query.teamConfermato = { $ne: false };
-      query.$or = [{ responsabile: session.user.id }, { collaboratori: session.user.id }];
+      const userId = session.user.id;
+      query.$and = [
+        { $or: [{ responsabile: userId }, { collaboratori: userId }] },
+        { $or: [{ teamConfermato: { $ne: false } }, { partecipantiIniziali: userId }] },
+      ];
     }
     if (search) query.nome = { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
     if (from || to) {
@@ -56,7 +59,8 @@ export async function POST(req) {
     const created = await Evento.create({
       ...payload,
       disponibilitaSuInvito: true,
-      teamConfermato: payload.teamConfermato ?? false,
+      teamConfermato: false,
+      partecipantiIniziali: payload.collaboratori,
       createdBy: session.user.id,
       updatedBy: session.user.id,
     });

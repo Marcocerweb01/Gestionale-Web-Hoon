@@ -26,10 +26,15 @@ export async function POST(_req, { params }) {
       status: { $ne: "non_attivo" },
     }).select("nome cognome subRoles email telefono isAdmin").lean();
     const alreadyRequested = new Set((event.destinatariDisponibilita || []).map(String));
-    const eligible = candidates.filter(isTeamEvento);
+    const assigned = new Set([...(event.collaboratori || []), event.responsabile].filter(Boolean).map(String));
+    const eligible = candidates.filter((person) => isTeamEvento(person) && !assigned.has(String(person._id)));
     const recipients = eligible.filter((person) => !alreadyRequested.has(String(person._id)));
     if (!recipients.length) {
-      return NextResponse.json({ message: eligible.length ? "La richiesta è già stata inviata a tutti i destinatari." : "Nessun Social Media Manager, fotografo o videomaker attivo." });
+      return NextResponse.json({
+        message: eligible.length
+          ? "La richiesta è già stata inviata a tutti i destinatari idonei."
+          : "Nessun Social Media Manager, fotografo o videomaker attivo da invitare fuori dal team.",
+      });
     }
 
     const tipo = event.tipo === "shooting" ? "shooting" : "evento";

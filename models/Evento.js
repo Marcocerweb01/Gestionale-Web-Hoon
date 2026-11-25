@@ -26,6 +26,7 @@ const EventoSchema = new Schema({
   disponibilitaSuInvito: Boolean,
   disponibilitaVisionataDa: { type: [Schema.Types.ObjectId], default: undefined },
   teamConfermato: Boolean,
+  partecipantiIniziali: { type: [Schema.Types.ObjectId], default: undefined },
   destinatariDisponibilita: {
     type: [{ type: Schema.Types.ObjectId, ref: "Collaboratore" }],
     default: undefined,
