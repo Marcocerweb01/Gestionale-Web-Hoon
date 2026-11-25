@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { connectToDB } from "@/utils/database";
-import { isAdmin } from "@/lib/eventi";
+import { isAdmin, isHoonWeb, isTeamEvento, ruoliTeamEvento } from "@/lib/eventi";
 import { Azienda, Collaboratore } from "@/models/User";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,12 @@ export async function GET() {
       Azienda.find({ status: { $ne: "non_attivo" } }).select("etichetta ragioneSociale").sort({ etichetta: 1 }).lean(),
     ]);
     return NextResponse.json({
-      collaboratori: collaboratori.map((item) => ({ ...item, _id: String(item._id) })),
+      responsabili: collaboratori.filter((item) => !isHoonWeb(item)).map((item) => ({
+        _id: String(item._id), nome: item.nome, cognome: item.cognome,
+      })),
+      collaboratori: collaboratori.filter(isTeamEvento).map((item) => ({
+        ...item, _id: String(item._id), subRoles: ruoliTeamEvento(item),
+      })),
       aziende: aziende.map((item) => ({ ...item, _id: String(item._id) })),
     });
   } catch (error) {

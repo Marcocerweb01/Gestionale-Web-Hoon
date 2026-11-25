@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Check, ChevronDown, HelpCircle, MapPin, X } from "lucide-react";
 
 const ANSWER_OPTIONS = [
@@ -9,14 +9,15 @@ const ANSWER_OPTIONS = [
   { value: "forse", label: "Forse", Icon: HelpCircle, selectedClass: "border-amber-500 bg-amber-500 text-slate-950" },
 ];
 
-export default function EventAvailabilityClient() {
+export default function EventAvailabilityClient({ pendingOnly = false, eventId = "", onPendingCount }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
-  const [open, setOpen] = useState("");
+  const [open, setOpen] = useState(eventId);
+  const [savedEvent, setSavedEvent] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
-      const response = await fetch("/api/disponibilita-eventi", { cache: "no-store" });
+      const response = await fetch(`/api/disponibilita-eventi${eventId ? `?evento=${encodeURIComponent(eventId)}` : ""}`, { cache: "no-store" });
       const body = await response.json();
       if (!response.ok) throw new Error(body.message || "Impossibile caricare le disponibilità");
       setData(body);
@@ -24,47 +25,86 @@ export default function EventAvailabilityClient() {
     } catch (loadError) {
       setError(loadError.message);
     }
-  };
+  }, [eventId]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const events = useMemo(() => {
+    if (!data) return [];
+    return pendingOnly ? data.events.filter(hasPendingAvailability) : data.events;
+  }, [data, pendingOnly]);
+
+  useEffect(() => {
+    if (data && pendingOnly) {
+      onPendingCount?.({ pending: events.length, unseen: events.filter((event) => !event.visionata).length });
+    }
+  }, [data, events, onPendingCount, pendingOnly]);
+
+  const markViewed = async (event) => {
+    try {
+      const response = await fetch("/api/disponibilita-eventi", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ evento: event._id }),
+      });
+      if (response.ok) {
+        setData((current) => ({
+          ...current,
+          events: current.events.map((item) => item._id === event._id ? { ...item, visionata: true } : item),
+        }));
+      }
+    } catch {
+      // Leave the unread indicator visible so opening the request can retry.
+    }
+  };
 
   if (error && !data) return <p className="rounded-xl bg-red-50 p-4 text-red-700">{error}</p>;
   if (!data) return <p className="py-12 text-center text-slate-500">Caricamento disponibilità…</p>;
 
   return (
-    <div className="space-y-6">
-      <header>
+    <div className="space-y-4">
+      {!pendingOnly && <header>
         <h1 className="text-3xl font-bold text-slate-900">Disponibilità Eventi & Shooting</h1>
         <p className="mt-1 text-slate-600">
           {data.mode === "admin"
             ? "Controlla le risposte dei ragazzi, data per data."
             : "Apri un evento e indica la tua disponibilità per ciascuna data."}
         </p>
-      </header>
+        {eventId && <a href={`/Eventi/${encodeURIComponent(eventId)}`} className="mt-2 inline-block text-sm font-semibold text-blue-700">Torna al dettaglio</a>}
+      </header>}
       {error && <p className="rounded-xl bg-red-50 p-4 text-red-700">{error}</p>}
+      {pendingOnly && <div role="status" className={savedEvent ? "text-sm font-medium text-emerald-700" : "sr-only"}>
+        {savedEvent && `Disponibilità salvate per ${savedEvent}.`}
+      </div>}
       <div className="space-y-3">
-        {data.events.map((event) => {
+        {events.map((event) => {
           const isOpen = open === event._id;
           const sharedProps = {
             event,
             open: isOpen,
-            toggle: () => setOpen(isOpen ? "" : event._id),
+            toggle: () => {
+              setOpen(isOpen ? "" : event._id);
+              if (!isOpen && pendingOnly && !event.visionata) markViewed(event);
+            },
           };
           return data.mode === "admin"
             ? <AdminRow key={event._id} {...sharedProps} data={data} />
-            : <CollaboratorRow key={event._id} {...sharedProps} onSaved={load} />;
+            : <CollaboratorRow key={event._id} {...sharedProps} onSaved={() => { if (pendingOnly) setSavedEvent(event.nome); load(); }} />;
         })}
-        {!data.events.length && <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500">Nessun evento o shooting futuro.</div>}
+        {!events.length && <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-500">
+          {pendingOnly ? "Nessuna richiesta di disponibilità in attesa." : "Nessun evento o shooting futuro."}
+        </div>}
       </div>
     </div>
   );
 }
 
-function EventSummary({ event }) {
+function EventSummary({ event, isNew = false }) {
   return (
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="font-bold text-slate-900">{event.nome}</h2>
+        {isNew && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-900">Nuova</span>}
         <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${event.tipo === "shooting" ? "bg-slate-100 text-slate-700" : "bg-blue-50 text-blue-700"}`}>
           {event.tipo === "shooting" ? "Shooting" : "Evento"}
         </span>
@@ -135,7 +175,7 @@ function CollaboratorRow({ event, open, toggle, onSaved }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <button type="button" onClick={toggle} aria-expanded={open} aria-controls={panelId} className="flex w-full items-center justify-between gap-4 p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600">
-        <EventSummary event={event} />
+        <EventSummary event={event} isNew={!event.visionata && completed < dates.length} />
         <div className="flex shrink-0 items-center gap-3">
           <span className={`hidden text-sm font-semibold sm:block ${completed === dates.length ? "text-emerald-700" : "text-slate-500"}`}>
             {completed === dates.length ? "Completo" : `${completed}/${dates.length} date`}
@@ -152,7 +192,7 @@ function CollaboratorRow({ event, open, toggle, onSaved }) {
               const fieldId = `reason-${event._id}-${date}`;
               return (
                 <fieldset key={date} className={index ? "border-t border-slate-100 pt-5" : ""}>
-                  <legend className="w-full text-sm font-bold capitalize text-slate-900">{longDate(date)}</legend>
+                  <legend className="w-full text-sm font-bold capitalize text-slate-900">{longDate(date)}<DayTime event={event} date={date} /></legend>
                   <div className="mt-3 grid grid-cols-3 gap-2 sm:flex">
                     {ANSWER_OPTIONS.map(({ value, label, Icon, selectedClass }) => (
                       <button
@@ -199,12 +239,24 @@ function CollaboratorRow({ event, open, toggle, onSaved }) {
   );
 }
 
+function DayTime({ event, date }) {
+  const time = event.orariGiornate?.find(({ data }) => data === date);
+  if (!time) return null;
+  return <span className="ml-2 font-normal normal-case text-slate-600">
+    {[time.inizio && `Inizio ${time.inizio}`, time.fine && `Fine ${time.fine}`].filter(Boolean).join(" · ")}
+  </span>;
+}
+
 function AdminRow({ event, data, open, toggle }) {
   const dates = eventDates(event);
   const responses = useMemo(() => data.responses.filter((item) => String(item.evento) === String(event._id)), [data.responses, event._id]);
   const dailyAnswers = responses.flatMap((response) => response.risposteGiornaliere || []);
   const count = (value) => dailyAnswers.filter((answer) => answer.stato === value).length;
-  const totalExpected = data.collaborators.length * dates.length;
+  const invited = new Set((event.destinatariDisponibilita || []).map(String));
+  const collaborators = event.disponibilitaSuInvito
+    ? data.collaborators.filter(({ _id }) => invited.has(String(_id)))
+    : data.collaborators;
+  const totalExpected = collaborators.length * dates.length;
   const panelId = `admin-availability-${event._id}`;
 
   return (
@@ -223,9 +275,10 @@ function AdminRow({ event, data, open, toggle }) {
           <div className="space-y-6">
             {dates.map((date) => (
               <section key={date}>
-                <h3 className="text-sm font-bold capitalize text-slate-900">{longDate(date)}</h3>
+                <h3 className="text-sm font-bold capitalize text-slate-900">{longDate(date)}<DayTime event={event} date={date} /></h3>
                 <div className="mt-2 divide-y divide-slate-100 rounded-xl bg-slate-50 px-4">
-                  {data.collaborators.map((person) => {
+                  {!collaborators.length && <p className="py-3 text-sm text-slate-600">Nessuna richiesta inviata.</p>}
+                  {collaborators.map((person) => {
                     const response = responses.find((item) => String(item.collaboratore) === String(person._id));
                     const answer = response?.risposteGiornaliere?.find((item) => dateKey(item.data) === date);
                     return (
@@ -261,6 +314,11 @@ function eventDates(event) {
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return dates;
+}
+
+function hasPendingAvailability(event) {
+  const answers = answersFromResponse(event.risposta);
+  return eventDates(event).some((date) => !answers[date]?.stato);
 }
 
 function answersFromResponse(response) {

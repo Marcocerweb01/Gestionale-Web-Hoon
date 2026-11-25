@@ -61,6 +61,17 @@ const WebDesignSection = ({ userId }) => {
 
 const Dashboard = () => {
   const { data: session, status } = useSession();
+  const [unseenAvailability, setUnseenAvailability] = useState(0);
+
+  useEffect(() => {
+    if (session?.user?.role !== "collaboratore") return;
+    const controller = new AbortController();
+    fetch("/api/disponibilita-eventi?riepilogo=1", { cache: "no-store", signal: controller.signal })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => { if (data) setUnseenAvailability(data.nuove); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [session?.user?.id, session?.user?.role]);
   const [isVisible, setIsVisible] = useState(false);
   const [sezioneAperta, setSezioneAperta] = useState(() => {
     // Recupera lo stato salvato da localStorage
@@ -1042,8 +1053,12 @@ const Dashboard = () => {
           ) : (
             <>
               {/* Lead Commerciali */}
-              <Link href="/Disponibilita-Eventi-Shooting" className="mb-8 flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 p-5 transition hover:border-blue-400 hover:bg-blue-100">
-                <div><h3 className="text-lg font-bold text-slate-900">Eventi & Shooting</h3><p className="mt-1 text-sm text-slate-600">Comunica la tua disponibilità: Sì, No oppure Forse.</p></div><span className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Apri</span>
+              <Link href={unseenAvailability ? "/Eventi#disponibilita" : "/Eventi"} className="mb-8 flex items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-5 transition hover:border-blue-400 hover:bg-blue-100">
+                <div><h3 className="text-lg font-bold text-slate-900">Eventi & Shooting</h3>{unseenAvailability > 0 ? (
+                  <p className="mt-2 w-fit rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-900">
+                    {unseenAvailability === 1 ? "Una nuova richiesta per te!" : `${unseenAvailability} nuove richieste per te!`}
+                  </p>
+                ) : <p className="mt-1 text-sm text-slate-600">Vedi le tue partecipazioni e rispondi alle richieste di disponibilità.</p>}</div><span className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Apri</span>
               </Link>
 
               {/* Lead Commerciali */}

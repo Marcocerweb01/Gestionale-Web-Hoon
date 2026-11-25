@@ -28,7 +28,7 @@ export async function GET(req, { params }) {
     if (result.error) return result.error;
     const { searchParams } = new URL(req.url);
     const query = { evento: result.event._id };
-    if (result.access === "collaboratore") query.collaboratore = result.session.user.id;
+    if (result.access !== "admin") query.collaboratore = result.session.user.id;
     else if (searchParams.get("collaboratore")) {
       if (!isValidId(searchParams.get("collaboratore"))) return NextResponse.json({ message: "Collaboratore non valido" }, { status: 400 });
       query.collaboratore = searchParams.get("collaboratore");
@@ -54,7 +54,7 @@ export async function POST(req, { params }) {
   try {
     const result = await load(params);
     if (result.error) return result.error;
-    if (!['admin', 'responsabile'].includes(result.access)) return NextResponse.json({ message: "Non autorizzato" }, { status: 403 });
+    if (result.access !== "admin") return NextResponse.json({ message: "Non autorizzato" }, { status: 403 });
     const body = await req.json();
     if (!isValidId(body.collaboratore)) return NextResponse.json({ message: "Collaboratore non valido" }, { status: 400 });
     const allowed = result.event.collaboratori.some((id) => String(id) === String(body.collaboratore));

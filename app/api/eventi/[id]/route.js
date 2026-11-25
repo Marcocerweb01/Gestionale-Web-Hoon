@@ -48,7 +48,7 @@ export async function PATCH(req, { params }) {
     if (result.access === "collaboratore") return NextResponse.json({ message: "Non autorizzato" }, { status: 403 });
     const body = await req.json();
     const updates = result.access === "admin"
-      ? await validateAdminEventPayload(body)
+      ? await validateAdminEventPayload(body, result.event)
       : validateResponsibleEventPayload({
           ...body,
           currentInizioSocial: result.event.inizioSocial,

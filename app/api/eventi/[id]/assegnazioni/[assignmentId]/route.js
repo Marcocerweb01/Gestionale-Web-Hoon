@@ -16,7 +16,7 @@ async function authorize(params) {
   const event = await Evento.findById(id).lean();
   if (!event) return { error: NextResponse.json({ message: "Evento non trovato" }, { status: 404 }) };
   const access = eventAccess(event, session);
-  if (!['admin', 'responsabile'].includes(access)) return { error: NextResponse.json({ message: "Non autorizzato" }, { status: 403 }) };
+  if (access !== "admin") return { error: NextResponse.json({ message: "Non autorizzato" }, { status: 403 }) };
   const assignment = await AssegnazioneEvento.findOne({ _id: assignmentId, evento: id });
   if (!assignment) return { error: NextResponse.json({ message: "Attività non trovata" }, { status: 404 }) };
   return { event, assignment, session };

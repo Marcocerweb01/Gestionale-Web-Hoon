@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CalendarDays, CalendarRange, MapPin, MessageSquareText, Pencil, Target, Trash2, UserRound } from "lucide-react";
-import EventForm from "./EventForm";
+import EventForm, { requestEventAvailability } from "./EventForm";
 import EventAssignments from "./EventAssignments";
 
 export default function EventoDetailClient({ eventId }) {
@@ -12,13 +12,25 @@ export default function EventoDetailClient({ eventId }) {
   const [event, setEvent] = useState(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
-  const load = async () => {
+  const [requesting, setRequesting] = useState(false);
+  const [requestFeedback, setRequestFeedback] = useState(null);
+  const requestAvailability = async () => {
+    setRequesting(true);
+    setRequestFeedback(null);
+    try {
+      const feedback = await requestEventAvailability(eventId);
+      setRequestFeedback(feedback);
+    } finally {
+      setRequesting(false);
+    }
+  };
+  const load = useCallback(async () => {
     const response = await fetch(`/api/eventi/${eventId}`, { cache: "no-store" });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message);
     setEvent(data);
-  };
-  useEffect(() => { load().catch((err) => setError(err.message)); }, [eventId]);
+  }, [eventId]);
+  useEffect(() => { load().catch((err) => setError(err.message)); }, [load]);
   const remove = async () => {
     if (!window.confirm(`Eliminare definitivamente ${event?.tipo === "shooting" ? "lo shooting" : "l'evento"} e tutte le sue attività?`)) return;
     const response = await fetch(`/api/eventi/${eventId}`, { method: "DELETE" });
@@ -34,7 +46,36 @@ export default function EventoDetailClient({ eventId }) {
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start"><div><span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wide">{event.access === "admin" ? "Amministrazione" : event.access === "responsabile" ? `Responsabile ${event.tipo || "evento"}` : "La tua assegnazione"}</span><h1 className="mt-3 text-3xl font-bold">{event.nome}</h1><div className="mt-4 flex flex-wrap gap-4 text-sm text-blue-100"><span className="flex items-center gap-2"><CalendarDays className="h-4 w-4" /><strong className="text-white">DATE {event.tipo === "shooting" ? "SHOOTING" : "EVENTO"}:</strong> {formatEventDays(event.giornateEvento)}</span><span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {event.luogo}</span><span className="flex items-center gap-2"><UserRound className="h-4 w-4" /> {event.responsabile?.nome} {event.responsabile?.cognome}</span></div></div>{event.access !== "collaboratore" && <div className="flex gap-2"><button onClick={() => setEditing(!editing)} className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold text-slate-900"><Pencil className="h-4 w-4" /> Modifica</button>{event.access === "admin" && <button onClick={remove} className="rounded-lg bg-red-600 p-2.5 text-white" title={`Elimina ${event.tipo || "evento"}`}><Trash2 className="h-4 w-4" /></button>}</div>}</div>
       </header>
 
-      {editing && <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm md:p-7"><EventForm event={event} access={event.access} onCancel={() => setEditing(false)} onSaved={(updated) => { setEvent(updated); setEditing(false); }} /></div>}
+      {!!event.orariGiornate?.length && (
+        <section className="rounded-2xl border border-gray-200 bg-white p-5">
+          <h2 className="font-bold text-gray-900">Orari per giornata</h2>
+          <ul className="mt-2 space-y-1 text-sm text-gray-700">
+            {event.orariGiornate.map(({ data, inizio, fine }) => (
+              <li key={data}>
+                {formatDate(data)}{inizio && ` · Inizio ${inizio}`}{fine && ` · Fine ${fine}`}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {event.access === "admin" && !editing && (
+        <div className="flex flex-wrap items-center gap-3">
+          {event.teamConfermato !== true && (
+            <button type="button" disabled={requesting} onClick={requestAvailability} className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700">
+              {requesting ? "Invio in corso…" : "Richiedi disponibilità"}
+            </button>
+          )}
+          <Link href={`/Disponibilita-Eventi-Shooting?evento=${eventId}`} className="rounded-lg border border-slate-300 px-4 py-2 font-semibold text-slate-800 hover:bg-slate-50">
+            Vedi risposte
+          </Link>
+          <p role="status" className={requestFeedback?.error ? "text-sm text-red-700" : "text-sm text-gray-700"}>
+            {requestFeedback?.message || (event.teamConfermato === true ? "Team confermato. Disponibilità chiuse." : "")}
+          </p>
+        </div>
+      )}
+
+      {editing && <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm md:p-7"><EventForm event={event} access={event.access} onCancel={() => setEditing(false)} onSaved={(updated, feedback) => { setEvent(updated); setRequestFeedback(feedback); setEditing(false); }} /></div>}
 
       {event.access !== "collaboratore" && !editing && event.tipo !== "shooting" && (
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">

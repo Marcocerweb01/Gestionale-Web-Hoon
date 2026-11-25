@@ -26,6 +26,7 @@ const initialForm = (event) => ({
   nome: event?.nome || "",
   azienda: event?.azienda?._id || "",
   giornateEvento: legacyEventDays(event),
+  orariGiornate: Object.fromEntries((event?.orariGiornate || []).map(({ data, inizio, fine }) => [data, { inizio, fine }])),
   luogo: event?.luogo || "",
   responsabile: event?.responsabile?._id || "",
   collaboratori: event?.collaboratori?.map((item) => item._id) || [],
@@ -39,18 +40,28 @@ const initialForm = (event) => ({
   noteInterne: event?.noteInterne || "",
   noteShooting: event?.noteShooting || "",
   pagamentoTotale: event?.pagamentoTotale || "0.00",
-  tranche: event?.tranche?.length
-    ? event.tranche.map((item) => ({ ...item, scadenza: dateValue(item.scadenza) }))
-    : [0, 1, 2].map(emptyTranche),
+  tranche: event
+    ? (event.tranche || []).map((item) => ({ ...item, scadenza: dateValue(item.scadenza) }))
+    : [emptyTranche(0)],
   hardDisk: Boolean(event?.hardDisk),
   report: Boolean(event?.report),
 });
 
 const field = "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200";
 
+export async function requestEventAvailability(eventId) {
+  try {
+    const response = await fetch(`/api/eventi/${eventId}/richiedi-disponibilita`, { method: "POST" });
+    const data = await response.json();
+    return { message: data.message, error: !response.ok, destinatari: data.destinatari };
+  } catch {
+    return { message: "Impossibile inviare la richiesta. Riprova.", error: true };
+  }
+}
+
 export default function EventForm({ event, defaultType = "evento", access = "admin", onSaved, onCancel }) {
   const [form, setForm] = useState(() => ({ ...initialForm(event), tipo: event?.tipo || defaultType }));
-  const [options, setOptions] = useState({ collaboratori: [], aziende: [] });
+  const [options, setOptions] = useState({ collaboratori: [], responsabili: [], aziende: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [singleDate, setSingleDate] = useState("");
@@ -76,6 +87,18 @@ export default function EventForm({ event, defaultType = "evento", access = "adm
   const paymentDifference = Math.abs(trancheTotal - (Number(String(form.pagamentoTotale).replace(",", ".")) || 0));
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const addEventDates = (dates) => set("giornateEvento", [...new Set([...form.giornateEvento, ...dates])].sort());
+  const setDayTime = (day, key, value) => setForm((current) => ({
+    ...current,
+    orariGiornate: {
+      ...current.orariGiornate,
+      [day]: { ...current.orariGiornate[day], [key]: value },
+    },
+  }));
+  const removeDay = (day) => setForm((current) => {
+    const orariGiornate = { ...current.orariGiornate };
+    delete orariGiornate[day];
+    return { ...current, orariGiornate, giornateEvento: current.giornateEvento.filter((value) => value !== day) };
+  });
   const addSingleDate = () => {
     if (!singleDate) return;
     addEventDates([singleDate]);
@@ -99,17 +122,26 @@ export default function EventForm({ event, defaultType = "evento", access = "adm
 
   const submit = async (e) => {
     e.preventDefault();
+    const action = e.nativeEvent.submitter?.value;
+    const requestAvailability = access === "admin" && action === "request-availability";
+    const confermaTeam = access === "admin" && action === "confirm-team";
     setLoading(true);
     setError("");
     try {
       const response = await fetch(event ? `/api/eventi/${event._id}` : "/api/eventi", {
         method: event ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          confermaTeam,
+          orariGiornate: Object.entries(form.orariGiornate).map(([data, orari]) => ({ data, ...orari })),
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Salvataggio non riuscito");
-      onSaved?.(data);
+      const feedback = requestAvailability ? await requestEventAvailability(data._id) : null;
+      if (feedback?.destinatari) data.destinatariDisponibilita = feedback.destinatari;
+      onSaved?.(data, feedback);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -163,7 +195,10 @@ export default function EventForm({ event, defaultType = "evento", access = "adm
           <Label title="Responsabile *">
             <select className={field} required value={form.responsabile} onChange={(e) => set("responsabile", e.target.value)}>
               <option value="">Seleziona</option>
-              {options.collaboratori.map((item) => <option key={item._id} value={item._id}>{item.nome} {item.cognome}</option>)}
+              {event?.responsabile && !options.responsabili.some((item) => item._id === event.responsabile._id) && (
+                <option value={event.responsabile._id}>{event.responsabile.nome} {event.responsabile.cognome} (attuale)</option>
+              )}
+              {options.responsabili.map((item) => <option key={item._id} value={item._id}>{item.nome} {item.cognome}</option>)}
             </select>
           </Label>
         </div>
@@ -178,22 +213,31 @@ export default function EventForm({ event, defaultType = "evento", access = "adm
           <Label title="al"><input className={field} type="date" min={rangeStart} value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} /></Label>
           <button type="button" onClick={addDateRange} className="rounded-lg border border-blue-300 bg-white px-4 py-2 font-semibold text-blue-700 hover:bg-blue-50">Aggiungi intervallo</button>
         </div>
-        <div className="flex min-h-12 flex-wrap gap-2 rounded-xl border border-blue-100 bg-white p-3">
+        <div className="min-h-12 space-y-3 rounded-xl border border-blue-100 bg-white p-3">
           {form.giornateEvento.length === 0 && <span className="text-sm text-slate-400">Nessuna data {form.tipo.toUpperCase()} inserita</span>}
-          {form.giornateEvento.map((day) => <DateBadge key={day} value={day} onRemove={() => set("giornateEvento", form.giornateEvento.filter((value) => value !== day))} />)}
+          {form.giornateEvento.map((day) => (
+            <div key={day} className="grid items-end gap-3 sm:grid-cols-3">
+              <div><DateBadge value={day} onRemove={() => removeDay(day)} /></div>
+              <Label title="Inizio (facoltativo)">
+                <input className={field} type="time" value={form.orariGiornate[day]?.inizio || ""} onChange={(e) => setDayTime(day, "inizio", e.target.value)} />
+              </Label>
+              <Label title="Fine (facoltativa)">
+                <input className={field} type="time" value={form.orariGiornate[day]?.fine || ""} onChange={(e) => setDayTime(day, "fine", e.target.value)} />
+              </Label>
+            </div>
+          ))}
         </div>
       </DatePanel>
 
-      <Section title="Team">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {options.collaboratori.map((item) => (
-            <label key={item._id} className="flex items-start gap-3 rounded-lg border border-gray-200 p-3">
-              <input type="checkbox" className="mt-1" checked={form.collaboratori.includes(item._id)} onChange={(e) => set("collaboratori", e.target.checked ? [...form.collaboratori, item._id] : form.collaboratori.filter((id) => id !== item._id))} />
-              <span><span className="block font-medium text-gray-900">{item.nome} {item.cognome}</span><span className="text-xs text-gray-500">{(item.subRoles || []).join(", ")}</span></span>
-            </label>
-          ))}
-        </div>
-      </Section>
+      <TeamPicker
+        title="Team"
+        description={event?.teamConfermato === true
+          ? "Seleziona chi partecipa all’evento."
+          : "Dopo aver controllato le risposte, seleziona chi partecipa e premi Conferma team. La raccolta delle disponibilità si chiuderà."}
+        people={options.collaboratori}
+        selected={form.collaboratori}
+        onChange={(ids) => set("collaboratori", ids)}
+      />
 
       {form.tipo === "evento" ? <><Section title="Obiettivi e avanzamento">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -234,8 +278,46 @@ export default function EventForm({ event, defaultType = "evento", access = "adm
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.report} onChange={(e) => set("report", e.target.checked)} /> Report completato</label>
         </div>
       </Section>
-      <Actions loading={loading} onCancel={onCancel} type={form.tipo} />
+      <Actions loading={loading} onCancel={onCancel} type={form.tipo} canConfirmTeam={access === "admin" && event?.teamConfermato !== true} />
     </form>
+  );
+}
+
+function TeamPicker({ title, description, people, selected, onChange }) {
+  const groups = [
+    { title: "Social Media Manager", people: people.filter(({ subRoles }) => subRoles.includes("smm")) },
+    { title: "Fotografi", people: people.filter(({ subRoles }) => subRoles.includes("fotografo")) },
+    { title: "Videomaker", people: people.filter(({ subRoles }) => subRoles.includes("videomaker")) },
+  ];
+  return (
+    <Section title={title}>
+      <p className="text-sm text-slate-600">{description}</p>
+      {groups.map(({ title, people }) => (
+        <details key={title} className="rounded-lg border border-gray-200">
+          <summary className="cursor-pointer p-3 font-semibold text-gray-900">
+            {title} ({people.filter(({ _id }) => selected.includes(_id)).length}/{people.length})
+          </summary>
+          {people.length ? (
+            <div className="grid gap-2 px-3 pb-3 sm:grid-cols-2 lg:grid-cols-3">
+              {people.map(({ _id, nome, cognome, subRoles }) => (
+                <label key={_id} className="flex items-start gap-3 rounded-lg border border-gray-200 p-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={selected.includes(_id)}
+                    onChange={(e) => onChange(e.target.checked ? [...selected, _id] : selected.filter((id) => id !== _id))}
+                  />
+                  <span>
+                    <span className="block font-medium text-gray-900">{nome} {cognome}</span>
+                    <span className="text-xs text-gray-500">{subRoles.join(", ")}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          ) : <p className="px-3 pb-3 text-sm text-gray-600">Nessun profilo attivo.</p>}
+        </details>
+      ))}
+    </Section>
   );
 }
 
@@ -244,4 +326,23 @@ function Section({ title, children }) { return <section className="space-y-4"><h
 function DatePanel({ title, tone, children }) { const colors = tone === "violet" ? "border-violet-200 bg-violet-50/60 text-violet-900" : "border-blue-200 bg-blue-50/60 text-blue-900"; return <section className={`space-y-4 rounded-2xl border p-5 ${colors}`}><h3 className="text-sm font-black tracking-[0.12em]">{title}</h3>{children}</section>; }
 function DateBadge({ value, onRemove }) { return <span className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-600 px-3 py-1.5 text-sm font-bold text-white">{new Date(`${value}T12:00:00.000Z`).toLocaleDateString("it-IT", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })}{onRemove && <button type="button" onClick={onRemove} className="text-blue-100 hover:text-white" aria-label={`Rimuovi ${value}`}>×</button>}</span>; }
 const SOCIALS = [{ value: "instagram", label: "Instagram" }, { value: "facebook", label: "Facebook" }, { value: "tiktok", label: "TikTok" }, { value: "youtube", label: "YouTube" }, { value: "linkedin", label: "LinkedIn" }];
-function Actions({ loading, onCancel, type = "evento" }) { return <div className="flex justify-end gap-3 border-t border-gray-200 pt-5">{onCancel && <button type="button" onClick={onCancel} className="rounded-lg border border-gray-300 px-4 py-2 font-semibold text-gray-700">Annulla</button>}<button disabled={loading} className="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{loading ? "Salvataggio..." : `Salva ${type}`}</button></div>; }
+function Actions({ loading, onCancel, type = "evento", canConfirmTeam = false }) {
+  return (
+    <div className="flex flex-wrap justify-end gap-3 border-t border-gray-200 pt-5">
+      {onCancel && <button type="button" disabled={loading} onClick={onCancel} className="rounded-lg border border-gray-300 px-4 py-2 font-semibold text-gray-700">Annulla</button>}
+      <button type="submit" disabled={loading} className="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+        {loading ? "Salvataggio…" : `Salva ${type}`}
+      </button>
+      {canConfirmTeam && (
+        <button type="submit" value="request-availability" disabled={loading} className="rounded-lg border border-blue-600 px-5 py-2 font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50">
+          Salva e richiedi disponibilità
+        </button>
+      )}
+      {canConfirmTeam && (
+        <button type="submit" value="confirm-team" disabled={loading} className="rounded-lg bg-emerald-700 px-5 py-2 font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
+          Conferma team
+        </button>
+      )}
+    </div>
+  );
+}
