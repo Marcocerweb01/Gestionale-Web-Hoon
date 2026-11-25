@@ -80,12 +80,12 @@ function DesignService({ service }) {
   );
 }
 
-export default function DesignServices({ collaboratorId }) {
-  const headingId = useId();
+export function useDesignServices(collaboratorId, enabled = true) {
   const [services, setServices] = useState([]);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     const query = collaboratorId ? `?collaboratore=${encodeURIComponent(collaboratorId)}` : '';
     fetch(`/api/collaborazioni-webdesign-v2/design${query}`, { signal: controller.signal, cache: 'no-store' })
@@ -98,15 +98,25 @@ export default function DesignServices({ collaboratorId }) {
         if (!controller.signal.aborted) setError(true);
       });
     return () => controller.abort();
-  }, [collaboratorId]);
+  }, [collaboratorId, enabled]);
 
+  return { services, error };
+}
+
+export function DesignServicesList({ services, error, showHeading = true }) {
+  const headingId = useId();
   if (error) return <p role="alert" className="mb-4 text-sm text-red-700">Impossibile caricare i servizi Design.</p>;
   if (!services.length) return null;
 
   return (
-    <section aria-labelledby={headingId} className="mb-4 space-y-3">
-      <h3 id={headingId} className="text-sm font-semibold text-gray-900">Servizi Design</h3>
+    <section aria-labelledby={showHeading ? headingId : undefined} className="mb-4 space-y-3">
+      {showHeading && <h3 id={headingId} className="text-sm font-semibold text-gray-900">Servizi Design</h3>}
       {services.map((service) => <DesignService key={service.id} service={service} />)}
     </section>
   );
+}
+
+export default function DesignServices({ collaboratorId }) {
+  const data = useDesignServices(collaboratorId);
+  return <DesignServicesList {...data} />;
 }

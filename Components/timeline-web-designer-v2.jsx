@@ -11,6 +11,7 @@ import {
   isWebDesignTaskCompleted,
 } from '@/lib/webdesign-v2-progress.mjs';
 import WebDesignV2StandardWorkflow from '@/Components/webdesign-v2-standard-workflow';
+import { DesignServicesList, useDesignServices } from '@/Components/DesignServices';
 import { isStandardWorkflowProject } from '@/lib/webdesign-v2-workflow.mjs';
 
 const FASE_CONFIG = {
@@ -539,8 +540,10 @@ const createDefaultInterview = () => ({
   fileUtili: '',
 });
 
-const TimelineWebDesignerV2 = ({ userId }) => {
+const TimelineWebDesignerV2 = ({ userId, showProjectTabs = false }) => {
   const { data: session } = useSession();
+  const [projectTab, setProjectTab] = useState('attive');
+  const designServices = useDesignServices(userId, showProjectTabs);
   const [collaborazioni, setCollaborazioni] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -798,7 +801,7 @@ const TimelineWebDesignerV2 = ({ userId }) => {
     );
   }
 
-  if (collaborazioni.length === 0) {
+  if (!showProjectTabs && collaborazioni.length === 0) {
     return (
       <div className="text-center p-10 bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl border border-violet-100">
         <div className="text-5xl mb-4">🚀</div>
@@ -808,40 +811,76 @@ const TimelineWebDesignerV2 = ({ userId }) => {
     );
   }
 
+  const tabs = [
+    ['attive', 'Attive'],
+    ['completate', 'Completate'],
+    ...(designServices.services.length ? [['design', 'Solo Design']] : []),
+  ];
+  const visibleProjects = showProjectTabs
+    ? collaborazioni.filter((collab) => (collab.stato === 'terminata') === (projectTab === 'completate'))
+    : collaborazioni;
+
   return (
     <div className="space-y-4">
+      {showProjectTabs && (
+        <div role="group" aria-label="Vista progetti Web Design" className="flex flex-wrap gap-2 border-b border-gray-200 pb-3">
+          {tabs.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={projectTab === value}
+              onClick={() => setProjectTab(value)}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold focus-visible:outline-violet-600 ${
+                projectTab === value ? 'bg-violet-100 text-violet-900' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {showProjectTabs && designServices.error && <DesignServicesList {...designServices} />}
+      {showProjectTabs && designServices.services.length > 0 && (
+        <div hidden={projectTab !== 'design'}>
+          <DesignServicesList {...designServices} showHeading={false} />
+        </div>
+      )}
+      {projectTab !== 'design' && visibleProjects.length === 0 && (
+        <p className="py-4 text-sm text-gray-600">
+          {projectTab === 'completate' ? 'Nessuna collaborazione completata.' : 'Nessuna collaborazione attiva.'}
+        </p>
+      )}
       {deleteError && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
           {deleteError}
         </div>
       )}
-      {collaborazioni.map((collab) => {
+      {projectTab !== 'design' && visibleProjects.map((collab) => {
+        const deleteAction = isAdministrator && (
+          <button
+            type="button"
+            onClick={() => handleDeleteCollaboration(collab)}
+            disabled={deletingId === collab._id}
+            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+          >
+            {deletingId === collab._id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Trash2 className="h-4 w-4" aria-hidden="true" />}
+            {deletingId === collab._id ? 'Eliminazione…' : 'Elimina collaborazione'}
+          </button>
+        );
         if (isStandardWorkflowProject(collab)) {
           return (
-            <div key={collab._id} className="space-y-2">
-              {isAdministrator && (
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteCollaboration(collab)}
-                    disabled={deletingId === collab._id}
-                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {deletingId === collab._id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" aria-hidden="true" />
-                    )}
-                    {deletingId === collab._id ? 'Eliminazione…' : 'Elimina collaborazione'}
-                  </button>
-                </div>
-              )}
-              <WebDesignV2StandardWorkflow
-                initialProject={collab}
-                userId={userId}
-                isStaff={isAdminView}
-              />
-            </div>
+            <WebDesignV2StandardWorkflow
+              key={collab._id}
+              initialProject={collab}
+              userId={userId}
+              isStaff={isAdminView}
+              deleteAction={deleteAction}
+              onStatusChange={(stato) =>
+                setCollaborazioni((current) =>
+                  current.map((item) => item._id === collab._id ? { ...item, stato } : item)
+                )
+              }
+            />
           );
         }
         const isOpen = openProjects[collab._id];
@@ -980,22 +1019,7 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                       <option value="terminata">✅ Terminato</option>
                     </select>
                   </div>
-                  {isAdministrator && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteCollaboration(collab)}
-                      disabled={deletingId === collab._id}
-                      className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white p-2 text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      title="Elimina collaborazione"
-                      aria-label={`Elimina collaborazione di ${collab.cliente?.etichetta || collab.aziendaRagioneSociale}`}
-                    >
-                      {deletingId === collab._id ? (
-                        <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-                      ) : (
-                        <Trash2 className="h-5 w-5" aria-hidden="true" />
-                      )}
-                    </button>
-                  )}
+
                 </div>
               </div>
             </div>
@@ -1844,6 +1868,7 @@ const TimelineWebDesignerV2 = ({ userId }) => {
                   />
                 </div>
 
+                {deleteAction && <div className="border-t border-gray-200 pt-4">{deleteAction}</div>}
               </div>
             )}
           </div>

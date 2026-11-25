@@ -74,7 +74,7 @@ const progressOf = calculateTaskCollectionProgress;
 const inputClass =
   'w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400';
 
-export default function WebDesignV2StandardWorkflow({ initialProject, userId, isStaff }) {
+export default function WebDesignV2StandardWorkflow({ initialProject, userId, isStaff, onStatusChange, deleteAction }) {
   const [project, setProject] = useState(initialProject);
   const [open, setOpen] = useState(false);
   const [openPhases, setOpenPhases] = useState({ struttura: true });
@@ -137,6 +137,9 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Aggiornamento non riuscito');
+        if (payload.stato && data.collaborazione?.stato) {
+          onStatusChange?.(data.collaborazione.stato);
+        }
         if (data.collaborazione && editVersion === editVersionRef.current) {
           setProject((current) => ({
             ...current,
@@ -491,8 +494,8 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
       </button>
 
       {open && (
-        <div id={`workflow-${project._id}`} className="space-y-6 p-5">
-          <div aria-live="polite" className="min-h-5 text-sm">
+        <div id={`workflow-${project._id}`} className="space-y-6 border-t border-gray-200 p-4 sm:p-6">
+          <div aria-live="polite" className="empty:hidden text-sm">
             {saving && <span className="font-medium text-violet-700">Salvataggio in corso…</span>}
             {!saving && messageScope === 'global' && message && (
               <span className={message === 'Salvato' ? 'font-medium text-emerald-700' : 'font-semibold text-red-700'}>
@@ -500,83 +503,6 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
               </span>
             )}
           </div>
-          {isStaff && (
-            <label className="block max-w-xs text-sm font-semibold text-gray-900">
-              Stato collaborazione
-              <select
-                className={`${inputClass} mt-1`}
-                value={project.stato || 'in corso'}
-                disabled={saving}
-                onChange={(event) => {
-                  const stato = event.target.value;
-                  patch({ stato }, { ...project, stato });
-                }}
-              >
-                <option value="in corso">Non completato</option>
-                <option value="in pausa">In pausa</option>
-                <option value="terminata">Completato</option>
-              </select>
-            </label>
-          )}
-          {isStaff && project.dataAvvioOperativo && (
-            <section className="rounded-xl border border-violet-200 bg-violet-50 p-4">
-              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-                <div className="max-w-xl">
-                  <h4 className="font-bold text-violet-950">Sposta timeline</h4>
-                  <p className="text-sm text-violet-800">
-                    Ricalcola tutte le date previste delle fasi, dei controlli e della consegna.
-                    Stati, note, appuntamenti, pubblicazione e date effettive non cambiano.
-                  </p>
-                </div>
-                <div className="grid flex-1 gap-2 sm:grid-cols-[minmax(150px,0.7fr)_minmax(220px,1.3fr)_auto]">
-                  <label className="text-xs font-bold text-violet-900">
-                    Nuovo giorno 1
-                    <input
-                      type="date"
-                      value={newStartDate}
-                      onChange={(event) => setNewStartDate(event.target.value)}
-                      className={`${inputClass} mt-1`}
-                    />
-                  </label>
-                  <label className="text-xs font-bold text-violet-900">
-                    Motivo (facoltativo)
-                    <input
-                      value={rescheduleReason}
-                      onChange={(event) => setRescheduleReason(event.target.value)}
-                      className={`${inputClass} mt-1`}
-                      placeholder="Es. avvio contratto posticipato"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    disabled={!newStartDate || newStartDate === currentStartDate || saving}
-                    onClick={handleReschedule}
-                    className="self-end rounded-lg bg-violet-700 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Ricalcola date
-                  </button>
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-violet-800">
-                <span>Avvio attuale: <strong>{formatDate(project.dataAvvioOperativo)}</strong></span>
-                <span>Consegna prevista: <strong>{formatDate(delivery.dataPrevista)}</strong></span>
-                {latestTimelineChange && (
-                  <span>
-                    Ultimo spostamento: {formatDate(latestTimelineChange.dataPrecedente)} →{' '}
-                    {formatDate(latestTimelineChange.dataNuova)}
-                    {latestTimelineChange.modificataDaNome
-                      ? ` · ${latestTimelineChange.modificataDaNome}`
-                      : ''}
-                  </span>
-                )}
-              </div>
-              {messageScope === 'schedule' && message && !saving && (
-                <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-emerald-700' : 'mt-2 text-sm font-semibold text-red-700'}>
-                  {message === 'Salvato' ? 'Timeline riprogrammata' : message}
-                </p>
-              )}
-            </section>
-          )}
           {!project.dataAvvioOperativo ? (
             <div className="flex flex-col justify-between gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 sm:flex-row sm:items-center">
               <div>
@@ -593,18 +519,20 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
               </Link>
             </div>
           ) : (
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 md:col-span-2">
-                <p className="text-xs font-bold uppercase tracking-wide text-violet-600">Prossima attività</p>
-                <p className="mt-1 font-semibold text-gray-900">
+            <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900">Prossima attività</p>
+                <p className="mt-1 text-sm text-gray-700">
                   {nextTask
-                    ? `${nextTask.giorno ? `${nextTask.giorno}: ` : ''}${nextTask.nome}`
-                    : 'Tutte le attività risultano completate'}
+                    ? `${nextTask.giorno ? `${nextTask.giorno} · ` : ''}${nextTask.nome}`
+                    : allTasks.every(isDone)
+                      ? 'Tutte le attività risultano completate'
+                      : 'In attesa dello sblocco della prossima fase'}
                 </p>
               </div>
               <Link
                 href={`/Lista_clienti_webdesigner/${userId}/interview/${project._id}`}
-                className="flex items-center justify-center rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm font-bold text-orange-800"
+                className="inline-flex min-h-10 shrink-0 items-center justify-center self-start rounded-lg border border-violet-200 bg-white px-3 text-sm font-semibold text-violet-800 hover:bg-violet-50 sm:self-auto"
               >
                 Intervista e analisi IA
               </Link>
@@ -614,8 +542,7 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
           <section>
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <h4 className="text-lg font-bold text-gray-900">Avanzamento produzione</h4>
-                <p className="text-sm text-gray-500">Spunta ogni attività quando è stata completata.</p>
+                <h4 className="text-lg font-bold text-gray-900">Fasi e attività</h4>
               </div>
               <span className="text-sm font-bold text-violet-700">{projectProgress}%</span>
             </div>
@@ -713,10 +640,7 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
           {!isWeeklyWorkflow && (
             <section className="rounded-xl border border-sky-200 bg-sky-50 p-4">
               <h4 className="text-lg font-bold text-gray-900">Controlli obbligatori</h4>
-              <p className="mb-4 text-sm text-gray-600">
-                I controlli storici restano separati per preservare il workflow originale.
-              </p>
-              <div className="grid gap-3 lg:grid-cols-2">
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
                 {controls.map((control, controlIndex) => renderControl(control, controlIndex))}
               </div>
             </section>
@@ -772,101 +696,191 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
             </section>
           )}
 
-          <section className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-              <h4 className="text-lg font-bold text-emerald-950">Stato consegna</h4>
-              <p className="mb-3 text-sm text-emerald-800">Scadenza prevista: {formatDate(delivery.dataPrevista)}</p>
-              {delivery.dataEffettiva && <p className="mb-3 text-sm font-semibold text-emerald-900">Data effettiva: {formatDate(delivery.dataEffettiva)}</p>}
-              {delivery.confermata ? (
-                <div className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800">
-                  {productionStatus}
-                </div>
-              ) : (
-                <select aria-label="Stato preparazione consegna" value={delivery.stato || 'non consegnato'} onChange={(event) => patch({ consegna: { stato: event.target.value } }, { ...project, consegna: { ...delivery, stato: event.target.value } }, 'delivery')} className={inputClass}>
-                  {['non consegnato', 'pronta', 'bloccata'].map((value) => <option key={value}>{value}</option>)}
-                </select>
-              )}
-              <textarea aria-label="Note consegna" value={delivery.note || ''} onChange={(event) => setDraftProject({ ...project, consegna: { ...delivery, note: event.target.value } })} onBlur={(event) => patch({ consegna: { note: event.target.value } }, project, 'delivery')} className={`${inputClass} mt-2`} rows={2} placeholder="Note consegna" />
-              {messageScope === 'delivery' && message && !saving && (
-                <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-emerald-800' : 'mt-2 text-sm font-semibold text-red-700'}>{message}</p>
-              )}
-              <button type="button" disabled={delivery.confermata || saving} onClick={() => patch({ consegna: { stato: 'consegnato', confermata: true } }, { ...project, consegna: { ...delivery, stato: 'consegnato', confermata: true } }, 'delivery')} className="mt-3 w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-50">
-                {delivery.confermata ? `Consegnato il ${formatDate(delivery.dataEffettiva)}` : 'Conferma consegna definitiva'}
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
-              <h4 className="text-lg font-bold text-indigo-950">Stato pubblicazione</h4>
-              <p className="mb-3 text-sm text-indigo-800">Indipendente dalla consegna e gestibile anche in seguito.</p>
-              {publication.dataEffettiva && <p className="mb-3 text-sm font-semibold text-indigo-900">Pubblicato il {formatDate(publication.dataEffettiva)}</p>}
-              <select aria-label="Stato pubblicazione" disabled={publication.stato === 'pubblicata'} value={publication.stato || 'da pianificare'} onChange={(event) => patch({ pubblicazione: { stato: event.target.value } }, { ...project, pubblicazione: { ...publication, stato: event.target.value } }, 'publication')} className={inputClass}>
-                {PUBLICATION_STATES.map((value) => (
-                  <option key={value} disabled={value === 'pubblicata' && publication.stato !== 'pubblicata'}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <input aria-label="Data prevista pubblicazione" type="date" value={dateInput(publication.dataPrevista)} onChange={(event) => patch({ pubblicazione: { dataPrevista: event.target.value || null } }, { ...project, pubblicazione: { ...publication, dataPrevista: event.target.value || null } }, 'publication')} className={inputClass} />
-                <input aria-label="URL pubblico del sito" value={publication.urlPubblico || ''} onChange={(event) => setDraftProject({ ...project, pubblicazione: { ...publication, urlPubblico: event.target.value } })} onBlur={(event) => patch({ pubblicazione: { urlPubblico: event.target.value } }, project, 'publication')} className={inputClass} placeholder="https://sito.it" />
-              </div>
-              <textarea aria-label="Note pubblicazione" value={publication.note || ''} onChange={(event) => setDraftProject({ ...project, pubblicazione: { ...publication, note: event.target.value } })} onBlur={(event) => patch({ pubblicazione: { note: event.target.value } }, project, 'publication')} className={`${inputClass} mt-2`} rows={2} placeholder="Note pubblicazione" />
-              <button
-                type="button"
-                disabled={publication.stato === 'pubblicata' || !publication.urlPubblico?.trim() || saving}
-                onClick={() => patch(
-                  { pubblicazione: { stato: 'pubblicata', urlPubblico: publication.urlPubblico } },
-                  { ...project, pubblicazione: { ...publication, stato: 'pubblicata' } },
-                  'publication'
-                )}
-                className="mt-3 w-full rounded-lg bg-indigo-700 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {publication.stato === 'pubblicata' ? 'Sito pubblicato' : 'Segna come pubblicato'}
-              </button>
-              {messageScope === 'publication' && message && !saving && (
-                <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-indigo-800' : 'mt-2 text-sm font-semibold text-red-700'}>{message}</p>
-              )}
-            </div>
-          </section>
-
-          <section className="overflow-hidden rounded-xl border border-emerald-200">
-            <button type="button" aria-expanded={openChecklist} aria-controls={`publication-checklist-${project._id}`} onClick={() => setOpenChecklist((value) => !value)} className="flex w-full items-center justify-between bg-emerald-50 p-4 text-left">
-              <div>
-                <h4 className="font-bold text-gray-900">Checklist pubblicazione — 29 controlli</h4>
-                <p className="text-sm text-gray-600">{checklistProgress.done}/{checklistProgress.total} completati o non applicabili. Non blocca la consegna.</p>
-              </div>
-              <ChevronDown className={`h-5 w-5 transition ${openChecklist ? 'rotate-180' : ''}`} />
-            </button>
-            {openChecklist && (
-              <div id={`publication-checklist-${project._id}`} className="space-y-4 p-4">
-                {checklist.map((group, groupIndex) => (
-                  <div key={group.categoria}>
-                    <h5 className="mb-2 text-sm font-bold text-gray-800">{group.categoria}</h5>
-                    <div className="space-y-2">
-                      {group.items.map((item, itemIndex) => (
-                        <div key={item.nome} className="grid items-start gap-2 rounded-lg bg-gray-50 p-3 md:grid-cols-[1fr_170px_170px]">
-                          <div>
-                            <p className={`text-sm font-semibold ${isDone(item) ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{item.nome}</p>
-                            <p className="text-xs text-gray-500">{item.descrizione}</p>
-                          </div>
-                          <select aria-label={`Tipo controllo: ${item.nome}`} value={item.tipoControllo || 'obbligatorio'} onChange={(event) => updateChecklist(groupIndex, itemIndex, { tipoControllo: event.target.value })} className={inputClass}>
-                            {['obbligatorio', 'condizionale', 'non applicabile'].map((value) => <option key={value}>{value}</option>)}
-                          </select>
-                          <select aria-label={`Stato controllo: ${item.nome}`} value={item.stato || (item.completata ? 'completata' : 'da fare')} onChange={(event) => updateChecklist(groupIndex, itemIndex, { stato: event.target.value })} className={inputClass}>
-                            {TASK_STATES.map((value) => <option key={value}>{value}</option>)}
-                          </select>
-                        </div>
-                      ))}
+          <details className="group rounded-xl border border-gray-200">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-semibold text-gray-900 focus-visible:outline-violet-600 [&::-webkit-details-marker]:hidden">
+              Consegna e pubblicazione
+              <ChevronDown className="h-4 w-4 text-gray-600 group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="space-y-4 border-t border-gray-200 p-4">
+              <section className="grid gap-4 lg:grid-cols-2">
+                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                  <h4 className="text-base font-bold text-gray-900">Stato consegna</h4>
+                  <p className="mb-3 text-sm text-emerald-800">Scadenza prevista: {formatDate(delivery.dataPrevista)}</p>
+                  {delivery.dataEffettiva && <p className="mb-3 text-sm font-semibold text-emerald-900">Data effettiva: {formatDate(delivery.dataEffettiva)}</p>}
+                  {delivery.confermata ? (
+                    <div className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800">
+                      {productionStatus}
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+                  ) : (
+                    <select aria-label="Stato preparazione consegna" value={delivery.stato || 'non consegnato'} onChange={(event) => patch({ consegna: { stato: event.target.value } }, { ...project, consegna: { ...delivery, stato: event.target.value } }, 'delivery')} className={inputClass}>
+                      {['non consegnato', 'pronta', 'bloccata'].map((value) => <option key={value}>{value}</option>)}
+                    </select>
+                  )}
+                  <textarea aria-label="Note consegna" value={delivery.note || ''} onChange={(event) => setDraftProject({ ...project, consegna: { ...delivery, note: event.target.value } })} onBlur={(event) => patch({ consegna: { note: event.target.value } }, project, 'delivery')} className={`${inputClass} mt-2`} rows={2} placeholder="Note consegna" />
+                  {messageScope === 'delivery' && message && !saving && (
+                    <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-emerald-800' : 'mt-2 text-sm font-semibold text-red-700'}>{message}</p>
+                  )}
+                  <button type="button" disabled={delivery.confermata || saving} onClick={() => patch({ consegna: { stato: 'consegnato', confermata: true } }, { ...project, consegna: { ...delivery, stato: 'consegnato', confermata: true } }, 'delivery')} className="mt-3 w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-50">
+                    {delivery.confermata ? `Consegnato il ${formatDate(delivery.dataEffettiva)}` : 'Conferma consegna definitiva'}
+                  </button>
+                </div>
 
-          <div className="flex items-center justify-end text-xs">
-            <span className="text-gray-400">Fuso orario Europe/Rome · weekend esclusi</span>
-          </div>
+                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                  <h4 className="text-base font-bold text-gray-900">Stato pubblicazione</h4>
+
+                  {publication.dataEffettiva && <p className="mb-3 text-sm font-semibold text-indigo-900">Pubblicato il {formatDate(publication.dataEffettiva)}</p>}
+                  <select aria-label="Stato pubblicazione" disabled={publication.stato === 'pubblicata'} value={publication.stato || 'da pianificare'} onChange={(event) => patch({ pubblicazione: { stato: event.target.value } }, { ...project, pubblicazione: { ...publication, stato: event.target.value } }, 'publication')} className={inputClass}>
+                    {PUBLICATION_STATES.map((value) => (
+                      <option key={value} disabled={value === 'pubblicata' && publication.stato !== 'pubblicata'}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <input aria-label="Data prevista pubblicazione" type="date" value={dateInput(publication.dataPrevista)} onChange={(event) => patch({ pubblicazione: { dataPrevista: event.target.value || null } }, { ...project, pubblicazione: { ...publication, dataPrevista: event.target.value || null } }, 'publication')} className={inputClass} />
+                    <input aria-label="URL pubblico del sito" value={publication.urlPubblico || ''} onChange={(event) => setDraftProject({ ...project, pubblicazione: { ...publication, urlPubblico: event.target.value } })} onBlur={(event) => patch({ pubblicazione: { urlPubblico: event.target.value } }, project, 'publication')} className={inputClass} placeholder="https://sito.it" />
+                  </div>
+                  <textarea aria-label="Note pubblicazione" value={publication.note || ''} onChange={(event) => setDraftProject({ ...project, pubblicazione: { ...publication, note: event.target.value } })} onBlur={(event) => patch({ pubblicazione: { note: event.target.value } }, project, 'publication')} className={`${inputClass} mt-2`} rows={2} placeholder="Note pubblicazione" />
+                  <button
+                    type="button"
+                    disabled={publication.stato === 'pubblicata' || !publication.urlPubblico?.trim() || saving}
+                    onClick={() => patch(
+                      { pubblicazione: { stato: 'pubblicata', urlPubblico: publication.urlPubblico } },
+                      { ...project, pubblicazione: { ...publication, stato: 'pubblicata' } },
+                      'publication'
+                    )}
+                    className="mt-3 w-full rounded-lg bg-indigo-700 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {publication.stato === 'pubblicata' ? 'Sito pubblicato' : 'Segna come pubblicato'}
+                  </button>
+                  {messageScope === 'publication' && message && !saving && (
+                    <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-indigo-800' : 'mt-2 text-sm font-semibold text-red-700'}>{message}</p>
+                  )}
+                </div>
+              </section>
+
+              <section className="overflow-hidden rounded-xl border border-emerald-200">
+                <button type="button" aria-expanded={openChecklist} aria-controls={`publication-checklist-${project._id}`} onClick={() => setOpenChecklist((value) => !value)} className="flex w-full items-center justify-between bg-emerald-50 p-4 text-left">
+                  <div>
+                    <h4 className="font-bold text-gray-900">Checklist pubblicazione — 29 controlli</h4>
+                    <p className="text-sm text-gray-600">{checklistProgress.done}/{checklistProgress.total} completati o non applicabili. Non blocca la consegna.</p>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition ${openChecklist ? 'rotate-180' : ''}`} />
+                </button>
+                {openChecklist && (
+                  <div id={`publication-checklist-${project._id}`} className="space-y-4 p-4">
+                    {checklist.map((group, groupIndex) => (
+                      <div key={group.categoria}>
+                        <h5 className="mb-2 text-sm font-bold text-gray-800">{group.categoria}</h5>
+                        <div className="space-y-2">
+                          {group.items.map((item, itemIndex) => (
+                            <div key={item.nome} className="grid items-start gap-2 rounded-lg bg-gray-50 p-3 md:grid-cols-[1fr_170px_170px]">
+                              <div>
+                                <p className={`text-sm font-semibold ${isDone(item) ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{item.nome}</p>
+                                <p className="text-xs text-gray-500">{item.descrizione}</p>
+                              </div>
+                              <select aria-label={`Tipo controllo: ${item.nome}`} value={item.tipoControllo || 'obbligatorio'} onChange={(event) => updateChecklist(groupIndex, itemIndex, { tipoControllo: event.target.value })} className={inputClass}>
+                                {['obbligatorio', 'condizionale', 'non applicabile'].map((value) => <option key={value}>{value}</option>)}
+                              </select>
+                              <select aria-label={`Stato controllo: ${item.nome}`} value={item.stato || (item.completata ? 'completata' : 'da fare')} onChange={(event) => updateChecklist(groupIndex, itemIndex, { stato: event.target.value })} className={inputClass}>
+                                {TASK_STATES.map((value) => <option key={value}>{value}</option>)}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          </details>
+
+          {isStaff && (
+            <details className="group rounded-xl border border-gray-200">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-gray-900 focus-visible:outline-violet-600 [&::-webkit-details-marker]:hidden">
+                Impostazioni collaborazione
+                <ChevronDown className="h-4 w-4 text-gray-600 group-open:rotate-180" aria-hidden="true" />
+              </summary>
+              <div className="space-y-5 border-t border-gray-200 p-4">
+                <label className="block max-w-xs text-sm font-semibold text-gray-900">
+                  Stato collaborazione
+                  <select
+                    className={`${inputClass} mt-1`}
+                    value={project.stato || 'in corso'}
+                    disabled={saving}
+                    onChange={(event) => {
+                      const stato = event.target.value;
+                      patch({ stato }, { ...project, stato });
+                    }}
+                  >
+                    <option value="in corso">Non completato</option>
+                    <option value="in pausa">In pausa</option>
+                    <option value="terminata">Completato</option>
+                  </select>
+                </label>
+                {project.dataAvvioOperativo && (
+                  <section className="border-t border-gray-200 pt-4">
+                    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                      <div className="max-w-xl">
+                        <h4 className="font-bold text-gray-900">Sposta timeline</h4>
+                        <p className="text-sm text-gray-600">
+                          Ricalcola le date previste delle fasi, dei controlli e della consegna.
+                        </p>
+                      </div>
+                      <div className="grid w-full gap-3 sm:grid-cols-2 lg:max-w-md">
+                        <label className="text-sm font-semibold text-gray-800">
+                          Nuova data di avvio
+                          <input
+                            type="date"
+                            value={newStartDate}
+                            onChange={(event) => setNewStartDate(event.target.value)}
+                            className={`${inputClass} mt-1`}
+                          />
+                        </label>
+                        <label className="text-sm font-semibold text-gray-800">
+                          Motivo (facoltativo)
+                          <input
+                            value={rescheduleReason}
+                            onChange={(event) => setRescheduleReason(event.target.value)}
+                            className={`${inputClass} mt-1`}
+                            placeholder="Es. avvio contratto posticipato"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          disabled={!newStartDate || newStartDate === currentStartDate || saving}
+                          onClick={handleReschedule}
+                          className="justify-self-start rounded-lg bg-violet-700 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Ricalcola date
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-600">
+                      <span>Avvio attuale: <strong>{formatDate(project.dataAvvioOperativo)}</strong></span>
+                      <span>Consegna prevista: <strong>{formatDate(delivery.dataPrevista)}</strong></span>
+                      {latestTimelineChange && (
+                        <span>
+                          Ultimo spostamento: {formatDate(latestTimelineChange.dataPrecedente)} →{' '}
+                          {formatDate(latestTimelineChange.dataNuova)}
+                          {latestTimelineChange.modificataDaNome
+                            ? ` · ${latestTimelineChange.modificataDaNome}`
+                            : ''}
+                        </span>
+                      )}
+                    </div>
+                    {messageScope === 'schedule' && message && !saving && (
+                      <p className={message === 'Salvato' ? 'mt-2 text-sm font-medium text-emerald-700' : 'mt-2 text-sm font-semibold text-red-700'}>
+                        {message === 'Salvato' ? 'Timeline riprogrammata' : message}
+                      </p>
+                    )}
+                  </section>
+                )}
+                {deleteAction && <div className="border-t border-gray-200 pt-3">{deleteAction}</div>}
+              </div>
+            </details>
+          )}
         </div>
       )}
     </div>
