@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Lista_clienti from "./Lista-clienti";
 import TimelineWebDesignerV2 from "./timeline-web-designer-v2";
+import DesignServices from "./DesignServices";
 import ListaGoogleAdsCollaboratore from "./ListaGoogleAdsCollaboratore";
 import SeoCollaborations from "./SeoCollaborations";
 
@@ -542,7 +543,10 @@ const CollaboratoreItem = ({ id, nome, ruolo, tipoLista, status = "attivo", note
                 : "Lista Clienti"}
             </h4>
             {tipoLista === "web designer" ? (
-              <TimelineWebDesignerV2 userId={id} />
+              <>
+                <DesignServices key={id} collaboratorId={id} />
+                <TimelineWebDesignerV2 userId={id} />
+              </>
             ) : tipoLista === "google ads" ? (
               <ListaGoogleAdsCollaboratore collaboratoreId={id} />
             ) : tipoLista === "seo" ? (

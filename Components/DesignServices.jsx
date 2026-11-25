@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
+import WebDesignCompletionBadge from './WebDesignCompletionBadge';
 
 const dateFormat = new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome' });
 
@@ -35,6 +36,12 @@ function DesignService({ service }) {
     <details className="rounded-xl border border-violet-200 bg-white">
       <summary className="cursor-pointer rounded-xl px-4 py-3 focus-visible:outline-violet-600">
         <span className="font-semibold text-gray-900">{service.cliente}</span>
+        <span className="ml-2 inline-block rounded-full bg-violet-100 px-2 py-1 text-xs font-semibold text-violet-800">
+          Solo Design
+        </span>
+        <span className="ml-2 inline-block">
+          <WebDesignCompletionBadge completed={service.faseCompletata || (tasks.length > 0 && done === tasks.length)} />
+        </span>
         <span className="ml-3 text-sm text-gray-600">{done}/{tasks.length} attività completate</span>
       </summary>
       <div className="space-y-3 border-t border-violet-100 px-4 py-3">
@@ -73,13 +80,15 @@ function DesignService({ service }) {
   );
 }
 
-export default function DesignServices() {
+export default function DesignServices({ collaboratorId }) {
+  const headingId = useId();
   const [services, setServices] = useState([]);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch('/api/collaborazioni-webdesign-v2/design', { signal: controller.signal, cache: 'no-store' })
+    const query = collaboratorId ? `?collaboratore=${encodeURIComponent(collaboratorId)}` : '';
+    fetch(`/api/collaborazioni-webdesign-v2/design${query}`, { signal: controller.signal, cache: 'no-store' })
       .then((response) => {
         if (!response.ok) throw new Error();
         return response.json();
@@ -89,14 +98,14 @@ export default function DesignServices() {
         if (!controller.signal.aborted) setError(true);
       });
     return () => controller.abort();
-  }, []);
+  }, [collaboratorId]);
 
   if (error) return <p role="alert" className="mb-4 text-sm text-red-700">Impossibile caricare i servizi Design.</p>;
   if (!services.length) return null;
 
   return (
-    <section aria-labelledby="design-services-title" className="mb-8 space-y-3">
-      <h3 id="design-services-title" className="text-xl font-semibold text-gray-900">Servizi Design</h3>
+    <section aria-labelledby={headingId} className="mb-4 space-y-3">
+      <h3 id={headingId} className="text-sm font-semibold text-gray-900">Servizi Design</h3>
       {services.map((service) => <DesignService key={service.id} service={service} />)}
     </section>
   );

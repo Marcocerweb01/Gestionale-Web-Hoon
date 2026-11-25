@@ -19,6 +19,7 @@ import {
   isWorkflowPhaseUnlocked,
 } from '@/lib/webdesign-v2-workflow.mjs';
 import { calculateTaskCollectionProgress, isWebDesignTaskCompleted } from '@/lib/webdesign-v2-progress.mjs';
+import WebDesignCompletionBadge from './WebDesignCompletionBadge';
 
 const PHASE_META = {
   struttura: { label: 'Struttura', period: 'Giorni 1-5', Icon: Building2 },
@@ -483,10 +484,8 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className={`hidden rounded-full px-3 py-1 text-xs font-bold sm:inline ${delivery.confermata ? 'bg-amber-100 text-amber-800' : 'bg-violet-100 text-violet-800'}`}>
-            {productionStatus}
-          </span>
+        <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
+          <WebDesignCompletionBadge completed={project.stato === 'terminata'} paused={project.stato === 'in pausa'} />
           <span className="text-sm font-bold text-violet-700">{projectProgress}%</span>
         </div>
       </button>
@@ -501,6 +500,24 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
               </span>
             )}
           </div>
+          {isStaff && (
+            <label className="block max-w-xs text-sm font-semibold text-gray-900">
+              Stato collaborazione
+              <select
+                className={`${inputClass} mt-1`}
+                value={project.stato || 'in corso'}
+                disabled={saving}
+                onChange={(event) => {
+                  const stato = event.target.value;
+                  patch({ stato }, { ...project, stato });
+                }}
+              >
+                <option value="in corso">Non completato</option>
+                <option value="in pausa">In pausa</option>
+                <option value="terminata">Completato</option>
+              </select>
+            </label>
+          )}
           {isStaff && project.dataAvvioOperativo && (
             <section className="rounded-xl border border-violet-200 bg-violet-50 p-4">
               <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
@@ -762,7 +779,7 @@ export default function WebDesignV2StandardWorkflow({ initialProject, userId, is
               {delivery.dataEffettiva && <p className="mb-3 text-sm font-semibold text-emerald-900">Data effettiva: {formatDate(delivery.dataEffettiva)}</p>}
               {delivery.confermata ? (
                 <div className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800">
-                  Consegnato
+                  {productionStatus}
                 </div>
               ) : (
                 <select aria-label="Stato preparazione consegna" value={delivery.stato || 'non consegnato'} onChange={(event) => patch({ consegna: { stato: event.target.value } }, { ...project, consegna: { ...delivery, stato: event.target.value } }, 'delivery')} className={inputClass}>
