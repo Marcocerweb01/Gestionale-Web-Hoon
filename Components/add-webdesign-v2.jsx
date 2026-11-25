@@ -101,14 +101,13 @@ const AddWebDesignV2Form = () => {
       .includes(aziendaSearch.toLowerCase())
   );
 
-  const filteredCollaboratori = collaboratori.filter((c) => {
-    const roles = Array.isArray(c.subRoles) ? c.subRoles : [c.subRole].filter(Boolean);
-    return (
-      roles.includes('web designer') &&
-      `${c.nome} ${c.cognome}`.toLowerCase().includes(collaboratoreSearch.toLowerCase())
-    );
-  });
-  const altriCollaboratori = collaboratori.filter((c) => c.id !== formData.webDesignerId);
+  const webDesigners = collaboratori.filter(
+    (c) => c.subRoles?.includes('web designer') || c.subRole === 'web designer'
+  );
+  const filteredCollaboratori = webDesigners.filter((c) =>
+    `${c.nome} ${c.cognome}`.toLowerCase().includes(collaboratoreSearch.toLowerCase())
+  );
+  const altriWebDesigner = webDesigners.filter((c) => c.id !== formData.webDesignerId);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -294,9 +293,9 @@ const AddWebDesignV2Form = () => {
                   required
                 >
                   <option value="">
-                    {altriCollaboratori.length ? 'Seleziona un collaboratore' : 'Nessun altro collaboratore disponibile'}
+                    {altriWebDesigner.length ? 'Seleziona un Web Designer' : 'Nessun altro Web Designer disponibile'}
                   </option>
-                  {altriCollaboratori.map((collaboratore) => (
+                  {altriWebDesigner.map((collaboratore) => (
                     <option key={collaboratore.id} value={collaboratore.id}>
                       {collaboratore.nome} {collaboratore.cognome}
                     </option>

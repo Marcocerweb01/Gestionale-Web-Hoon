@@ -47,9 +47,15 @@ export async function POST(req) {
         status: 404,
       });
     }
-    const designCollaboratore = designCollaboratoreId ?? collaboratore.id;
-    if (designCollaboratore !== collaboratore.id && !(await Collaboratore.exists({ _id: designCollaboratore }))) {
-      return new Response(JSON.stringify({ message: 'Collaboratore Design non trovato' }), { status: 404 });
+    const designCollaboratore = designCollaboratoreId?.toLowerCase() ?? collaboratore.id;
+    if (designCollaboratore !== collaboratore.id) {
+      const delegato = await Collaboratore.findById(designCollaboratore).select('subRoles subRole').lean();
+      if (!delegato) {
+        return new Response(JSON.stringify({ message: 'Collaboratore Design non trovato' }), { status: 404 });
+      }
+      if (!delegato.subRoles?.includes('web designer') && delegato.subRole !== 'web designer') {
+        return new Response(JSON.stringify({ message: 'Seleziona un Web Designer' }), { status: 400 });
+      }
     }
 
     // One Page, Landing Page e Blog confluiscono nella timeline Vetrina finché
