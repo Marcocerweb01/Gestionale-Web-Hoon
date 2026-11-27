@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth';
 import {
   isStandardWorkflowProject,
   isWorkflowPhaseUnlocked,
+  normalizePlannedWebDesignDelivery,
   rescheduleWebDesignWorkflow,
   validateDeliveryConfirmation,
 } from '@/lib/webdesign-v2-workflow.mjs';
@@ -78,7 +79,7 @@ export async function GET(req, { params }) {
       );
 
       return {
-        ...collaborazione,
+        ...normalizePlannedWebDesignDelivery(collaborazione),
         interviewWorkflow: item
           ? {
               id: item._id,
@@ -395,7 +396,11 @@ export async function PATCH(req, { params }) {
           status: 400,
         });
       }
-      const consegna = { ...(collaborationToUpdate.consegna || {}), ...body.consegna };
+      const plannedDelivery = normalizePlannedWebDesignDelivery(collaborationToUpdate);
+      const consegna = { ...(plannedDelivery.consegna || {}), ...body.consegna };
+      if (plannedDelivery.dataFineContratto !== collaborationToUpdate.dataFineContratto) {
+        updatePayload.dataFineContratto = plannedDelivery.dataFineContratto;
+      }
       for (const key of ['dataPrevista', 'dataEffettiva']) {
         if (body.consegna[key] !== undefined) {
           const parsed = parseDateField(body.consegna[key]);
@@ -544,7 +549,7 @@ export async function PATCH(req, { params }) {
       });
     }
 
-    return new Response(JSON.stringify({ message: 'Collaborazione v2 aggiornata con successo', collaborazione: updated }), {
+    return new Response(JSON.stringify({ message: 'Collaborazione v2 aggiornata con successo', collaborazione: normalizePlannedWebDesignDelivery(updated.toObject()) }), {
       status: 200,
     });
   } catch (error) {

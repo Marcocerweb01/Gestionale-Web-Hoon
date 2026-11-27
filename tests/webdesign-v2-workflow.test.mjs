@@ -8,6 +8,7 @@ import {
   getOperationalStartDateOnly,
   isStandardWorkflowProject,
   isWorkflowPhaseUnlocked,
+  normalizePlannedWebDesignDelivery,
   normalizeProjectType,
   rescheduleWebDesignWorkflow,
   scheduleExistingWorkflow,
@@ -78,7 +79,7 @@ test('crea un sito vetrina con 3 settimane, 15 attività per fase e ordine esatt
   assert.deepEqual(workflow.fasi.map((fase) => fase.tasks.length), [15, 15, 15]);
   assert.equal(workflow.fasi.flatMap((fase) => fase.tasks).length, 45);
   assert.ok(workflow.fasi.flatMap((fase) => fase.tasks).every((task) => !task.giorno));
-  assert.equal(workflow.consegna.dataPrevista.toISOString().slice(0, 10), '2026-11-05');
+  assert.equal(workflow.consegna.dataPrevista.toISOString().slice(0, 10), '2026-11-13');
   assert.equal(workflow.fasi.at(-1).giornoFine, 15);
 });
 
@@ -131,7 +132,24 @@ test("l'intervista ricevuta mantiene l'avvio contrattuale e completa il relativo
   assert.equal(scheduled.intervistaRicevutaAt.toISOString(), receivedAt.toISOString());
   assert.equal(scheduled.fasi[0].tasks[0].note, 'Dato già inserito');
   assert.equal(scheduled.fasi[0].tasks[0].stato, 'completata');
-  assert.equal(scheduled['consegna.dataPrevista'].toISOString().slice(0, 10), '2026-11-06');
+  assert.equal(scheduled['consegna.dataPrevista'].toISOString().slice(0, 10), '2026-11-16');
+});
+
+test('ricalcola la vecchia scadenza automatica sui progetti in corso', () => {
+  const project = createWebDesignWorkflow({ operationalStart: '2026-11-06' });
+  project.consegna.dataPrevista = new Date('2026-11-26T12:00:00.000Z');
+  project.dataFineContratto = project.consegna.dataPrevista;
+
+  const normalized = normalizePlannedWebDesignDelivery(project);
+  assert.equal(normalized.consegna.dataPrevista.toISOString().slice(0, 10), '2026-12-04');
+  assert.equal(normalized.dataFineContratto, normalized.consegna.dataPrevista);
+  assert.equal(normalizePlannedWebDesignDelivery(normalized), normalized);
+
+  project.consegna.confermata = true;
+  assert.equal(normalizePlannedWebDesignDelivery(project), project);
+  project.consegna.confermata = false;
+  project.consegna.dataPrevista = new Date('2026-11-27T12:00:00.000Z');
+  assert.equal(normalizePlannedWebDesignDelivery(project), project);
 });
 
 test('weekend e cambi ora Europe/Rome non entrano nei 15 giorni', () => {
@@ -223,7 +241,7 @@ test('spostare il giorno 1 ricalcola le previsioni senza perdere dati operativi'
   assert.equal(rescheduled.dataAvvioOperativo.toISOString().slice(0, 10), '2026-10-26');
   assert.equal(rescheduled.fasi[0].dataFinePrevista.toISOString().slice(0, 10), '2026-10-30');
   assert.equal(rescheduled.fasi[2].dataFinePrevista.toISOString().slice(0, 10), '2026-11-13');
-  assert.equal(rescheduled.dataFineContratto.toISOString().slice(0, 10), '2026-11-13');
+  assert.equal(rescheduled.dataFineContratto.toISOString().slice(0, 10), '2026-11-23');
   assert.equal(rescheduled.fasi[0].tasks[2].stato, 'completata');
   assert.equal(rescheduled.fasi[0].tasks[2].note, 'Obiettivi verificati');
   assert.equal(rescheduled.fasiControllo[0].data.toISOString(), '2026-10-23T12:00:00.000Z');
